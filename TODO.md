@@ -1,30 +1,90 @@
 # TODO — 未完成事项与实现备忘
 
-> 状态基线：M1 进行到一半（骨架 + config + db/sqlc + auth + users 已完成并编译通过）。
-> 本文件记录剩余工作、已完成部分的注意事项、以及后续实现"该怎么写"的要点。
-> 每完成一项请勾选并从 git 提交（提交信息：祈使句、小写、简短）。
+> 状态：**M1–M8 全部完成**（2026-09-12），最终回归 24 项冒烟全 PASS（PR 表单字段为 base/head，
+> 最终验证脚本 /tmp/opencode/final_smoke.sh 可复跑）。
+> 后续方向见文末「后续方向」。每完成一项请勾选并提交（祈使句、小写、简短）。
 
-## 里程碑进度
+## 全量回归清单（已验证）
 
-- [x] 技术选型定稿（见 AGENTS.md，勿偏离）
-- [x] AGENTS.md / README.md / sqlc.yaml / go.mod
-- [x] internal/config（TOML + 环境变量覆盖，GITLI_* 前缀）
-- [x] internal/db 迁移 0001（users/sessions）+ sqlc 生成（db/models/querier/*.sql.go）
-- [x] internal/auth（bcrypt、session 增删查、token SHA-256 哈希存储）
-- [x] internal/users（Register/Get/Search，首个注册用户自动 is_admin=1）
-- [x] **M1 完成**：web render（internal/assets 内嵌模板）、middleware（session/CSRF/secure headers）、
-      chi 路由、注册/登录/退出、cmd/gitli serve 入口、冒烟测试通过
-- [x] **M2 完成**：repos/pats/collaborators 表 + sqlc、internal/git（InitRepo/路径校验/SmartHTTPHandler
-      桥接 git http-backend）、internal/auth/pat.go（PAT 认证）、internal/auth/access.go（CanAccess 唯一权限入口）、
-      仓库创建页、Basic Auth 推拉；冒烟测试通过：匿名 clone public ✓、PAT/密码 push ✓、
-      匿名读 private 401 ✓、非协作者 push 拒绝 ✓、管理员读全部 ✓（is_admin 绕过，设计行为）
-- [ ] **M3 Web 代码浏览（当前任务）**
-- [ ] M4 SSH server（golang.org/x/crypto/ssh，公钥查库 → spawn `git upload-pack/receive-pack`）
-      + git:// 9418 匿名 daemon（仅 public，`git daemon` spawn 或自实现）
-- [ ] M5 Issue + 组织（orgs 表、org_members 角色、可见性三级权限收敛到一个 `CanAccess`）
-- [ ] M6 PR：fork、diff、评论、merge/squash/rebase（全部 shell git）
-- [ ] M7 Wiki（`<repo>.wiki.git`）+ OAuth2/OIDC（golang.org/x/oauth2）+ 管理后台
-- [ ] M8 Dockerfile（多阶段，golang 构建 → 运行时只需 git + 二进制）、docker-compose、发布
+- M1：注册/登录/退出/CSRF/首个用户自动 admin
+- M2：仓库创建（public/org/private）、git smart HTTP 推拉（PAT/密码 Basic Auth）、匿名读 public、
+  private 拒绝（401）、协作者
+- M3：仓库首页（树+README markdown+最近提交）、tree/blob/raw/commits 分页/commit diff/blame/branches/tags、
+  XSS 消毒（bluemonday）
+- M4：内置 SSH server（公钥指纹认证、host key 持久化）、git:// 9418 匿名协议（仅 public），
+  private 两协议均拒绝，owner key 可推拉
+- M5：Issue（创建/评论/关闭/标签/指派）、组织（owner/member 角色、组织仓库、非成员不可见）
+- M6：PR（diff、评论复用 issue_comments、merge/squash/rebase 三种合并、merge-tree 无工作区合并）
+- M7：Wiki（裸仓库 plumbing 写入、markdown 渲染）、OAuth2/OIDC（未配置 404 不崩）、管理后台
+- M8：Makefile build/release（5 平台静态编译）、Dockerfile 多阶段（golang:1.25-alpine 基础镜像，
+  go.mod 要求 ≥1.25.11）、docker-compose、config.example.toml 校对
+
+## 后续方向（按优先级）
+
+- [ ] Web UI 按用户指定的组件规范重构（见下「Web UI 设计参考」），当前是功能优先的原生表单
+- [ ] PAT 管理页面（pats 表已就绪，缺 UI 生成/列出/吊销）
+- [ ] SSH key 管理页面（ssh_keys 表已就绪，缺 UI，目前测试直接插库）
+- [ ] 协作者管理页面（collaborators 表已就绪，缺 UI）
+- [ ] Issue/PR 编号全局唯一性检查（当前 number 按 repo 递增，正常）
+- [ ] PR rebase 大量场景测试（冲突、非 fast-forward）
+- [ ] go test 单元测试覆盖（当前零测试文件，go test ./... 输出 no test files）
+- [ ] 日志级别配置实际生效检查（newLogger 读 env 不读 toml 的 log.level）
+- [ ] git:// 与 SSH 的连接数/速率限制
+- [ ] 镜像仓库（mirror pull）、Webhook
+
+## 已定决策与注意事项（写代码前先读）
+
+1. **环境坑（本机）**：构建缓存已永久迁移：GOMODCACHE=/data/home/admin1/gomod/mod（go env -w 已写入）、
+   GOCACHE=/data/home/admin1/gocache、GOTMPDIR=/data/home/admin1/gotmp（Makefile 已 export）。
+   网络 GOPROXY=https://goproxy.cn,direct。**/tmp 后台进程会随 shell 会话结束被杀，测试脚本须起-测-停一体。**
+2. **Go 版本**：go.mod 实际为 go 1.25.11（依赖拉高），本地 toolchain 自动下载 1.25.11。
+   加依赖时注意 go 指令变化；每次 go mod tidy 后检查 `grep "^go " go.mod`。
+3. **sqlc**：改 queries/*.sql 或迁移后必须 generate（Makefile: make sqlc）。
+   自建代码在 internal/db/open.go，**不要动 sqlc 生成的 db.go**。LIKE 参数生成 sql.NullString。
+4. **迁移**：golang-migrate + database/sqlite driver。**大坑：m.Close() 会关闭底层 *sql.DB**，
+   open.go 里绝不能 defer m.Close()。
+5. **SQLite**：DSN `_pragma=journal_mode(WAL)&busy_timeout(5000)&foreign_keys(1)`，SetMaxOpenConns(1)。
+6. **Git smart HTTP（踩坑记录）**：
+   - PATH_INFO 必须以 / 开头且相对 GIT_PROJECT_ROOT（/alice/demo.git/info/refs），否则 `aliased` 错误
+   - cgi.Env 必须含 os.Environ()（PATH），否则 http-backend 找不到 git 子命令
+   - GIT_PROJECT_ROOT 必须绝对路径（config.validate 已转 abs）
+   - CGI 输出无 HTTP 状态行，**不能 http.ReadResponse**，手动逐行读头（smarthttp.go）
+   - M3 教训：chi v5 的 `*` 通配参数用 `chi.URLParam(r, "*")` 而非 r.PathValue
+   - M4 教训：ssh channel 不要在 spawn 后立刻 CloseWrite()（发 EOF 导致客户端 128）；
+     exec-reply 必须在 spawn 前回；host key 持久化到 dataDir
+7. **权限**：auth.CanAccess 唯一入口（user/org repo、三级可见性、管理员绕过）。首个注册用户 is_admin=1。
+8. **安全红线**：
+   - 用户内容禁止 template.HTML，唯一豁免 internal/web/markdown.go（gomarkdown + bluemonday.UGCPolicy）
+   - git 子进程全部 exec.Command 参数数组；仓库名/路径 git.ValidateRepoName/ValidateUsername 校验
+   - session/PAT 只存 SHA-256 hex；密码 bcrypt
+9. **模板**：internal/assets/templates/（embed）。新页面三步：render.go pages 列表 → pages/<name>.html
+   （{{define "content"}}）→ handler s.render。数据走 pageData{Title,User,CSRF,Data}。
+10. **PR 表单字段名**：base/head（不是 base_branch/head_branch）。
+11. **提交风格**：祈使句、小写开头、简短。
+
+## Web UI 设计参考（用户指定）
+
+前端组件规范参考 https://spicytater.cn/terms/catalog/frontend-interaction
+（subcategory: buttons-links、upload、time-picker、switch、select、radio、input-number、checkbox、button、slider）。
+做 Web UI 打磨时按该 catalog 的交互规范：button 状态层级、select/radio/checkbox/switch 表单语义、
+slider/input-number 数值场景、time-picker/时间统一格式、upload 交互模式（Wiki 附件等）。
+
+## M3 实现要点（已实现，留作参考）
+
+- internal/git/browse.go：ls-tree/for-each-ref/log/show/blame --porcelain，全部 cmd.Dir=repo
+- README 渲染：gomarkdown + bluemonday.UGCPolicy()（template.HTML 唯一豁免）
+- 路由：/{owner}/{repo}、tree/blob/raw/commits/commit/blame/branches/tags
+- ref 校验：git rev-parse --verify <ref>^{commit}；路径穿越已校验（Clean + 前缀 + ".." 拒绝）
+
+## M4 实现要点（已实现，留作参考）
+
+- SSH：golang.org/x/crypto/ssh，FingerprintSHA256 查 ssh_keys 表，host key 存 <dataDir>/ssh_host_ed25519_key
+- git://：自实现最小 pktline 解析（4字节hex长度），仅 upload-pack + public 仓库
+- 权限统一走注入的 AuthorizeFunc（auth.CanAccess），git 包不能 import repos（循环依赖）
+
+## Git 协议常量备忘
+
+- smart HTTP service：git-upload-pack（读）、git-receive-pack（写）；pktline flush 帧 `0000`
 
 ## 已定决策与注意事项（写代码前先读）
 
