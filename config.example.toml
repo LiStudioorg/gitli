@@ -1,0 +1,11 @@
+[server]
+http_addr = ":3000"
+ssh_addr = ":2222"
+git_addr = ":9418"
+root_url = "http://localhost:3000"
+
+[app]
+data_dir = "./data"
+
+[log]
+level = "info"

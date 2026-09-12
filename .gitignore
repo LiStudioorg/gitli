@@ -1,0 +1,6 @@
+data/
+bin/
+config.toml
+*.db
+*.db-wal
+*.db-shm

@@ -1,0 +1,9 @@
+{{define "content"}}
+<h1>登录</h1>
+{{template "flash" .Data}}
+<form method="post" action="/login">
+  <label>用户名 <input name="username" required></label>
+  <label>密码 <input name="password" type="password" required></label>
+  <button type="submit">登录</button>
+</form>
+{{end}}

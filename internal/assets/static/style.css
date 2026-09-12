@@ -1,0 +1,16 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; color: #24292f; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: .5rem 1rem; background: #24292f; color: #fff; }
+.topbar a, .topbar button.linklike { color: #fff; text-decoration: none; }
+.topbar nav { display: flex; gap: 1rem; align-items: center; }
+button.linklike { background: none; border: none; cursor: pointer; font-size: 1rem; }
+form.inline { display: inline; }
+.container { max-width: 960px; margin: 1.5rem auto; padding: 0 1rem; }
+.footer { text-align: center; padding: 1rem; }
+.muted { color: #8b949e; }
+.flash { padding: .6rem 1rem; border-radius: 4px; margin-bottom: 1rem; }
+.flash-error { background: #ffebe9; border: 1px solid #ff818266; }
+.flash-info { background: #ddf4ff; border: 1px solid #54aeff66; }
+label { display: block; margin-bottom: .75rem; }
+input { display: block; margin-top: .25rem; padding: .4rem; width: 280px; max-width: 100%; }
+button[type=submit] { padding: .4rem 1rem; }

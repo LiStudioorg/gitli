@@ -1,0 +1,30 @@
+{{define "layout.html"}}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} - gitli</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">gitli</a>
+  <nav>
+    {{if .User}}
+      <span class="muted">{{.User.Username}}</span>
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+        <button type="submit" class="linklike">退出</button>
+      </form>
+    {{else}}
+      <a href="/login">登录</a>
+      <a href="/register">注册</a>
+    {{end}}
+  </nav>
+</header>
+<main class="container">
+{{template "content" .}}
+</main>
+<footer class="footer muted">gitli — 轻量级 Git 托管</footer>
+</body>
+</html>{{end}}
