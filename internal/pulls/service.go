@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	ErrNotFound        = errors.New("pull not found")
-	ErrInvalidInput    = errors.New("invalid input")
-	ErrConflict        = errors.New("merge conflict")
+	ErrNotFound          = errors.New("pull not found")
+	ErrInvalidInput      = errors.New("invalid input")
+	ErrConflict          = errors.New("merge conflict")
 	ErrRebaseUnsupported = errors.New("rebase unsupported")
-	ErrAlreadyMerged   = errors.New("pull already merged")
-	ErrSameBranch      = errors.New("base and head must differ")
+	ErrAlreadyMerged     = errors.New("pull already merged")
+	ErrSameBranch        = errors.New("base and head must differ")
 )
 
 // Service PR 领域逻辑。
@@ -70,8 +70,8 @@ func (s *Service) Create(ctx context.Context, repo db.Repo, repoPath, base, head
 }
 
 type PullDetail struct {
-	Issue      db.Issue
-	Pull       db.Pull
+	Issue db.Issue
+	Pull  db.Pull
 }
 
 func (s *Service) Get(ctx context.Context, repoID, number int64) (PullDetail, error) {

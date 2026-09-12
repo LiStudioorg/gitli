@@ -81,20 +81,24 @@ func startGitServers(q db.Querier, cfg *config.Config) {
 	authorize := func(repo db.Repo, user *db.User, write bool) bool {
 		return auth.CanAccess(context.Background(), q, user, repo, write)
 	}
-	go func() {
-		sshSrv := git.NewSSHServer(cfg.Server.SSHAddr, reposDir, q, authorize)
-		slog.Info("ssh server listening", "addr", cfg.Server.SSHAddr)
-		if err := sshSrv.ListenAndServe(); err != nil {
-			slog.Error("ssh server stopped", "err", err)
-		}
-	}()
-	go func() {
-		gitSrv := git.NewGitProtocolServer(cfg.Server.GitAddr, reposDir, q)
-		slog.Info("git protocol server listening", "addr", cfg.Server.GitAddr)
-		if err := gitSrv.ListenAndServe(); err != nil {
-			slog.Error("git protocol server stopped", "err", err)
-		}
-	}()
+	if cfg.Server.SSHAddr != "" {
+		go func() {
+			sshSrv := git.NewSSHServer(cfg.Server.SSHAddr, reposDir, q, authorize)
+			slog.Info("ssh server listening", "addr", cfg.Server.SSHAddr)
+			if err := sshSrv.ListenAndServe(); err != nil {
+				slog.Error("ssh server stopped", "err", err)
+			}
+		}()
+	}
+	if cfg.Server.GitAddr != "" {
+		go func() {
+			gitSrv := git.NewGitProtocolServer(cfg.Server.GitAddr, reposDir, q, authorize)
+			slog.Info("git protocol server listening", "addr", cfg.Server.GitAddr)
+			if err := gitSrv.ListenAndServe(); err != nil {
+				slog.Error("git protocol server stopped", "err", err)
+			}
+		}()
+	}
 }
 
 func newLogger() *slog.Logger {

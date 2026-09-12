@@ -86,11 +86,11 @@ const (
 
 // OwnerInfo 仓库 + owner 信息 + owner 类型。
 type OwnerInfo struct {
-	Repo       db.Repo
-	OwnerName  string
-	Kind       OwnerKind
-	OwnerUser  db.User // Kind==user 时有效
-	OwnerOrg   db.Org  // Kind==org 时有效
+	Repo      db.Repo
+	OwnerName string
+	Kind      OwnerKind
+	OwnerUser db.User // Kind==user 时有效
+	OwnerOrg  db.Org  // Kind==org 时有效
 }
 
 // GetWithKind 先查 users 表，查无则查 orgs 表，返回 owner 类型。

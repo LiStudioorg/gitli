@@ -28,7 +28,6 @@ func AuthenticatePAT(ctx context.Context, q db.Querier, token string) (db.User, 
 	return user, nil
 }
 
-
 // NewToken 生成 PAT 明文（调用方负责 CreatePAT 存哈希）。
 func NewToken() string { return NewPAT() }
 

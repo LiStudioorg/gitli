@@ -34,11 +34,11 @@ type pullsData struct {
 }
 
 type pullNewData struct {
-	OwnerName string
-	RepoName  string
-	Branches  []string
+	OwnerName   string
+	RepoName    string
+	Branches    []string
 	DefaultBase string
-	Flash     Flash
+	Flash       Flash
 }
 
 type pullData struct {

@@ -10,8 +10,8 @@ import (
 )
 
 type adminStats struct {
-	Users    int64
-	Repos    int64
+	Users int64
+	Repos int64
 }
 
 type adminUserData struct {

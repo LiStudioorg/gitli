@@ -2,7 +2,6 @@ package git
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,19 +9,21 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"gitli/internal/db"
 )
 
 // GitProtocolServer git:// 9418 匿名协议 server：仅 public 仓库、只读（upload-pack）。
 type GitProtocolServer struct {
-	addr     string
-	reposDir string
-	q        db.Querier
+	addr      string
+	reposDir  string
+	q         db.Querier
+	authorize AuthorizeFunc
 }
 
-func NewGitProtocolServer(addr, reposDir string, q db.Querier) *GitProtocolServer {
-	return &GitProtocolServer{addr: addr, reposDir: reposDir, q: q}
+func NewGitProtocolServer(addr, reposDir string, q db.Querier, authorize AuthorizeFunc) *GitProtocolServer {
+	return &GitProtocolServer{addr: addr, reposDir: reposDir, q: q, authorize: authorize}
 }
 
 func (s *GitProtocolServer) ListenAndServe() error {
@@ -41,11 +42,13 @@ func (s *GitProtocolServer) ListenAndServe() error {
 
 func (s *GitProtocolServer) handleConn(conn net.Conn) {
 	defer conn.Close()
-	service, owner, name, err := s.readRequest(conn)
+	_ = conn.SetDeadline(time.Now().Add(time.Hour))
+	service, owner, name, err := readGitProtoRequest(conn)
 	if err != nil {
 		slog.Debug("git protocol bad request", "err", err)
 		return
 	}
+	// git:// 是匿名只读协议：仅允许 upload-pack
 	if service != "git-upload-pack" {
 		return
 	}
@@ -55,28 +58,39 @@ func (s *GitProtocolServer) handleConn(conn net.Conn) {
 		slog.Debug("git protocol repo not found", "owner", owner, "name", name)
 		return
 	}
-	if repo.Visibility != "public" {
-		slog.Debug("git protocol repo not public", "owner", owner, "name", name)
+	if s.authorize == nil || !s.authorize(repo, nil, false) {
+		slog.Debug("git protocol access denied", "owner", owner, "name", name)
 		return
 	}
 
 	path := RepoPath(s.reposDir, owner, name)
-	cmd := exec.CommandContext(ctx, "git", "upload-pack", path)
-	cmd.Stdin = conn
+	cmd := exec.Command("git", "upload-pack", path)
 	cmd.Stdout = conn
 	cmd.Stderr = io.Discard
-	if err := cmd.Run(); err != nil {
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return
+	}
+	if err := cmd.Start(); err != nil {
+		slog.Debug("git upload-pack spawn failed", "err", err)
+		return
+	}
+	go func() {
+		io.Copy(stdin, conn)
+		stdin.Close()
+	}()
+	if err := cmd.Wait(); err != nil {
 		slog.Debug("git upload-pack exited", "err", err)
 	}
 }
 
-// readRequest 读取 pktline 请求行 "git-upload-pack /owner/name.git\0host=..."。
-func (s *GitProtocolServer) readRequest(conn net.Conn) (service, owner, name string, err error) {
+// readGitProtoRequest 读取第一帧 pktline，解析 "git-upload-pack /owner/name.git\0host=..."。
+func readGitProtoRequest(conn net.Conn) (service, owner, name string, err error) {
 	payload, err := readPktLine(conn)
 	if err != nil {
 		return "", "", "", err
 	}
-	// host 与 path 以 NUL 分隔（v0 协议）
+	// v0 协议：命令、路径与 host=... 以 NUL 分隔；路径含开头 /
 	head := payload
 	if idx := strings.IndexByte(head, 0); idx >= 0 {
 		head = head[:idx]
@@ -86,6 +100,9 @@ func (s *GitProtocolServer) readRequest(conn net.Conn) (service, owner, name str
 		return "", "", "", fmt.Errorf("malformed request")
 	}
 	service = parts[0]
+	if service != "git-upload-pack" && service != "git-receive-pack" && service != "git-upload-archive" {
+		return "", "", "", fmt.Errorf("unsupported service")
+	}
 	repoPath := strings.TrimPrefix(parts[1], "/")
 	if owner, name, err = splitRepoPath(repoPath); err != nil {
 		return "", "", "", err
@@ -109,5 +126,3 @@ func readPktLine(r io.Reader) (string, error) {
 	}
 	return string(payload), nil
 }
-
-var _ = hex.EncodedLen

@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	ErrUsernameTaken  = errors.New("username already taken")
-	ErrEmailTaken     = errors.New("email already taken")
-	ErrInvalidInput   = errors.New("invalid input")
-	ErrUserNotFound   = errors.New("user not found")
-	usernameRe        = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,38}$`)
-	emailRe           = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+	ErrUsernameTaken = errors.New("username already taken")
+	ErrEmailTaken    = errors.New("email already taken")
+	ErrInvalidInput  = errors.New("invalid input")
+	ErrUserNotFound  = errors.New("user not found")
+	usernameRe       = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,38}$`)
+	emailRe          = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 )
 
 // Service 提供用户领域逻辑。

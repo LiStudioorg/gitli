@@ -32,13 +32,13 @@ type LogConfig struct {
 
 // OAuth2Config 通用 OAuth2/OIDC 授权码流程配置。
 type OAuth2Config struct {
-	Enabled     bool     `toml:"enabled"`
-	ClientID    string   `toml:"client_id"`
-	ClientSecret string  `toml:"client_secret"`
-	AuthURL     string   `toml:"auth_url"`
-	TokenURL    string   `toml:"token_url"`
-	UserinfoURL string   `toml:"userinfo_url"`
-	Scopes      []string `toml:"scopes"`
+	Enabled      bool     `toml:"enabled"`
+	ClientID     string   `toml:"client_id"`
+	ClientSecret string   `toml:"client_secret"`
+	AuthURL      string   `toml:"auth_url"`
+	TokenURL     string   `toml:"token_url"`
+	UserinfoURL  string   `toml:"userinfo_url"`
+	Scopes       []string `toml:"scopes"`
 }
 
 func Default() *Config {

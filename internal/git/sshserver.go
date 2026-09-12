@@ -2,12 +2,18 @@ package git
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"gitli/internal/db"
@@ -31,6 +37,10 @@ func NewSSHServer(addr, reposDir string, q db.Querier, authorize AuthorizeFunc) 
 }
 
 func (s *SSHServer) ListenAndServe() error {
+	hostKey, err := loadOrCreateHostKey(s.reposDir)
+	if err != nil {
+		return fmt.Errorf("ssh host key: %w", err)
+	}
 	cfg := &ssh.ServerConfig{
 		PublicKeyCallback: func(meta ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 			fp := ssh.FingerprintSHA256(key)
@@ -46,7 +56,7 @@ func (s *SSHServer) ListenAndServe() error {
 			return &ssh.Permissions{Extensions: map[string]string{"user_id": fmt.Sprint(user.ID)}}, nil
 		},
 	}
-	cfg.NoClientAuth = false
+	cfg.AddHostKey(hostKey)
 
 	ln, err := net.Listen("tcp", s.addr)
 	if err != nil {
@@ -59,6 +69,35 @@ func (s *SSHServer) ListenAndServe() error {
 		}
 		go s.handleConn(cfg, conn)
 	}
+}
+
+// loadOrCreateHostKey 加载（或首次生成并持久化）SSH host key，路径 <reposDir>/../ssh_host_ed25519_key。
+func loadOrCreateHostKey(reposDir string) (ssh.Signer, error) {
+	dataDir := filepath.Dir(reposDir)
+	keyPath := filepath.Join(dataDir, "ssh_host_ed25519_key")
+	if _, err := os.Stat(keyPath); err != nil {
+		_, priv, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			return nil, fmt.Errorf("generate host key: %w", err)
+		}
+		block, err := x509.MarshalPKCS8PrivateKey(priv)
+		if err != nil {
+			return nil, fmt.Errorf("marshal host key: %w", err)
+		}
+		pemData := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: block})
+		if err := os.WriteFile(keyPath, pemData, 0o600); err != nil {
+			return nil, fmt.Errorf("save host key: %w", err)
+		}
+	}
+	pemData, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, fmt.Errorf("read host key: %w", err)
+	}
+	key, err := ssh.ParsePrivateKey(pemData)
+	if err != nil {
+		return nil, fmt.Errorf("parse host key: %w", err)
+	}
+	return key, nil
 }
 
 func (s *SSHServer) handleConn(cfg *ssh.ServerConfig, conn net.Conn) {
@@ -99,17 +138,15 @@ func (s *SSHServer) handleSession(ch ssh.Channel, chReqs <-chan *ssh.Request, us
 	for req := range chReqs {
 		switch req.Type {
 		case "exec":
-			ok := false
 			if len(req.Payload) >= 4 {
 				cmdLine := string(req.Payload[4:])
 				if service, repoPath, err := parseGitCommand(cmdLine); err == nil {
-					ok = s.runGitCommand(ch, service, repoPath, user)
+					req.Reply(true, nil)
+					s.runGitCommand(ch, service, repoPath, user)
+					return
 				}
 			}
-			req.Reply(ok, nil)
-			if ok {
-				return
-			}
+			req.Reply(false, nil)
 		case "pty-req", "shell", "env":
 			req.Reply(false, nil)
 		default:
@@ -158,11 +195,23 @@ func (s *SSHServer) runGitCommand(ch ssh.Channel, service, repoPath string, user
 	}
 
 	path := RepoPath(s.reposDir, owner, name)
-	cmd := exec.CommandContext(ctx, "git", service[len("git-"):], path)
-	cmd.Stdin = ch
+	cmd := exec.Command("git", service[len("git-"):], path)
 	cmd.Stdout = ch
 	cmd.Stderr = ch.Stderr()
-	err = cmd.Run()
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		sendExitStatus(ch, fmt.Errorf("stdin pipe"))
+		return false
+	}
+	if err := cmd.Start(); err != nil {
+		sendExitStatus(ch, err)
+		return false
+	}
+	go func() {
+		io.Copy(stdin, ch)
+		stdin.Close()
+	}()
+	err = cmd.Wait()
 	sendExitStatus(ch, err)
 	return true
 }

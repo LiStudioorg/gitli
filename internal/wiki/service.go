@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	ErrPageNotFound   = errors.New("page not found")
-	ErrInvalidPage    = errors.New("invalid page name")
+	ErrPageNotFound = errors.New("page not found")
+	ErrInvalidPage  = errors.New("invalid page name")
 )
 
 var pageRe = regexp.MustCompile(`^[A-Za-z0-9_-]{1,50}$`)
