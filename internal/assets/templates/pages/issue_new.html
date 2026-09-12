@@ -1,0 +1,10 @@
+{{define "content"}}
+<h1>新建 Issue — {{.Data.OwnerName}}/{{.Data.RepoName}}</h1>
+{{template "flash" .Data.Flash}}
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/issues/new">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>标题 <input name="title" required></label>
+  <label>描述 <textarea name="body" rows="8" cols="60"></textarea></label>
+  <button type="submit">提交</button>
+</form>
+{{end}}

@@ -6,4 +6,5 @@
   <label>密码 <input name="password" type="password" required></label>
   <button type="submit">登录</button>
 </form>
+{{if .OAuthEnabled}}<p><a href="/oauth2/start">使用 OAuth2 / OIDC 登录</a></p>{{end}}
 {{end}}

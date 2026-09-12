@@ -1,0 +1,18 @@
+{{define "repoheader"}}
+<section class="repo-header">
+  <h1 class="repo-title"><a href="/{{.OwnerName}}">{{.OwnerName}}</a> / <a href="/{{.OwnerName}}/{{.RepoName}}">{{.RepoName}}</a>
+    <span class="badge vis-{{.Visibility}}">{{.Visibility}}</span>
+  </h1>
+  {{if .Description}}<p class="muted">{{.Description}}</p>{{end}}
+  <p class="clone-url"><input readonly value="{{.CloneURL}}" onclick="this.select()"></p>
+  <nav class="repo-tabs">
+    <a href="/{{.OwnerName}}/{{.RepoName}}" {{if eq .ActiveTab "files"}}class="active"{{end}}>代码</a>
+    <a href="/{{.OwnerName}}/{{.RepoName}}/issues" {{if eq .ActiveTab "issues"}}class="active"{{end}}>Issues</a>
+    <a href="/{{.OwnerName}}/{{.RepoName}}/pulls" {{if eq .ActiveTab "pulls"}}class="active"{{end}}>PR</a>
+    <a href="/{{.OwnerName}}/{{.RepoName}}/wiki" {{if eq .ActiveTab "wiki"}}class="active"{{end}}>Wiki</a>
+    <a href="/{{.OwnerName}}/{{.RepoName}}/commits/{{if .Ref}}{{.Ref}}{{else}}HEAD{{end}}" {{if eq .ActiveTab "commits"}}class="active"{{end}}>提交</a>
+    <a href="/{{.OwnerName}}/{{.RepoName}}/branches" {{if eq .ActiveTab "branches"}}class="active"{{end}}>分支</a>
+    <a href="/{{.OwnerName}}/{{.RepoName}}/tags" {{if eq .ActiveTab "tags"}}class="active"{{end}}>标签</a>
+  </nav>
+</section>
+{{end}}

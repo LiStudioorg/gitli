@@ -14,3 +14,58 @@ form.inline { display: inline; }
 label { display: block; margin-bottom: .75rem; }
 input { display: block; margin-top: .25rem; padding: .4rem; width: 280px; max-width: 100%; }
 button[type=submit] { padding: .4rem 1rem; }
+
+/* ---- M3 代码浏览 ---- */
+.repo-header .repo-title { margin: .2rem 0; }
+.badge { display: inline-block; font-size: .75rem; padding: .1rem .5rem; border-radius: 10px; vertical-align: middle; }
+.vis-public { background: #ddf4ff; color: #0969da; }
+.vis-private { background: #fff1e5; color: #bc4c00; }
+.vis-org { background: #fbefff; color: #8250df; }
+.clone-url input { width: 420px; max-width: 100%; font-family: monospace; font-size: .85rem; padding: .3rem .5rem; }
+.repo-tabs { display: flex; gap: .25rem; border-bottom: 1px solid #d0d7de; margin: .75rem 0 1rem; }
+.repo-tabs a { padding: .4rem .9rem; text-decoration: none; color: #24292f; border-bottom: 2px solid transparent; }
+.repo-tabs a.active { border-bottom-color: #fd8c73; font-weight: 600; }
+.breadcrumb { margin-bottom: .75rem; font-size: .95rem; }
+.breadcrumb a { text-decoration: none; }
+.commit-summary { display: flex; gap: 1rem; align-items: baseline; background: #f6f8fa; padding: .5rem .75rem; border-radius: 6px; margin-bottom: .75rem; }
+.commit-summary span:nth-child(2) { flex: 1; }
+table.tree-table, table.code-table, table.blame-table, table.ref-table { width: 100%; border-collapse: collapse; border: 1px solid #d0d7de; border-radius: 6px; }
+table.tree-table td, table.ref-table td { padding: .35rem .75rem; border-bottom: 1px solid #eaeef2; }
+table.tree-table tr:last-child td, table.ref-table tr:last-child td { border-bottom: none; }
+.tree-table a { text-decoration: none; }
+.tree-table a:hover { text-decoration: underline; }
+.tree-actions a { margin-left: .5rem; font-size: .85rem; }
+.readme { margin-top: 1.5rem; border: 1px solid #d0d7de; border-radius: 6px; padding: .5rem 1.25rem 1rem; }
+.readme h2 { border-bottom: 1px solid #eaeef2; padding-bottom: .4rem; }
+.markdown pre { background: #f6f8fa; padding: .75rem; border-radius: 6px; overflow-x: auto; }
+.markdown code { background: #f6f8fa; padding: .1rem .3rem; border-radius: 4px; }
+.markdown pre code { padding: 0; background: none; }
+.markdown img { max-width: 100%; }
+.markdown table { border-collapse: collapse; }
+.markdown table th, .markdown table td { border: 1px solid #d0d7de; padding: .3rem .6rem; }
+.recent-commits h2 { margin-bottom: .5rem; }
+ul.commit-list { list-style: none; padding: 0; }
+ul.commit-list li { display: flex; gap: .75rem; align-items: baseline; padding: .45rem 0; border-bottom: 1px solid #eaeef2; }
+ul.commit-list li span:nth-child(2) { flex: 1; }
+.commit-list code { background: #f6f8fa; padding: .1rem .35rem; border-radius: 4px; }
+.code-table, .blame-table { font-family: ui-monospace, SFMono-Regular, monospace; font-size: .85rem; }
+.code-table td, .blame-table td { padding: 0 .5rem; border-bottom: none; }
+.line-no { text-align: right; color: #8b949e; user-select: none; width: 1%; min-width: 3rem; background: #f6f8fa; }
+.line-code { white-space: pre-wrap; word-break: break-all; width: 99%; }
+.blame-sha, .blame-author { white-space: nowrap; background: #f6f8fa; }
+.file-meta { display: flex; gap: 1rem; align-items: baseline; background: #f6f8fa; padding: .5rem .75rem; border-radius: 6px 6px 0 0; border: 1px solid #d0d7de; border-bottom: none; }
+.file-meta .spacer { flex: 1; }
+.file-meta a { text-decoration: none; }
+.commit-detail h2 { margin-bottom: .25rem; }
+.commit-body { background: #f6f8fa; padding: .5rem .75rem; border-radius: 6px; }
+.diff { font-family: ui-monospace, SFMono-Regular, monospace; font-size: .85rem; border: 1px solid #d0d7de; border-radius: 6px; overflow-x: auto; }
+.diff div { padding: 0 .5rem; white-space: pre-wrap; word-break: break-all; }
+.diff-meta { background: #f6f8fa; color: #57606a; font-weight: 600; margin-top: .4rem; }
+.diff-hunk { background: #ddf4ff; color: #57606a; }
+.diff-add { background: #dafbe1; color: #116329; }
+.diff-del { background: #ffebe9; color: #82071e; }
+.diff-ctx { color: #24292f; }
+.pagination { display: flex; gap: 1rem; margin: 1rem 0; }
+.pagination a { text-decoration: none; padding: .3rem .8rem; border: 1px solid #d0d7de; border-radius: 6px; }
+.pagination a:hover { background: #f6f8fa; }
+.empty-repo pre { background: #f6f8fa; padding: .75rem; border-radius: 6px; }

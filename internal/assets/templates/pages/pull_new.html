@@ -1,0 +1,20 @@
+{{define "content"}}
+<h1>新建 Pull Request — {{.Data.OwnerName}}/{{.Data.RepoName}}</h1>
+{{template "flash" .Data.Flash}}
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/pulls/new">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>base 分支
+    <select name="base" required>
+      {{range .Data.Branches}}<option value="{{.}}" {{if eq . $.Data.DefaultBase}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+  </label>
+  <label>head 分支
+    <select name="head" required>
+      {{range .Data.Branches}}<option value="{{.}}">{{.}}</option>{{end}}
+    </select>
+  </label>
+  <label>标题 <input name="title" required></label>
+  <label>描述 <textarea name="body" rows="6" cols="60"></textarea></label>
+  <button type="submit">创建 PR</button>
+</form>
+{{end}}

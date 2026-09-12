@@ -14,6 +14,54 @@ type Collaborator struct {
 	CreatedAt int64
 }
 
+type Issue struct {
+	ID         int64
+	RepoID     int64
+	Number     int64
+	AuthorID   int64
+	Title      string
+	Body       string
+	IsPull     int64
+	Closed     int64
+	AssigneeID sql.NullInt64
+	CreatedAt  int64
+	UpdatedAt  int64
+}
+
+type IssueComment struct {
+	ID        int64
+	IssueID   int64
+	AuthorID  int64
+	Body      string
+	CreatedAt int64
+}
+
+type IssueLabel struct {
+	IssueID int64
+	LabelID int64
+}
+
+type Label struct {
+	ID     int64
+	RepoID int64
+	Name   string
+	Color  string
+}
+
+type Org struct {
+	ID          int64
+	Name        string
+	Description string
+	CreatedAt   int64
+}
+
+type OrgMember struct {
+	OrgID     int64
+	UserID    int64
+	Role      string
+	CreatedAt int64
+}
+
 type Pat struct {
 	ID         int64
 	UserID     int64
@@ -21,6 +69,16 @@ type Pat struct {
 	TokenHash  string
 	CreatedAt  int64
 	LastUsedAt sql.NullInt64
+}
+
+type Pull struct {
+	IssueID     int64
+	RepoID      int64
+	HeadRepoID  int64
+	HeadBranch  string
+	BaseBranch  string
+	Merged      int64
+	MergeCommit sql.NullString
 }
 
 type Repo struct {
@@ -39,6 +97,15 @@ type Session struct {
 	CsrfToken string
 	ExpiresAt int64
 	CreatedAt int64
+}
+
+type SshKey struct {
+	ID          int64
+	UserID      int64
+	Name        string
+	Fingerprint string
+	PublicKey   string
+	CreatedAt   int64
 }
 
 type User struct {

@@ -1,0 +1,21 @@
+{{define "content"}}
+<h1><a href="/{{.Data.OwnerName}}">{{.Data.OwnerName}}</a> / <a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}">{{.Data.RepoName}}</a> · Wiki</h1>
+<div class="wiki-layout">
+  <aside class="wiki-sidebar">
+    <h3>页面</h3>
+    <ul>
+      {{range .Data.Pages}}<li><a href="/{{$.Data.OwnerName}}/{{$.Data.RepoName}}/wiki/{{.}}">{{.}}</a></li>{{end}}
+    </ul>
+    {{if .Data.CanWrite}}<a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/wiki/new">新建页面</a>{{end}}
+  </aside>
+  <section class="wiki-content">
+    {{if .Data.HasPage}}
+    <h2>{{.Data.Page}} <small><a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/wiki/{{.Data.Page}}/edit">编辑</a></small></h2>
+    <div class="markdown">{{.Data.Content}}</div>
+    {{else}}
+    <p class="muted">Wiki 还是空的。</p>
+    {{template "flash" .Data.Flash}}
+    {{end}}
+  </section>
+</div>
+{{end}}

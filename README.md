@@ -37,7 +37,21 @@ make dev            # go run ./cmd/gitli serve
 ### Docker
 
 ```sh
-docker compose up -d
+docker compose up -d          # 构建 + 启动，数据落在 ./docker-data/
+```
+
+端口映射：`3000`（HTTP + Git smart HTTP）、`2222`（SSH）、`9418`（Git 匿名协议）；
+数据目录挂载在容器 `/data`。也可手动构建：
+
+```sh
+docker build -t gitli:latest .
+docker run -d -p 3000:3000 -p 2222:2222 -p 9418:9418 -v gitli-data:/data gitli:latest
+```
+
+### 交叉编译发布
+
+```sh
+make release   # 产出 bin/gitli-{linux,darwin}-{amd64,arm64} 与 bin/gitli-windows-amd64.exe
 ```
 
 ## 配置
@@ -69,10 +83,12 @@ git clone git://localhost:9418/alice/demo.git   # 仅 public 仓库
 ## 开发
 
 ```sh
-make build   # 编译
+make build   # 编译 bin/gitli
 make test    # go test ./...
+make vet     # go vet ./...
 make sqlc    # 修改 internal/db/queries/*.sql 后重新生成代码
 make dev     # 开发运行
+make clean   # 清理 bin/
 ```
 
 架构与开发规范见 [AGENTS.md](AGENTS.md)。

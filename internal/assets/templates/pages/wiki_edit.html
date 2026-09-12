@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>{{if .Data.IsNew}}新建{{else}}编辑{{end}} Wiki 页面 — {{.Data.OwnerName}}/{{.Data.RepoName}}</h1>
+{{template "flash" .Data.Flash}}
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/wiki/{{if .Data.Page}}{{.Data.Page}}/edit{{else}}new{{end}}">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>页面名（字母/数字/_/-，1-50 字符）<input name="page" value="{{.Data.Page}}" required pattern="[A-Za-z0-9_-]{1,50}"></label>
+  <label>内容（Markdown）<textarea name="content" rows="16" cols="80">{{.Data.Content}}</textarea></label>
+  <label>提交说明 <input name="msg" placeholder="update {{.Data.Page}}"></label>
+  <button type="submit">保存</button>
+</form>
+{{end}}

@@ -1,0 +1,40 @@
+{{define "content"}}
+{{template "repoheader" .Data.Repo}}
+
+<nav class="breadcrumb">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}">{{.Data.Repo.RepoName}}</a>
+  {{if .Data.ParentDir}} / <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}/{{.Data.ParentDir}}">{{.Data.ParentDir}}</a>{{end}}
+  <span class="muted">@ {{.Data.Repo.Ref}}</span>
+</nav>
+
+{{if .Data.CommitShort}}
+<section class="commit-summary">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/commit/{{.Data.CommitShort}}"><code>{{.Data.CommitShort}}</code></a>
+  <span>{{.Data.CommitSummary}}</span>
+  <span class="muted">{{timefmt .Data.CommitTime}}</span>
+</section>
+{{end}}
+
+<table class="tree-table">
+  <tbody>
+  {{range .Data.Entries}}
+    <tr>
+      <td class="tree-mode"><span class="muted">{{if eq .Type "tree"}}dir{{else}}file{{end}}</span></td>
+      <td class="tree-name">
+        {{if eq .Type "tree"}}
+          <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/tree/{{$.Data.Repo.Ref}}/{{.Path}}">{{.Name}}/</a>
+        {{else}}
+          <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/blob/{{$.Data.Repo.Ref}}/{{.Path}}">{{.Name}}</a>
+        {{end}}
+      </td>
+      <td class="tree-size muted">{{if ge .Size 0}}{{.Size}} B{{end}}</td>
+      <td class="tree-actions">
+        {{if eq .Type "blob"}}
+          <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/raw/{{$.Data.Repo.Ref}}/{{.Path}}">raw</a>
+        {{end}}
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}

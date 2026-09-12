@@ -1,0 +1,17 @@
+{{define "content"}}
+<p><a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/wiki">← Wiki</a></p>
+<h1>{{.Data.Page}}</h1>
+{{template "flash" .Data.Flash}}
+{{if .Data.HasPage}}
+<div class="markdown">{{.Data.Content}}</div>
+<p><a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/wiki/{{.Data.Page}}/edit">编辑此页</a></p>
+{{else if .Data.CanWrite}}
+<p>页面不存在，创建它：</p>
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/wiki/new">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <input type="hidden" name="page" value="{{.Data.Page}}">
+  <textarea name="content" rows="10" cols="60"></textarea>
+  <button type="submit">创建</button>
+</form>
+{{end}}
+{{end}}

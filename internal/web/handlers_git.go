@@ -33,7 +33,7 @@ func (s *Server) gitHTTP() http.Handler {
 			if !ok {
 				return "", "", false
 			}
-			if _, _, err := s.repos.Get(r.Context(), owner, name); err != nil {
+			if _, err := s.repos.GetWithKind(r.Context(), owner, name); err != nil {
 				return "", "", false
 			}
 			return s.repos.DiskPath(owner, name), owner + "/" + name + ".git", true
@@ -43,10 +43,11 @@ func (s *Server) gitHTTP() http.Handler {
 			if !ok {
 				return false
 			}
-			repo, _, err := s.repos.Get(r.Context(), owner, name)
+			oi, err := s.repos.GetWithKind(r.Context(), owner, name)
 			if err != nil {
 				return false
 			}
+			repo := oi.Repo
 			write := svc == git.ReceivePack
 
 			// 匿名读 public 仓库

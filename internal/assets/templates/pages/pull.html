@@ -1,0 +1,55 @@
+{{define "content"}}
+<p><a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/pulls">← Pull Requests</a></p>
+<h1>#{{.Data.Number}} {{.Data.Title}}
+  <span class="badge state-{{.Data.State}}">{{.Data.State}}</span>
+</h1>
+<p class="muted">
+  {{.Data.Author}} 想将 <code>{{.Data.Head}}</code> 合入 <code>{{.Data.Base}}</code>
+  · {{timefmt .Data.CreatedAt}} · 领先 {{.Data.Commits}} 个提交
+</p>
+<div class="issue-body"><pre>{{.Data.Body}}</pre></div>
+
+{{if .Data.HasDiff}}
+<h2>Diff</h2>
+<pre class="diff">{{range .Data.DiffLines}}<span class="diff-{{.Kind}}">{{.Kind}}  {{.Text}}
+</span>{{end}}</pre>
+{{end}}
+
+{{if not .Data.Closed}}
+{{if not .Data.Merged}}
+{{if .Data.CanMerge}}
+<h2>合并</h2>
+{{if .Data.Mergeable}}<p class="muted">可合并（无冲突）</p>{{else}}<p class="muted">⚠ 可能存在冲突</p>{{end}}
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/pulls/{{.Data.Number}}/merge">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <select name="method">
+    <option value="merge">merge</option>
+    <option value="squash">squash</option>
+    <option value="rebase">rebase</option>
+  </select>
+  <label>提交信息 <input name="msg" placeholder="留空使用默认"></label>
+  <button type="submit">合并</button>
+</form>
+{{end}}
+{{else}}
+<p class="muted">已合并</p>
+{{end}}
+
+{{if .Data.CanAct}}
+<h3>评论</h3>
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/pulls/{{.Data.Number}}/comment">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <textarea name="body" rows="4" cols="60" required></textarea>
+  <button type="submit">评论</button>
+</form>
+{{end}}
+{{end}}
+
+<h2>评论记录</h2>
+{{range .Data.Comments}}
+<div class="comment">
+  <p class="muted"><strong>{{.Author}}</strong> · {{timefmt .CreatedAt}}</p>
+  <pre>{{.Body}}</pre>
+</div>
+{{end}}
+{{end}}

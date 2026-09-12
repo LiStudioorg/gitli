@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>管理后台</h1>
+<ul>
+  <li>用户数：{{.Data.Users}}</li>
+  <li>仓库数：{{.Data.Repos}}</li>
+</ul>
+<nav>
+  <a href="/admin/users">用户管理</a> ·
+  <a href="/admin/repos">仓库管理</a>
+</nav>
+{{end}}

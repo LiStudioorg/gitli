@@ -86,6 +86,32 @@ func (q *Queries) GetRepoByID(ctx context.Context, id int64) (Repo, error) {
 	return i, err
 }
 
+const getRepoByOrgAndName = `-- name: GetRepoByOrgAndName :one
+SELECT r.id, r.owner_id, r.name, r.description, r.visibility, r.created_at, r.updated_at FROM repos r
+JOIN orgs o ON o.id = r.owner_id
+WHERE o.name = ? AND r.name = ?
+`
+
+type GetRepoByOrgAndNameParams struct {
+	Name   string
+	Name_2 string
+}
+
+func (q *Queries) GetRepoByOrgAndName(ctx context.Context, arg GetRepoByOrgAndNameParams) (Repo, error) {
+	row := q.db.QueryRowContext(ctx, getRepoByOrgAndName, arg.Name, arg.Name_2)
+	var i Repo
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.Name,
+		&i.Description,
+		&i.Visibility,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getRepoByOwnerAndName = `-- name: GetRepoByOwnerAndName :one
 SELECT r.id, r.owner_id, r.name, r.description, r.visibility, r.created_at, r.updated_at FROM repos r
 JOIN users u ON u.id = r.owner_id

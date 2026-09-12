@@ -1,0 +1,28 @@
+{{define "content"}}
+{{template "repoheader" .Data.Repo}}
+
+<nav class="breadcrumb">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/commits/{{.Data.Repo.Ref}}">提交历史</a> /
+  <code>{{.Data.Commit.Short}}</code>
+</nav>
+
+<section class="commit-detail">
+  <h2>{{.Data.Commit.Subject}}</h2>
+  <p class="muted">
+    {{.Data.Commit.Author}} · {{timefmt .Data.Commit.Time}} ·
+    <code>{{.Data.Commit.SHA}}</code>
+  </p>
+  {{if .Data.Commit.Body}}<pre class="commit-body">{{.Data.Commit.Body}}</pre>{{end}}
+</section>
+
+<section class="diff">
+{{range .Data.Diff}}
+  {{if eq .Kind "meta"}}<div class="diff-meta">{{.Text}}</div>
+  {{else if eq .Kind "hunk"}}<div class="diff-hunk">{{.Text}}</div>
+  {{else if eq .Kind "add"}}<div class="diff-add">+{{.Text}}</div>
+  {{else if eq .Kind "del"}}<div class="diff-del">-{{.Text}}</div>
+  {{else}}<div class="diff-ctx"> {{.Text}}</div>
+  {{end}}
+{{end}}
+</section>
+{{end}}

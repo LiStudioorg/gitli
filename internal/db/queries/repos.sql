@@ -34,3 +34,8 @@ DELETE FROM repos WHERE id = ?;
 
 -- name: CountReposByOwner :one
 SELECT COUNT(*) FROM repos WHERE owner_id = ?;
+
+-- name: GetRepoByOrgAndName :one
+SELECT r.* FROM repos r
+JOIN orgs o ON o.id = r.owner_id
+WHERE o.name = ? AND r.name = ?;

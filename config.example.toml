@@ -1,11 +1,26 @@
+# gitli 配置示例。复制为 config.toml 按需修改。
+# 所有配置项均可用环境变量覆盖（容器部署推荐方式），
+# 对应关系：server.http_addr -> GITLI_HTTP_ADDR
+#           server.ssh_addr  -> GITLI_SSH_ADDR
+#           server.git_addr  -> GITLI_GIT_ADDR
+#           server.root_url  -> GITLI_ROOT_URL
+#           app.data_dir     -> GITLI_DATA_DIR
+#           log.level        -> GITLI_LOG_LEVEL
+
 [server]
+# HTTP 监听地址（Web 界面 + Git smart HTTP 推拉）
 http_addr = ":3000"
+# 内置 SSH server 监听地址（Git over SSH，公钥认证）
 ssh_addr = ":2222"
+# Git 匿名协议（git://）监听地址，仅 public 仓库可读
 git_addr = ":9418"
+# 对外访问地址，用于生成 clone URL 等场景
 root_url = "http://localhost:3000"
 
 [app]
+# 数据目录：SQLite 数据库 + git 裸仓库
 data_dir = "./data"
 
 [log]
+# 日志级别：debug / info / warn / error
 level = "info"

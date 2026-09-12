@@ -1,0 +1,47 @@
+{{define "content"}}
+<h1>{{.Data.Org.Name}} <span class="muted">组织</span></h1>
+{{if .Data.Org.Description}}<p class="muted">{{.Data.Org.Description}}</p>{{end}}
+
+<h2>成员</h2>
+<ul>
+  {{range .Data.Members}}
+  <li><a href="/{{.Username}}">{{.Username}}</a> <span class="muted">{{.MemberRole}}</span></li>
+  {{end}}
+</ul>
+
+{{if eq .Data.CurrentRole "owner"}}
+<h2>添加成员</h2>
+<form method="post" action="/orgs/{{.Data.Org.Name}}/members/add">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>用户名 <input name="username" required></label>
+  <button type="submit">添加</button>
+</form>
+{{end}}
+
+<h2>仓库</h2>
+{{if .Data.Repos}}
+<ul class="repo-list">
+  {{range .Data.Repos}}
+  <li><a href="/{{$.Data.Org.Name}}/{{.Name}}">{{.Name}}</a> <span class="muted">{{.Visibility}}</span></li>
+  {{end}}
+</ul>
+{{else}}<p class="muted">暂无仓库</p>{{end}}
+
+{{if eq .Data.CurrentRole "owner"}}
+<h2>新建组织仓库</h2>
+{{template "flash" .Data.Flash}}
+<form method="post" action="/orgs/{{.Data.Org.Name}}/repos/create">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>仓库名 <input name="name" required pattern="[A-Za-z0-9][A-Za-z0-9_.-]*"></label>
+  <label>描述 <input name="description"></label>
+  <label>可见性
+    <select name="visibility">
+      <option value="public">public</option>
+      <option value="org">org</option>
+      <option value="private">private</option>
+    </select>
+  </label>
+  <button type="submit">创建</button>
+</form>
+{{end}}
+{{end}}

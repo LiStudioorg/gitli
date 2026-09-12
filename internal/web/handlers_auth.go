@@ -19,9 +19,10 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) showLogin(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "login", pageData{
-		Title: "登录",
-		User:  UserFromContext(r.Context()),
-		Data:  Flash{},
+		Title:        "登录",
+		User:         UserFromContext(r.Context()),
+		Data:         Flash{},
+		OAuthEnabled: auth.OAuthEnabled(),
 	})
 }
 

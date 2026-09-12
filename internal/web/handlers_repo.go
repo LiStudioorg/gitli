@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"gitli/internal/auth"
+	"gitli/internal/db"
 	"gitli/internal/git"
 	"gitli/internal/repos"
 	"gitli/internal/users"
@@ -123,36 +124,74 @@ func (s *Server) doCreateRepo(w http.ResponseWriter, r *http.Request) {
 func (s *Server) showRepo(w http.ResponseWriter, r *http.Request) {
 	ownerName := r.PathValue("owner")
 	repoName := r.PathValue("repo")
-	repo, owner, err := s.repos.Get(r.Context(), ownerName, repoName)
+	oi, err := s.repos.GetWithKind(r.Context(), ownerName, repoName)
 	if err != nil {
 		s.renderError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
+	repo := oi.Repo
 	user := UserFromContext(r.Context())
 	if !auth.CanAccess(r.Context(), s.q, user, repo, false) {
 		s.renderError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
+
+	repoPath := s.repos.DiskPath(oi.OwnerName, repo.Name)
+	data := browseData{Repo: repoCtx{
+		OwnerName:   oi.OwnerName,
+		RepoName:    repo.Name,
+		Description: repo.Description,
+		Visibility:  repo.Visibility,
+		CloneURL:    s.cloneURL(oi.OwnerName, repo.Name),
+		IsOwner:     s.isRepoOwner(r, user, oi),
+		ActiveTab:   "files",
+	}}
+
+	if !git.HasCommit(r.Context(), repoPath) {
+		data.EmptyRepo = true
+	} else {
+		ref := git.DefaultBranch(r.Context(), repoPath)
+		data.Repo.Ref = ref
+		if entries, err := git.ParseLsTree(r.Context(), repoPath, ref, ""); err == nil {
+			data.Entries = sortTreeEntries(entries)
+			if e, ok := findREADME(entries); ok {
+				if content, err := git.GetBlob(r.Context(), repoPath, ref, e.Path); err == nil {
+					if !git.IsBinary(content) && len(content) <= 512<<10 {
+						data.READMEHTML = RenderMarkdown(content)
+						data.HasREADME = true
+					}
+				}
+			}
+		}
+		if log, err := git.LogCommits(r.Context(), repoPath, ref, 10, 0); err == nil {
+			data.Commits = log
+		}
+		if branches, err := git.ListBranches(r.Context(), repoPath); err == nil {
+			data.Branches = branches
+		}
+	}
+
 	s.render(w, http.StatusOK, "repo", pageData{
 		Title: ownerName + "/" + repoName,
 		User:  user,
 		CSRF:  CSRFFromContext(r.Context()),
-		Data: userData{
-			OwnerName: ownerName,
-			Repo: repoView{
-				ID:          repo.ID,
-				Name:        repo.Name,
-				Description: repo.Description,
-				Visibility:  repo.Visibility,
-				CloneURL:    s.cloneURL(owner.Username, repo.Name),
-				IsOwner:     user != nil && user.ID == repo.OwnerID,
-			},
-		},
+		Data:  data,
 	})
 }
 
 func (s *Server) cloneURL(owner, repo string) string {
 	return fmt.Sprintf("%s/%s/%s.git", s.rootURL, owner, repo)
+}
+
+// isRepoOwner 判断当前用户是否视为仓库 owner（用户本人 / org owner 角色）。
+func (s *Server) isRepoOwner(r *http.Request, user *db.User, oi repos.OwnerInfo) bool {
+	if user == nil {
+		return false
+	}
+	if oi.Kind == repos.OwnerOrg {
+		return s.orgs.UserRole(r.Context(), oi.Repo.OwnerID, user.ID) == "owner"
+	}
+	return user.ID == oi.Repo.OwnerID
 }
 
 var _ = git.ValidateRepoName

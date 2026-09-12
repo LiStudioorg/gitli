@@ -12,6 +12,7 @@ type Config struct {
 	Server ServerConfig `toml:"server"`
 	App    AppConfig    `toml:"app"`
 	Log    LogConfig    `toml:"log"`
+	OAuth2 OAuth2Config `toml:"oauth2"`
 }
 
 type ServerConfig struct {
@@ -29,6 +30,17 @@ type LogConfig struct {
 	Level string `toml:"level"`
 }
 
+// OAuth2Config 通用 OAuth2/OIDC 授权码流程配置。
+type OAuth2Config struct {
+	Enabled     bool     `toml:"enabled"`
+	ClientID    string   `toml:"client_id"`
+	ClientSecret string  `toml:"client_secret"`
+	AuthURL     string   `toml:"auth_url"`
+	TokenURL    string   `toml:"token_url"`
+	UserinfoURL string   `toml:"userinfo_url"`
+	Scopes      []string `toml:"scopes"`
+}
+
 func Default() *Config {
 	return &Config{
 		Server: ServerConfig{
@@ -42,6 +54,9 @@ func Default() *Config {
 		},
 		Log: LogConfig{
 			Level: "info",
+		},
+		OAuth2: OAuth2Config{
+			Scopes: []string{"openid", "profile", "email"},
 		},
 	}
 }
@@ -81,6 +96,25 @@ func (c *Config) applyEnv() {
 	}
 	if v := os.Getenv("GITLI_LOG_LEVEL"); v != "" {
 		c.Log.Level = v
+	}
+	// OAuth2 环境变量覆盖
+	if v := os.Getenv("GITLI_OAUTH_ENABLED"); v == "1" || v == "true" || v == "yes" {
+		c.OAuth2.Enabled = true
+	}
+	if v := os.Getenv("GITLI_OAUTH_CLIENT_ID"); v != "" {
+		c.OAuth2.ClientID = v
+	}
+	if v := os.Getenv("GITLI_OAUTH_CLIENT_SECRET"); v != "" {
+		c.OAuth2.ClientSecret = v
+	}
+	if v := os.Getenv("GITLI_OAUTH_AUTH_URL"); v != "" {
+		c.OAuth2.AuthURL = v
+	}
+	if v := os.Getenv("GITLI_OAUTH_TOKEN_URL"); v != "" {
+		c.OAuth2.TokenURL = v
+	}
+	if v := os.Getenv("GITLI_OAUTH_USERINFO_URL"); v != "" {
+		c.OAuth2.UserinfoURL = v
 	}
 }
 

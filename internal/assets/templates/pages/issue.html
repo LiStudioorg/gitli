@@ -1,0 +1,44 @@
+{{define "content"}}
+<p><a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/issues">← Issues</a></p>
+<h1>#{{.Data.Issue.Number}} {{.Data.Issue.Title}}
+  <span class="badge state-{{.Data.Issue.State}}">{{.Data.Issue.State}}</span>
+</h1>
+<p class="muted">{{.Data.Issue.Author}} 创建于 {{timefmt .Data.Issue.CreatedAt}}</p>
+{{if .Data.Issue.Labels}}
+<p>{{range .Data.Issue.Labels}}<span class="badge">{{.Name}}</span> {{end}}</p>
+{{end}}
+<div class="issue-body"><pre>{{.Data.Issue.Body}}</pre></div>
+
+<h2>评论</h2>
+{{range .Data.Comments}}
+<div class="comment">
+  <p class="muted"><strong>{{.Author}}</strong> · {{timefmt .CreatedAt}}</p>
+  <pre>{{.Body}}</pre>
+</div>
+{{end}}
+
+{{if .Data.CanAct}}
+<h3>添加评论</h3>
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/issues/{{.Data.Issue.Number}}/comment">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <textarea name="body" rows="4" cols="60" required></textarea>
+  <button type="submit">评论</button>
+</form>
+
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/issues/{{.Data.Issue.Number}}/state" class="inline">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  {{if eq .Data.Issue.State "open"}}
+    <input type="hidden" name="state" value="close"><button type="submit">关闭 Issue</button>
+  {{else}}
+    <input type="hidden" name="state" value="reopen"><button type="submit">重新打开</button>
+  {{end}}
+</form>
+
+<form method="post" action="/{{.Data.OwnerName}}/{{.Data.RepoName}}/issues/{{.Data.Issue.Number}}/labels" class="inline">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>标签 <input name="label" placeholder="bug"></label>
+  <select name="action"><option value="add">添加</option><option value="remove">移除</option></select>
+  <button type="submit">应用</button>
+</form>
+{{end}}
+{{end}}

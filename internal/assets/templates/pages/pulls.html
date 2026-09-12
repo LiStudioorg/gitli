@@ -1,0 +1,20 @@
+{{define "content"}}
+<h1><a href="/{{.Data.OwnerName}}">{{.Data.OwnerName}}</a> / <a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}">{{.Data.RepoName}}</a> · Pull Requests</h1>
+<nav>
+  <a href="?state=open" {{if eq .Data.State "open"}}class="active"{{end}}>开放</a>
+  <a href="?state=closed" {{if eq .Data.State "closed"}}class="active"{{end}}>已关闭</a>
+  <a href="?state=all" {{if eq .Data.State "all"}}class="active"{{end}}>全部</a>
+  {{if .User}}<a href="/{{.Data.OwnerName}}/{{.Data.RepoName}}/pulls/new">新建 PR</a>{{end}}
+</nav>
+{{if .Data.Pulls}}
+<ul>
+  {{range .Data.Pulls}}
+  <li>
+    <a href="/{{$.Data.OwnerName}}/{{$.Data.RepoName}}/pulls/{{.Number}}">#{{.Number}} {{.Title}}</a>
+    <span class="badge state-{{.State}}">{{.State}}</span>
+    <span class="muted">{{.Head}} → {{.Base}} · by {{.Author}} · {{timefmt .CreatedAt}}</span>
+  </li>
+  {{end}}
+</ul>
+{{else}}<p class="muted">没有 PR</p>{{end}}
+{{end}}

@@ -1,0 +1,21 @@
+{{define "content"}}
+<h1>仓库管理</h1>
+{{template "flash" .Data.Flash}}
+<table>
+  <thead><tr><th>ID</th><th>owner</th><th>仓库名</th><th>可见性</th><th>创建时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {{range .Data.Repos}}
+  <tr>
+    <td>{{.ID}}</td><td>{{.OwnerName}}</td><td>{{.Name}}</td><td>{{.Visibility}}</td>
+    <td>{{timefmt .CreatedAt}}</td>
+    <td>
+      <form method="post" action="/admin/repos/{{.ID}}/delete" class="inline">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+        <button type="submit">删除</button>
+      </form>
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}

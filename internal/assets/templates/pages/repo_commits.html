@@ -1,0 +1,23 @@
+{{define "content"}}
+{{template "repoheader" .Data.Repo}}
+
+<nav class="breadcrumb">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/commits/{{.Data.Repo.Ref}}">{{.Data.Repo.RepoName}}</a> / 提交历史
+  <span class="muted">@ {{.Data.Repo.Ref}}</span>
+</nav>
+
+<ul class="commit-list">
+{{range .Data.Commits}}
+  <li>
+    <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/commit/{{.SHA}}"><code>{{.Short}}</code></a>
+    <span>{{.Subject}}</span>
+    <span class="muted">{{.Author}} · {{timefmt .Time}}</span>
+  </li>
+{{end}}
+</ul>
+
+<nav class="pagination">
+  {{if .Data.HasPrev}}<a href="?page={{.Data.PrevPage}}">上一页</a>{{end}}
+  {{if .Data.HasNext}}<a href="?page={{.Data.NextPage}}">下一页</a>{{end}}
+</nav>
+{{end}}

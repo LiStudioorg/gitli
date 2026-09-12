@@ -1,0 +1,21 @@
+{{define "content"}}
+{{template "repoheader" .Data.Repo}}
+
+<nav class="breadcrumb">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}">{{.Data.Repo.RepoName}}</a> /
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/blob/{{.Data.Repo.Ref}}/{{.Data.BlobPath}}">{{.Data.BlobPath}}</a> / blame
+</nav>
+
+<table class="blame-table">
+  <tbody>
+  {{range .Data.Blame}}
+    <tr>
+      <td class="line-no">{{.Line}}</td>
+      <td class="blame-sha"><a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/commit/{{.SHA}}"><code>{{.SHA}}</code></a></td>
+      <td class="blame-author muted">{{.Author}}</td>
+      <td class="line-code">{{.Content}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}

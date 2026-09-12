@@ -1,0 +1,37 @@
+{{define "content"}}
+{{template "repoheader" .Data.Repo}}
+
+<nav class="breadcrumb">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}">{{.Data.Repo.RepoName}}</a>
+  {{if .Data.ParentDir}}
+    / <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}/{{.Data.ParentDir}}">{{.Data.ParentDir}}</a>
+  {{end}}
+  / <strong>{{.Data.BlobName}}</strong>
+</nav>
+
+<section class="file-meta">
+  <span><code>{{.Data.BlobName}}</code></span>
+  <span class="muted">{{.Data.BlobSize}} B</span>
+  <span class="spacer"></span>
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/raw/{{.Data.Repo.Ref}}/{{.Data.BlobPath}}">raw</a>
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/blame/{{.Data.Repo.Ref}}/{{.Data.BlobPath}}">blame</a>
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}/{{.Data.ParentDir}}">返回目录</a>
+</section>
+
+{{if .Data.BlobBinary}}
+<p class="muted">二进制文件，不显示内容。</p>
+{{else if .Data.BlobTooLarge}}
+<p class="muted">文件超过 1MB，不显示内容，请使用 <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/raw/{{.Data.Repo.Ref}}/{{.Data.BlobPath}}">raw</a> 查看。</p>
+{{else}}
+<table class="code-table">
+  <tbody>
+  {{range $i, $line := .Data.BlobLines}}
+    <tr>
+      <td class="line-no">{{$i}}</td>
+      <td class="line-code">{{$line}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}
+{{end}}

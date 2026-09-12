@@ -1,0 +1,24 @@
+{{define "content"}}
+<h1>用户管理</h1>
+{{template "flash" .Data.Flash}}
+<table>
+  <thead><tr><th>ID</th><th>用户名</th><th>邮箱</th><th>管理员</th><th>注册时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {{range .Data.Users}}
+  <tr>
+    <td>{{.ID}}</td><td>{{.Username}}</td><td>{{.Email}}</td>
+    <td>{{if eq .IsAdmin 1}}✓{{end}}</td>
+    <td>{{timefmt .CreatedAt}}</td>
+    <td>
+      {{if ne .ID $.User.ID}}
+      <form method="post" action="/admin/users/{{.ID}}/delete" class="inline">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+        <button type="submit">删除</button>
+      </form>
+      {{else}}<span class="muted">（自己）</span>{{end}}
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}

@@ -76,6 +76,55 @@ func (s *Service) Create(ctx context.Context, owner db.User, name, description, 
 	return repo, nil
 }
 
+// OwnerKind owner 类型：user 或 org。
+type OwnerKind string
+
+const (
+	OwnerUser OwnerKind = "user"
+	OwnerOrg  OwnerKind = "org"
+)
+
+// OwnerInfo 仓库 + owner 信息 + owner 类型。
+type OwnerInfo struct {
+	Repo       db.Repo
+	OwnerName  string
+	Kind       OwnerKind
+	OwnerUser  db.User // Kind==user 时有效
+	OwnerOrg   db.Org  // Kind==org 时有效
+}
+
+// GetWithKind 先查 users 表，查无则查 orgs 表，返回 owner 类型。
+func (s *Service) GetWithKind(ctx context.Context, ownerName, name string) (OwnerInfo, error) {
+	// 用户仓库
+	repo, err := s.q.GetRepoByOwnerAndName(ctx, db.GetRepoByOwnerAndNameParams{
+		Username: ownerName,
+		Name:     name,
+	})
+	if err == nil {
+		owner, err := s.q.GetUserByID(ctx, repo.OwnerID)
+		if err != nil {
+			return OwnerInfo{}, fmt.Errorf("get owner: %w", err)
+		}
+		return OwnerInfo{Repo: repo, OwnerName: owner.Username, Kind: OwnerUser, OwnerUser: owner}, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return OwnerInfo{}, fmt.Errorf("get repo: %w", err)
+	}
+	// 组织仓库
+	repo, err = s.q.GetRepoByOrgAndName(ctx, db.GetRepoByOrgAndNameParams{Name: ownerName, Name_2: name})
+	if errors.Is(err, sql.ErrNoRows) {
+		return OwnerInfo{}, ErrRepoNotFound
+	}
+	if err != nil {
+		return OwnerInfo{}, fmt.Errorf("get org repo: %w", err)
+	}
+	org, err := s.q.GetOrgByID(ctx, repo.OwnerID)
+	if err != nil {
+		return OwnerInfo{}, fmt.Errorf("get org owner: %w", err)
+	}
+	return OwnerInfo{Repo: repo, OwnerName: org.Name, Kind: OwnerOrg, OwnerOrg: org}, nil
+}
+
 // GetByUsernameAndName 查仓库（附带 owner 用户名已经隐含在参数里）。
 func (s *Service) Get(ctx context.Context, ownerName, name string) (db.Repo, db.User, error) {
 	repo, err := s.q.GetRepoByOwnerAndName(ctx, db.GetRepoByOwnerAndNameParams{
@@ -93,6 +142,41 @@ func (s *Service) Get(ctx context.Context, ownerName, name string) (db.Repo, db.
 		return db.Repo{}, db.User{}, fmt.Errorf("get owner: %w", err)
 	}
 	return repo, owner, nil
+}
+
+// CreateInOrg 在组织名下创建仓库（磁盘路径用组织名）。
+func (s *Service) CreateInOrg(ctx context.Context, org db.Org, name, description, visibility string) (db.Repo, error) {
+	if err := git.ValidateRepoName(name); err != nil {
+		return db.Repo{}, fmt.Errorf("%w: %s", ErrInvalidInput, err)
+	}
+	v := Visibility(visibility)
+	if visibility == "" {
+		v = VisibilityPublic
+	}
+	if !v.Valid() {
+		return db.Repo{}, fmt.Errorf("%w: bad visibility", ErrInvalidInput)
+	}
+	now := time.Now().UTC().Unix()
+	repo, err := s.q.CreateRepo(ctx, db.CreateRepoParams{
+		OwnerID:     org.ID,
+		Name:        name,
+		Description: description,
+		Visibility:  string(v),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	})
+	if err != nil {
+		if isUnique(err) {
+			return db.Repo{}, ErrNameTaken
+		}
+		return db.Repo{}, fmt.Errorf("create org repo: %w", err)
+	}
+	path := git.RepoPath(s.reposDir, org.Name, name)
+	if err := git.InitRepo(ctx, path); err != nil {
+		_ = s.q.DeleteRepo(ctx, repo.ID)
+		return db.Repo{}, fmt.Errorf("init repo: %w", err)
+	}
+	return repo, nil
 }
 
 func (s *Service) GetByID(ctx context.Context, id int64) (db.Repo, error) {

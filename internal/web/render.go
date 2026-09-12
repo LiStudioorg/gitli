@@ -31,6 +31,26 @@ func NewRenderer() (*Renderer, error) {
 		"error",
 		"user",
 		"repo",
+		"repo_tree",
+		"repo_blob",
+		"repo_commits",
+		"repo_commit",
+		"repo_blame",
+		"repo_refs",
+		"org_new",
+		"org",
+		"issues",
+		"issue",
+		"issue_new",
+		"pulls",
+		"pull",
+		"pull_new",
+		"wiki",
+		"wiki_page",
+		"wiki_edit",
+		"admin",
+		"admin_users",
+		"admin_repos",
 	}
 	for _, name := range pages {
 		t, err := template.New("layout.html").Funcs(funcMap).ParseFS(
@@ -49,10 +69,11 @@ func NewRenderer() (*Renderer, error) {
 
 // pageData 传给布局模板的公共数据。
 type pageData struct {
-	Title   string
-	User    *db.User
-	CSRF    string
-	Data    any
+	Title        string
+	User         *db.User
+	CSRF         string
+	Data         any
+	OAuthEnabled bool
 }
 
 func (r *Renderer) Render(w http.ResponseWriter, status int, name string, data pageData) {

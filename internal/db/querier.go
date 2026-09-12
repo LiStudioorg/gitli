@@ -11,35 +11,80 @@ import (
 
 type Querier interface {
 	AddCollaborator(ctx context.Context, arg AddCollaboratorParams) error
+	AddLabel(ctx context.Context, arg AddLabelParams) error
+	AddOrgMember(ctx context.Context, arg AddOrgMemberParams) error
+	CountAllRepos(ctx context.Context) (int64, error)
+	CountAllUsers(ctx context.Context) (int64, error)
+	CountComments(ctx context.Context, issueID int64) (int64, error)
+	CountOrgByID(ctx context.Context, id int64) (int64, error)
+	CountOrgMembers(ctx context.Context, orgID int64) (int64, error)
+	CountOrgsOfRepo(ctx context.Context, id int64) (int64, error)
 	CountReposByOwner(ctx context.Context, ownerID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
+	CreateComment(ctx context.Context, arg CreateCommentParams) (IssueComment, error)
+	CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue, error)
+	CreateLabel(ctx context.Context, arg CreateLabelParams) (Label, error)
+	CreateOrg(ctx context.Context, arg CreateOrgParams) (Org, error)
 	CreatePAT(ctx context.Context, arg CreatePATParams) (Pat, error)
+	CreatePull(ctx context.Context, arg CreatePullParams) error
 	CreateRepo(ctx context.Context, arg CreateRepoParams) (Repo, error)
+	CreateSSHKey(ctx context.Context, arg CreateSSHKeyParams) (SshKey, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt int64) error
 	DeletePAT(ctx context.Context, arg DeletePATParams) error
 	DeleteRepo(ctx context.Context, id int64) error
+	DeleteSSHKey(ctx context.Context, arg DeleteSSHKeyParams) error
 	DeleteSession(ctx context.Context, id string) error
+	DeleteUserByID(ctx context.Context, id int64) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
+	GetIssue(ctx context.Context, arg GetIssueParams) (Issue, error)
+	GetIssueByID(ctx context.Context, id int64) (Issue, error)
+	GetLabelByName(ctx context.Context, arg GetLabelByNameParams) (Label, error)
+	GetOpenPullByBranches(ctx context.Context, arg GetOpenPullByBranchesParams) (Pull, error)
+	GetOrgByID(ctx context.Context, id int64) (Org, error)
+	GetOrgByName(ctx context.Context, name string) (Org, error)
+	GetOrgMember(ctx context.Context, arg GetOrgMemberParams) (OrgMember, error)
 	GetPATByHash(ctx context.Context, tokenHash string) (Pat, error)
+	GetPullByIssue(ctx context.Context, issueID int64) (Pull, error)
 	GetRepoByID(ctx context.Context, id int64) (Repo, error)
+	GetRepoByOrgAndName(ctx context.Context, arg GetRepoByOrgAndNameParams) (Repo, error)
 	GetRepoByOwnerAndName(ctx context.Context, arg GetRepoByOwnerAndNameParams) (Repo, error)
+	GetSSHKeyByFingerprint(ctx context.Context, fingerprint string) (SshKey, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	IsCollaborator(ctx context.Context, arg IsCollaboratorParams) (int64, error)
+	IsOrgMember(ctx context.Context, arg IsOrgMemberParams) (int64, error)
+	IsOrgMemberByOrgID(ctx context.Context, arg IsOrgMemberByOrgIDParams) (int64, error)
+	ListAllReposWithOwner(ctx context.Context) ([]ListAllReposWithOwnerRow, error)
+	ListAllUsers(ctx context.Context) ([]User, error)
 	ListCollaborators(ctx context.Context, repoID int64) ([]User, error)
+	ListComments(ctx context.Context, issueID int64) ([]IssueComment, error)
+	ListIssueLabels(ctx context.Context, issueID int64) ([]Label, error)
+	ListIssues(ctx context.Context, arg ListIssuesParams) ([]Issue, error)
+	ListIssuesByState(ctx context.Context, arg ListIssuesByStateParams) ([]Issue, error)
+	ListLabels(ctx context.Context, repoID int64) ([]Label, error)
+	ListOrgMembersWithUsers(ctx context.Context, orgID int64) ([]ListOrgMembersWithUsersRow, error)
+	ListOrgRepos(ctx context.Context, name string) ([]Repo, error)
 	ListPATsByUser(ctx context.Context, userID int64) ([]Pat, error)
 	ListPublicRepos(ctx context.Context) ([]Repo, error)
+	ListPullsWithIssue(ctx context.Context, repoID int64) ([]ListPullsWithIssueRow, error)
 	ListReposByOwner(ctx context.Context, username string) ([]Repo, error)
+	ListSSHKeysByUser(ctx context.Context, userID int64) ([]SshKey, error)
 	// 用户可见的仓库：自己的 + public + 协作的r.id, r.owner_id, r.name, r.description, r.visibility, r.created_at, r.updated_atorg 可见性 M5 补组织成员查询）
 	ListVisibleReposForUser(ctx context.Context, arg ListVisibleReposForUserParams) ([]Repo, error)
+	MergePull(ctx context.Context, arg MergePullParams) error
+	NextIssueNumber(ctx context.Context, repoID int64) (int64, error)
 	RemoveCollaborator(ctx context.Context, arg RemoveCollaboratorParams) error
+	RemoveLabel(ctx context.Context, arg RemoveLabelParams) error
 	SearchRepos(ctx context.Context, arg SearchReposParams) ([]Repo, error)
 	SearchUsers(ctx context.Context, dollar_1 sql.NullString) ([]User, error)
 	TouchPAT(ctx context.Context, arg TouchPATParams) error
+	UpdateIssueAssignee(ctx context.Context, arg UpdateIssueAssigneeParams) error
+	UpdateIssueState(ctx context.Context, arg UpdateIssueStateParams) error
+	UpdateIssueTitleBody(ctx context.Context, arg UpdateIssueTitleBodyParams) error
 	UpdateRepo(ctx context.Context, arg UpdateRepoParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

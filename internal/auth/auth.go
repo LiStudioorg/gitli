@@ -83,6 +83,23 @@ func Logout(ctx context.Context, q db.Querier, sessionID string) error {
 	return q.DeleteSession(ctx, hashToken(sessionID))
 }
 
+// SessionForUser 为已认证用户直接创建 session（OAuth 登录用，不经密码校验）。
+func SessionForUser(ctx context.Context, q db.Querier, user db.User) (sessionID, csrfToken string, err error) {
+	sessionID = randomHex(32)
+	csrfToken = randomHex(32)
+	now := time.Now().UTC()
+	if err := q.CreateSession(ctx, db.CreateSessionParams{
+		ID:        hashToken(sessionID),
+		UserID:    user.ID,
+		CsrfToken: csrfToken,
+		ExpiresAt: now.Add(sessionTTL).Unix(),
+		CreatedAt: now.Unix(),
+	}); err != nil {
+		return "", "", fmt.Errorf("create session: %w", err)
+	}
+	return sessionID, csrfToken, nil
+}
+
 // SessionUser 校验 session 并返回对应用户。
 func SessionUser(ctx context.Context, q db.Querier, sessionID string) (db.User, error) {
 	sess, err := q.GetSession(ctx, hashToken(sessionID))

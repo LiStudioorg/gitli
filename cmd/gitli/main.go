@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 
+	"gitli/internal/auth"
 	"gitli/internal/config"
 	"gitli/internal/db"
+	"gitli/internal/git"
 	"gitli/internal/web"
 )
 
@@ -57,15 +60,41 @@ func runServe() error {
 	defer conn.Close()
 	queries := db.NewQuerier(conn)
 
+	// M7: OAuth2/OIDC 配置注入
+	auth.SetOAuthConfig(&cfg.OAuth2)
+
 	srv, err := web.NewServer(queries, cfg.ReposDir(), cfg.Server.RootURL)
 	if err != nil {
 		return fmt.Errorf("init web server: %w", err)
 	}
 
 	// M4: 在此启动内置 SSH server 与 git:// 匿名协议 server。
+	startGitServers(queries, cfg)
 
 	slog.Info("gitli serving", "http", cfg.Server.HTTPAddr, "data", cfg.App.DataDir)
 	return http.ListenAndServe(cfg.Server.HTTPAddr, srv)
+}
+
+// startGitServers 以 goroutine 启动 SSH 与 git:// 匿名协议 server（失败仅记日志，不影响 HTTP）。
+func startGitServers(q db.Querier, cfg *config.Config) {
+	reposDir := cfg.ReposDir()
+	authorize := func(repo db.Repo, user *db.User, write bool) bool {
+		return auth.CanAccess(context.Background(), q, user, repo, write)
+	}
+	go func() {
+		sshSrv := git.NewSSHServer(cfg.Server.SSHAddr, reposDir, q, authorize)
+		slog.Info("ssh server listening", "addr", cfg.Server.SSHAddr)
+		if err := sshSrv.ListenAndServe(); err != nil {
+			slog.Error("ssh server stopped", "err", err)
+		}
+	}()
+	go func() {
+		gitSrv := git.NewGitProtocolServer(cfg.Server.GitAddr, reposDir, q)
+		slog.Info("git protocol server listening", "addr", cfg.Server.GitAddr)
+		if err := gitSrv.ListenAndServe(); err != nil {
+			slog.Error("git protocol server stopped", "err", err)
+		}
+	}()
 }
 
 func newLogger() *slog.Logger {

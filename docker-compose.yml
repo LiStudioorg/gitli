@@ -1,0 +1,20 @@
+services:
+  gitli:
+    build: .
+    image: gitli:latest
+    ports:
+      - "3000:3000"   # HTTP Web + Git smart HTTP
+      - "2222:2222"   # 内置 SSH server
+      - "9418:9418"   # Git 匿名协议（仅 public 仓库）
+    environment:
+      GITLI_DATA_DIR: /data
+      GITLI_HTTP_ADDR: ":3000"
+    volumes:
+      - ./docker-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

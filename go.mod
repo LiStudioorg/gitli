@@ -8,10 +8,27 @@ require (
 	modernc.org/sqlite v1.18.1
 )
 
-require github.com/go-chi/chi/v5 v5.0.12
+require (
+	github.com/go-chi/chi/v5 v5.0.12
+	github.com/gomarkdown/markdown v0.0.0-20260907091611-16791ada75cf
+	github.com/microcosm-cc/bluemonday v1.0.26
+	golang.org/x/oauth2 v0.15.0
+)
 
 require (
-	github.com/golang-migrate/migrate/v4 v4.20.1
+	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/gorilla/css v1.0.1 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
+)
+
+require (
+	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect

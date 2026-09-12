@@ -1,12 +1,77 @@
 {{define "content"}}
-{{if .Data.NotFound}}
-<p class="muted">仓库不存在或无权访问</p>
+{{template "repoheader" .Data.Repo}}
+
+{{if .Data.EmptyRepo}}
+<section class="empty-repo">
+  <h2>空仓库</h2>
+  <p class="muted">这个仓库还没有任何提交。快速开始：</p>
+  <pre>git clone {{.Data.Repo.CloneURL}}
+cd {{.Data.RepoName}}
+echo "# {{.Data.RepoName}}" &gt; README.md
+git add README.md
+git commit -m "initial commit"
+git push origin main</pre>
+  <p class="muted">推送需要 Personal Access Token 或密码认证。</p>
+</section>
 {{else}}
-<h1>{{.Data.OwnerName}} / {{.Data.Repo.Name}}</h1>
-<p class="muted">{{.Data.Repo.Description}} · {{.Data.Repo.Visibility}}</p>
-<pre>{{.Data.CloneURL}}</pre>
-{{if .Data.IsOwner}}
-<p><a href="/{{.Data.OwnerName}}/{{.Data.Repo.Name}}/settings">设置</a></p>
+<nav class="breadcrumb">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}">{{.Data.Repo.RepoName}}</a>
+  {{if .Data.ParentDir}} / <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/tree/{{.Data.Repo.Ref}}/{{.Data.ParentDir}}">{{.Data.ParentDir}}</a>{{end}}
+  <span class="muted">@ {{.Data.Repo.Ref}}</span>
+</nav>
+
+{{if .Data.CommitShort}}
+<section class="commit-summary">
+  <a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/commit/{{.Data.CommitShort}}"><code>{{.Data.CommitShort}}</code></a>
+  <span>{{.Data.CommitSummary}}</span>
+  <span class="muted">{{timefmt .Data.CommitTime}}</span>
+</section>
+{{end}}
+
+<table class="tree-table">
+  <tbody>
+  {{range .Data.Entries}}
+    <tr>
+      <td class="tree-mode"><span class="muted">{{if eq .Type "tree"}}dir{{else}}file{{end}}</span></td>
+      <td class="tree-name">
+        {{if eq .Type "tree"}}
+          <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/tree/{{$.Data.Repo.Ref}}/{{.Path}}">{{.Name}}/</a>
+        {{else}}
+          <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/blob/{{$.Data.Repo.Ref}}/{{.Path}}">{{.Name}}</a>
+        {{end}}
+      </td>
+      <td class="tree-size muted">{{if ge .Size 0}}{{.Size}} B{{end}}</td>
+      <td class="tree-actions">
+        {{if eq .Type "blob"}}
+          <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/raw/{{$.Data.Repo.Ref}}/{{.Path}}">raw</a>
+        {{end}}
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+
+{{if .Data.HasREADME}}
+<section class="readme">
+  <h2>README</h2>
+  <div class="markdown">{{.Data.READMEHTML}}</div>
+</section>
+{{end}}
+
+{{if .Data.Commits}}
+<section class="recent-commits">
+  <h2>最近提交</h2>
+  <ul class="commit-list">
+  {{range .Data.Commits}}
+    <li>
+      <a href="/{{$.Data.Repo.OwnerName}}/{{$.Data.Repo.RepoName}}/commit/{{.SHA}}"><code>{{.Short}}</code></a>
+      <span>{{.Subject}}</span>
+      <span class="muted">{{.Author}} · {{timefmt .Time}}</span>
+    </li>
+  {{end}}
+  </ul>
+  <p><a href="/{{.Data.Repo.OwnerName}}/{{.Data.Repo.RepoName}}/commits/{{.Data.Repo.Ref}}">查看全部提交</a></p>
+</section>
 {{end}}
 {{end}}
 {{end}}
