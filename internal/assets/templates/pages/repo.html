@@ -1,0 +1,12 @@
+{{define "content"}}
+{{if .Data.NotFound}}
+<p class="muted">仓库不存在或无权访问</p>
+{{else}}
+<h1>{{.Data.OwnerName}} / {{.Data.Repo.Name}}</h1>
+<p class="muted">{{.Data.Repo.Description}} · {{.Data.Repo.Visibility}}</p>
+<pre>{{.Data.CloneURL}}</pre>
+{{if .Data.IsOwner}}
+<p><a href="/{{.Data.OwnerName}}/{{.Data.Repo.Name}}/settings">设置</a></p>
+{{end}}
+{{end}}
+{{end}}

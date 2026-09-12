@@ -10,17 +10,37 @@ import (
 )
 
 type Querier interface {
+	AddCollaborator(ctx context.Context, arg AddCollaboratorParams) error
+	CountReposByOwner(ctx context.Context, ownerID int64) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
+	CreatePAT(ctx context.Context, arg CreatePATParams) (Pat, error)
+	CreateRepo(ctx context.Context, arg CreateRepoParams) (Repo, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt int64) error
+	DeletePAT(ctx context.Context, arg DeletePATParams) error
+	DeleteRepo(ctx context.Context, id int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
+	GetPATByHash(ctx context.Context, tokenHash string) (Pat, error)
+	GetRepoByID(ctx context.Context, id int64) (Repo, error)
+	GetRepoByOwnerAndName(ctx context.Context, arg GetRepoByOwnerAndNameParams) (Repo, error)
 	GetSession(ctx context.Context, id string) (Session, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	IsCollaborator(ctx context.Context, arg IsCollaboratorParams) (int64, error)
+	ListCollaborators(ctx context.Context, repoID int64) ([]User, error)
+	ListPATsByUser(ctx context.Context, userID int64) ([]Pat, error)
+	ListPublicRepos(ctx context.Context) ([]Repo, error)
+	ListReposByOwner(ctx context.Context, username string) ([]Repo, error)
+	// 用户可见的仓库：自己的 + public + 协作的r.id, r.owner_id, r.name, r.description, r.visibility, r.created_at, r.updated_atorg 可见性 M5 补组织成员查询）
+	ListVisibleReposForUser(ctx context.Context, arg ListVisibleReposForUserParams) ([]Repo, error)
+	RemoveCollaborator(ctx context.Context, arg RemoveCollaboratorParams) error
+	SearchRepos(ctx context.Context, arg SearchReposParams) ([]Repo, error)
 	SearchUsers(ctx context.Context, dollar_1 sql.NullString) ([]User, error)
+	TouchPAT(ctx context.Context, arg TouchPATParams) error
+	UpdateRepo(ctx context.Context, arg UpdateRepoParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 }

@@ -29,6 +29,8 @@ func NewRenderer() (*Renderer, error) {
 		"login",
 		"register",
 		"error",
+		"user",
+		"repo",
 	}
 	for _, name := range pages {
 		t, err := template.New("layout.html").Funcs(funcMap).ParseFS(

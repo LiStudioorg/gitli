@@ -47,7 +47,7 @@ func migrateUp(conn *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("migrate init: %w", err)
 	}
-	defer m.Close()
+	// 注意：不要调用 m.Close()——它会关闭底层 *sql.DB（Migrate.Close 会调用 database.Close）。
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("migrate up: %w", err)
 	}

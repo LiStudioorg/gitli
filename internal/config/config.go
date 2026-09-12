@@ -91,6 +91,12 @@ func (c *Config) validate() error {
 	if c.Server.HTTPAddr == "" {
 		return fmt.Errorf("http_addr is required")
 	}
+	// git http-backend 等 CGI 子进程依赖绝对路径，这里统一转绝对
+	abs, err := filepath.Abs(c.App.DataDir)
+	if err != nil {
+		return fmt.Errorf("resolve data_dir: %w", err)
+	}
+	c.App.DataDir = abs
 	return nil
 }
 

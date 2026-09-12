@@ -57,7 +57,7 @@ func runServe() error {
 	defer conn.Close()
 	queries := db.NewQuerier(conn)
 
-	srv, err := web.NewServer(queries)
+	srv, err := web.NewServer(queries, cfg.ReposDir(), cfg.Server.RootURL)
 	if err != nil {
 		return fmt.Errorf("init web server: %w", err)
 	}

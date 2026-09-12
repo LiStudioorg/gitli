@@ -4,6 +4,35 @@
 
 package db
 
+import (
+	"database/sql"
+)
+
+type Collaborator struct {
+	RepoID    int64
+	UserID    int64
+	CreatedAt int64
+}
+
+type Pat struct {
+	ID         int64
+	UserID     int64
+	Name       string
+	TokenHash  string
+	CreatedAt  int64
+	LastUsedAt sql.NullInt64
+}
+
+type Repo struct {
+	ID          int64
+	OwnerID     int64
+	Name        string
+	Description string
+	Visibility  string
+	CreatedAt   int64
+	UpdatedAt   int64
+}
+
 type Session struct {
 	ID        string
 	UserID    int64

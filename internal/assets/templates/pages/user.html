@@ -1,0 +1,35 @@
+{{define "content"}}
+<h1>{{.Data.OwnerName}} / {{.Data.Repo.Name}}</h1>
+<p class="muted">{{if .Data.Repo.Description}}{{.Data.Repo.Description}}{{end}} · 可见性: {{.Data.Repo.Visibility}}</p>
+
+<p>Git 地址：</p>
+<pre>{{.Data.CloneURL}}</pre>
+
+<h2>仓库列表</h2>
+{{if .Data.Repos}}
+<ul class="repo-list">
+  {{range .Data.Repos}}
+  <li><a href="/{{$.Data.OwnerName}}/{{.Name}}">{{.Name}}</a> <span class="muted">{{.Visibility}}</span></li>
+  {{end}}
+</ul>
+{{else}}
+<p class="muted">暂无仓库</p>
+{{end}}
+
+{{if .User}}
+<h2>新建仓库</h2>
+{{template "flash" .Data.Flash}}
+<form method="post" action="/{{.Data.OwnerName}}/repos/create">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>仓库名 <input name="name" required pattern="[A-Za-z0-9][A-Za-z0-9_.-]*"></label>
+  <label>描述 <input name="description"></label>
+  <label>可见性
+    <select name="visibility">
+      <option value="public">public</option>
+      <option value="private">private</option>
+    </select>
+  </label>
+  <button type="submit">创建</button>
+</form>
+{{end}}
+{{end}}

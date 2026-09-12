@@ -3,33 +3,39 @@ package web
 import (
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"gitli/internal/assets"
 	"gitli/internal/db"
+	"gitli/internal/repos"
 	"gitli/internal/users"
 )
 
 // Server 装配路由与依赖。
 type Server struct {
-	q     db.Querier
-	users *users.Service
-	r     *Renderer
-	mux   *chi.Mux
+	q       db.Querier
+	users   *users.Service
+	repos   *repos.Service
+	rootURL string
+	r       *Renderer
+	mux     *chi.Mux
 }
 
-func NewServer(q db.Querier) (*Server, error) {
+func NewServer(q db.Querier, reposDir, rootURL string) (*Server, error) {
 	r, err := NewRenderer()
 	if err != nil {
 		return nil, err
 	}
 	s := &Server{
-		q:     q,
-		users: users.NewService(q),
-		r:     r,
-		mux:   chi.NewRouter(),
+		q:       q,
+		users:   users.NewService(q),
+		repos:   repos.NewService(q, reposDir),
+		rootURL: strings.TrimSuffix(rootURL, "/"),
+		r:       r,
+		mux:     chi.NewRouter(),
 	}
 	s.routes()
 	return s, nil
@@ -53,6 +59,13 @@ func (s *Server) routes() {
 	m.Get("/register", s.showRegister)
 	m.Post("/register", s.doRegister)
 	m.Post("/logout", s.doLogout)
+
+	// 用户主页与仓库
+	m.Get("/{owner}", s.showUser)
+	m.Post("/{owner}/repos/create", s.doCreateRepo)
+	m.Get("/{owner}/{repo}", s.showRepo)
+	// Git smart HTTP：/{owner}/{repo}.git/*
+	m.Mount("/{owner}/{repo}.git", s.gitHTTP())
 
 	m.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, http.StatusNotFound, "页面不存在")

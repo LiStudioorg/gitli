@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS pats;
+DROP TABLE IF EXISTS collaborators;
+DROP TABLE IF EXISTS repos;
