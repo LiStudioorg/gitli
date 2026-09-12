@@ -67,6 +67,16 @@ func (r *Renderer) Render(w http.ResponseWriter, status int, name string, data p
 	}
 }
 
+// render 由 Server 调用的统一渲染入口。
+func (s *Server) render(w http.ResponseWriter, status int, name string, data pageData) {
+	s.r.Render(w, status, name, data)
+}
+
+// renderError 渲染统一错误页。
+func (s *Server) renderError(w http.ResponseWriter, status int, msg string) {
+	s.r.RenderError(w, status, msg)
+}
+
 // Flash 简单闪存消息（页面内联，不做 cookie flash，M1 从简）。
 type Flash struct {
 	Kind    string // "error" | "info"
