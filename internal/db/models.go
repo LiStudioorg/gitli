@@ -69,6 +69,8 @@ type Pat struct {
 	TokenHash  string
 	CreatedAt  int64
 	LastUsedAt sql.NullInt64
+	Scope      string
+	ExpiresAt  sql.NullInt64
 }
 
 type Pull struct {
@@ -108,6 +110,18 @@ type SshKey struct {
 	CreatedAt   int64
 }
 
+type TotpRecoveryCode struct {
+	ID       int64
+	UserID   int64
+	CodeHash string
+	Used     int64
+}
+
+type TotpUsed struct {
+	UserID int64
+	Window int64
+}
+
 type User struct {
 	ID           int64
 	Username     string
@@ -116,4 +130,6 @@ type User struct {
 	IsAdmin      int64
 	CreatedAt    int64
 	UpdatedAt    int64
+	TotpSecret   string
+	TotpEnabled  int64
 }

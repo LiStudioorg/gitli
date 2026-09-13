@@ -41,7 +41,7 @@ func (q *Queries) IsCollaborator(ctx context.Context, arg IsCollaboratorParams) 
 }
 
 const listCollaborators = `-- name: ListCollaborators :many
-SELECT u.id, u.username, u.email, u.password_hash, u.is_admin, u.created_at, u.updated_at FROM collaborators c
+SELECT u.id, u.username, u.email, u.password_hash, u.is_admin, u.created_at, u.updated_at, u.totp_secret, u.totp_enabled FROM collaborators c
 JOIN users u ON u.id = c.user_id
 WHERE c.repo_id = ?
 `
@@ -63,6 +63,8 @@ func (q *Queries) ListCollaborators(ctx context.Context, repoID int64) ([]User, 
 			&i.IsAdmin,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TotpSecret,
+			&i.TotpEnabled,
 		); err != nil {
 			return nil, err
 		}

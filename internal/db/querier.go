@@ -27,17 +27,22 @@ type Querier interface {
 	CreateOrg(ctx context.Context, arg CreateOrgParams) (Org, error)
 	CreatePAT(ctx context.Context, arg CreatePATParams) (Pat, error)
 	CreatePull(ctx context.Context, arg CreatePullParams) error
+	CreateRecoveryCode(ctx context.Context, arg CreateRecoveryCodeParams) error
 	CreateRepo(ctx context.Context, arg CreateRepoParams) (Repo, error)
 	CreateSSHKey(ctx context.Context, arg CreateSSHKeyParams) (SshKey, error)
+	CreateScopedPAT(ctx context.Context, arg CreateScopedPATParams) (Pat, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt int64) error
 	DeletePAT(ctx context.Context, arg DeletePATParams) error
+	DeleteRecoveryCodes(ctx context.Context, userID int64) error
 	DeleteRepo(ctx context.Context, id int64) error
 	DeleteSSHKey(ctx context.Context, arg DeleteSSHKeyParams) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserByID(ctx context.Context, id int64) error
 	DeleteUserSessions(ctx context.Context, userID int64) error
+	DisableTOTP(ctx context.Context, id int64) error
+	EnableTOTP(ctx context.Context, id int64) error
 	GetIssue(ctx context.Context, arg GetIssueParams) (Issue, error)
 	GetIssueByID(ctx context.Context, id int64) (Issue, error)
 	GetLabelByName(ctx context.Context, arg GetLabelByNameParams) (Label, error)
@@ -68,19 +73,23 @@ type Querier interface {
 	ListLabels(ctx context.Context, repoID int64) ([]Label, error)
 	ListOrgMembersWithUsers(ctx context.Context, orgID int64) ([]ListOrgMembersWithUsersRow, error)
 	ListOrgRepos(ctx context.Context, name string) ([]Repo, error)
-	ListPATsByUser(ctx context.Context, userID int64) ([]Pat, error)
+	ListPATsByUser(ctx context.Context, userID int64) ([]ListPATsByUserRow, error)
+	ListPATsFull(ctx context.Context, userID int64) ([]Pat, error)
 	ListPublicRepos(ctx context.Context) ([]Repo, error)
 	ListPullsWithIssue(ctx context.Context, repoID int64) ([]ListPullsWithIssueRow, error)
+	ListRecoveryCodes(ctx context.Context, userID int64) ([]TotpRecoveryCode, error)
 	ListReposByOwner(ctx context.Context, username string) ([]Repo, error)
 	ListSSHKeysByUser(ctx context.Context, userID int64) ([]SshKey, error)
 	// 用户可见的仓库：自己的 + public + 协作的r.id, r.owner_id, r.name, r.description, r.visibility, r.created_at, r.updated_atorg 可见性 M5 补组织成员查询）
 	ListVisibleReposForUser(ctx context.Context, arg ListVisibleReposForUserParams) ([]Repo, error)
+	MarkTOTPUsed(ctx context.Context, arg MarkTOTPUsedParams) error
 	MergePull(ctx context.Context, arg MergePullParams) error
 	NextIssueNumber(ctx context.Context, repoID int64) (int64, error)
 	RemoveCollaborator(ctx context.Context, arg RemoveCollaboratorParams) error
 	RemoveLabel(ctx context.Context, arg RemoveLabelParams) error
 	SearchRepos(ctx context.Context, arg SearchReposParams) ([]Repo, error)
 	SearchUsers(ctx context.Context, dollar_1 sql.NullString) ([]User, error)
+	SetTOTPSecret(ctx context.Context, arg SetTOTPSecretParams) error
 	TouchPAT(ctx context.Context, arg TouchPATParams) error
 	UpdateIssueAssignee(ctx context.Context, arg UpdateIssueAssigneeParams) error
 	UpdateIssueState(ctx context.Context, arg UpdateIssueStateParams) error
@@ -88,6 +97,7 @@ type Querier interface {
 	UpdateRepo(ctx context.Context, arg UpdateRepoParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UseRecoveryCode(ctx context.Context, id int64) error
 }
 
 var _ Querier = (*Queries)(nil)

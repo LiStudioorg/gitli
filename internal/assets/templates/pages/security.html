@@ -1,0 +1,16 @@
+{{define "content"}}
+<h1>安全设置</h1>
+{{template "flash" .Data.Flash}}
+{{if eq .User.TotpEnabled 1}}
+<p>两步验证已启用。</p>
+<h2>禁用两步验证</h2>
+<form method="post" action="/settings/totp/disable">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>验证码或备用码 <input name="code" required></label>
+  <button type="submit">禁用</button>
+</form>
+{{else}}
+<p>两步验证未启用。</p>
+<a href="/settings/totp/setup"><button>启用两步验证（TOTP）</button></a>
+{{end}}
+{{end}}

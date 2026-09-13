@@ -13,7 +13,7 @@ import (
 const createPAT = `-- name: CreatePAT :one
 INSERT INTO pats (user_id, name, token_hash, created_at)
 VALUES (?, ?, ?, ?)
-RETURNING id, user_id, name, token_hash, created_at, last_used_at
+RETURNING id, user_id, name, token_hash, created_at, last_used_at, scope, expires_at
 `
 
 type CreatePATParams struct {
@@ -38,6 +38,45 @@ func (q *Queries) CreatePAT(ctx context.Context, arg CreatePATParams) (Pat, erro
 		&i.TokenHash,
 		&i.CreatedAt,
 		&i.LastUsedAt,
+		&i.Scope,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
+const createScopedPAT = `-- name: CreateScopedPAT :one
+INSERT INTO pats (user_id, name, token_hash, scope, created_at, expires_at)
+VALUES (?, ?, ?, ?, ?, ?) RETURNING id, user_id, name, token_hash, created_at, last_used_at, scope, expires_at
+`
+
+type CreateScopedPATParams struct {
+	UserID    int64
+	Name      string
+	TokenHash string
+	Scope     string
+	CreatedAt int64
+	ExpiresAt sql.NullInt64
+}
+
+func (q *Queries) CreateScopedPAT(ctx context.Context, arg CreateScopedPATParams) (Pat, error) {
+	row := q.db.QueryRowContext(ctx, createScopedPAT,
+		arg.UserID,
+		arg.Name,
+		arg.TokenHash,
+		arg.Scope,
+		arg.CreatedAt,
+		arg.ExpiresAt,
+	)
+	var i Pat
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.Scope,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
@@ -57,7 +96,7 @@ func (q *Queries) DeletePAT(ctx context.Context, arg DeletePATParams) error {
 }
 
 const getPATByHash = `-- name: GetPATByHash :one
-SELECT id, user_id, name, token_hash, created_at, last_used_at FROM pats WHERE token_hash = ?
+SELECT id, user_id, name, token_hash, created_at, last_used_at, scope, expires_at FROM pats WHERE token_hash = ?
 `
 
 func (q *Queries) GetPATByHash(ctx context.Context, tokenHash string) (Pat, error) {
@@ -70,6 +109,8 @@ func (q *Queries) GetPATByHash(ctx context.Context, tokenHash string) (Pat, erro
 		&i.TokenHash,
 		&i.CreatedAt,
 		&i.LastUsedAt,
+		&i.Scope,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
@@ -78,8 +119,51 @@ const listPATsByUser = `-- name: ListPATsByUser :many
 SELECT id, user_id, name, token_hash, created_at, last_used_at FROM pats WHERE user_id = ?
 `
 
-func (q *Queries) ListPATsByUser(ctx context.Context, userID int64) ([]Pat, error) {
+type ListPATsByUserRow struct {
+	ID         int64
+	UserID     int64
+	Name       string
+	TokenHash  string
+	CreatedAt  int64
+	LastUsedAt sql.NullInt64
+}
+
+func (q *Queries) ListPATsByUser(ctx context.Context, userID int64) ([]ListPATsByUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, listPATsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPATsByUserRow
+	for rows.Next() {
+		var i ListPATsByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.TokenHash,
+			&i.CreatedAt,
+			&i.LastUsedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPATsFull = `-- name: ListPATsFull :many
+SELECT id, user_id, name, token_hash, created_at, last_used_at, scope, expires_at FROM pats WHERE user_id = ?
+`
+
+func (q *Queries) ListPATsFull(ctx context.Context, userID int64) ([]Pat, error) {
+	rows, err := q.db.QueryContext(ctx, listPATsFull, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +178,8 @@ func (q *Queries) ListPATsByUser(ctx context.Context, userID int64) ([]Pat, erro
 			&i.TokenHash,
 			&i.CreatedAt,
 			&i.LastUsedAt,
+			&i.Scope,
+			&i.ExpiresAt,
 		); err != nil {
 			return nil, err
 		}

@@ -26,3 +26,12 @@ UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?;
 
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
+
+-- name: SetTOTPSecret :exec
+UPDATE users SET totp_secret = ?, totp_enabled = ? WHERE id = ?;
+
+-- name: EnableTOTP :exec
+UPDATE users SET totp_enabled = 1 WHERE id = ?;
+
+-- name: DisableTOTP :exec
+UPDATE users SET totp_secret = '', totp_enabled = 0 WHERE id = ?;

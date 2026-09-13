@@ -14,3 +14,10 @@ DELETE FROM pats WHERE id = ? AND user_id = ?;
 
 -- name: TouchPAT :exec
 UPDATE pats SET last_used_at = ? WHERE id = ?;
+
+-- name: CreateScopedPAT :one
+INSERT INTO pats (user_id, name, token_hash, scope, created_at, expires_at)
+VALUES (?, ?, ?, ?, ?, ?) RETURNING *;
+
+-- name: ListPATsFull :many
+SELECT * FROM pats WHERE user_id = ?;

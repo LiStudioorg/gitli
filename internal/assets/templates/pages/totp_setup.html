@@ -1,0 +1,13 @@
+{{define "content"}}
+<h1>启用两步验证</h1>
+{{template "flash" .Data.Flash}}
+<p>用验证器 App（Google Authenticator / FreeOTP 等）扫码或手输密钥：</p>
+<p><code>{{.Data.Secret}}</code></p>
+<p class="muted">{{.Data.URI}}</p>
+<form method="post" action="/settings/totp/enable">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <input type="hidden" name="secret" value="{{.Data.Secret}}">
+  <label>输入 App 显示的 6 位验证码 <input name="code" required pattern="[0-9]{6}"></label>
+  <button type="submit">验证并启用</button>
+</form>
+{{end}}

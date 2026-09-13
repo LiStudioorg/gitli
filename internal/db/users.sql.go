@@ -24,7 +24,7 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, password_hash, is_admin, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, username, email, password_hash, is_admin, created_at, updated_at
+RETURNING id, username, email, password_hash, is_admin, created_at, updated_at, totp_secret, totp_enabled
 `
 
 type CreateUserParams struct {
@@ -54,12 +54,32 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IsAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
+const disableTOTP = `-- name: DisableTOTP :exec
+UPDATE users SET totp_secret = '', totp_enabled = 0 WHERE id = ?
+`
+
+func (q *Queries) DisableTOTP(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, disableTOTP, id)
+	return err
+}
+
+const enableTOTP = `-- name: EnableTOTP :exec
+UPDATE users SET totp_enabled = 1 WHERE id = ?
+`
+
+func (q *Queries) EnableTOTP(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, enableTOTP, id)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, is_admin, created_at, updated_at FROM users WHERE email = ?
+SELECT id, username, email, password_hash, is_admin, created_at, updated_at, totp_secret, totp_enabled FROM users WHERE email = ?
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -73,12 +93,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.IsAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, is_admin, created_at, updated_at FROM users WHERE id = ?
+SELECT id, username, email, password_hash, is_admin, created_at, updated_at, totp_secret, totp_enabled FROM users WHERE id = ?
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -92,12 +114,14 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.IsAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, password_hash, is_admin, created_at, updated_at FROM users WHERE username = ?
+SELECT id, username, email, password_hash, is_admin, created_at, updated_at, totp_secret, totp_enabled FROM users WHERE username = ?
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -111,12 +135,14 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.IsAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TotpSecret,
+		&i.TotpEnabled,
 	)
 	return i, err
 }
 
 const searchUsers = `-- name: SearchUsers :many
-SELECT id, username, email, password_hash, is_admin, created_at, updated_at FROM users
+SELECT id, username, email, password_hash, is_admin, created_at, updated_at, totp_secret, totp_enabled FROM users
 WHERE username LIKE '%' || ? || '%'
 ORDER BY username
 LIMIT 50
@@ -139,6 +165,8 @@ func (q *Queries) SearchUsers(ctx context.Context, dollar_1 sql.NullString) ([]U
 			&i.IsAdmin,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TotpSecret,
+			&i.TotpEnabled,
 		); err != nil {
 			return nil, err
 		}
@@ -151,6 +179,21 @@ func (q *Queries) SearchUsers(ctx context.Context, dollar_1 sql.NullString) ([]U
 		return nil, err
 	}
 	return items, nil
+}
+
+const setTOTPSecret = `-- name: SetTOTPSecret :exec
+UPDATE users SET totp_secret = ?, totp_enabled = ? WHERE id = ?
+`
+
+type SetTOTPSecretParams struct {
+	TotpSecret  string
+	TotpEnabled int64
+	ID          int64
+}
+
+func (q *Queries) SetTOTPSecret(ctx context.Context, arg SetTOTPSecretParams) error {
+	_, err := q.db.ExecContext(ctx, setTOTPSecret, arg.TotpSecret, arg.TotpEnabled, arg.ID)
+	return err
 }
 
 const updateUserEmail = `-- name: UpdateUserEmail :exec

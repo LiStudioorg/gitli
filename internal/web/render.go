@@ -51,6 +51,11 @@ func NewRenderer() (*Renderer, error) {
 		"admin",
 		"admin_users",
 		"admin_repos",
+		"tokens",
+		"security",
+		"totp_setup",
+		"totp_recovery",
+		"totp_verify",
 	}
 	for _, name := range pages {
 		t, err := template.New("layout.html").Funcs(funcMap).ParseFS(

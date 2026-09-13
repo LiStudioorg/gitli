@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"gitli/internal/db"
@@ -97,27 +96,34 @@ func isCollaborator(ctx context.Context, q db.Querier, repoID, userID int64) boo
 
 // BasicAuthUser 从 Basic Auth 解析用户（PAT 优先，密码兜底校验 bcrypt）。
 func BasicAuthUser(ctx context.Context, q db.Querier, r req) (*db.User, bool) {
+	u, _ := BasicAuthGit(ctx, q, r)
+	if u == nil {
+		return nil, false
+	}
+	return u, true
+}
+
+// BasicAuthGit Git 场景认证：返回 (user, pat)。
+// pat == nil 表示用密码登录（或全局 PAT 内部消化）；pat != nil 表示仓库级/全局 PAT，
+// 调用方需再走 PATCanAccessRepo 判定作用域。TOTP 不影响 Git 认证（Git 通道独立凭据）。
+func BasicAuthGit(ctx context.Context, q db.Querier, r req) (*db.User, *db.Pat) {
 	username, token, ok := r.BasicAuth()
 	if !ok || username == "" || token == "" {
-		return nil, false
+		return nil, nil
 	}
 	user, err := q.GetUserByUsername(ctx, NormalizeUsername(username))
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, false
-		}
-		return nil, false
+		return nil, nil
 	}
-	// 先试 PAT（git 推拉主路径）
-	if _, err := AuthenticatePAT(ctx, q, token); err == nil {
-		u := user
-		return &u, true
+	// 先试 PAT（返回作用域）
+	if pat, u := AuthenticateGitPAT(ctx, q, token); pat != nil {
+		return u, pat
 	}
 	// 再试密码（兼容 Web 用户直接 clone）
 	if CheckPassword(user.PasswordHash, token) {
-		return &user, true
+		return &user, nil
 	}
-	return nil, false
+	return nil, nil
 }
 
 // req 抽象 http.Request 的 BasicAuth，避免本包直接依赖 net/http 之外的东西。

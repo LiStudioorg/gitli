@@ -21,8 +21,9 @@
 
 ## 后续方向（按优先级）
 
+- [x] PAT 双作用域（全局/仓库级）+ 过期时间；TOTP 两步验证（启用/备用码/登录二次验证/禁用）
 - [ ] Web UI 按用户指定的组件规范重构（见下「Web UI 设计参考」），当前是功能优先的原生表单
-- [ ] PAT 管理页面（pats 表已就绪，缺 UI 生成/列出/吊销）
+- [x] PAT 管理页面：/settings/tokens 生成/列出/吊销，支持全局与仓库级作用域（repo:<id>:<read|write>）、过期时间
 - [ ] SSH key 管理页面（ssh_keys 表已就绪，缺 UI，目前测试直接插库）
 - [ ] 协作者管理页面（collaborators 表已就绪，缺 UI）
 - [ ] Issue/PR 编号全局唯一性检查（当前 number 按 repo 递增，正常）

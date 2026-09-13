@@ -1,0 +1,14 @@
+{{define "content"}}
+<h1>两步验证</h1>
+{{template "flash" .Data.Flash}}
+<form method="post" action="/login/totp">
+  <input type="hidden" name="pending_token" value="{{.Data.PendingToken}}">
+  <label>6 位验证码 <input name="code" required pattern="[0-9]{6}" autofocus></label>
+  <button type="submit">验证</button>
+</form>
+<p class="muted">丢失验证器？<a href="#" onclick="document.querySelector('input[name=recovery]').value='1';document.querySelector('form').submit();return false">使用备用码</a></p>
+<form method="post" action="/login/totp" id="recform">
+  <input type="hidden" name="pending_token" value="{{.Data.PendingToken}}">
+  <input type="hidden" name="recovery" value="0">
+</form>
+{{end}}

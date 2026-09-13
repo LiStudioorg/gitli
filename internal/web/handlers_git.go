@@ -50,16 +50,23 @@ func (s *Server) gitHTTP() http.Handler {
 			repo := oi.Repo
 			write := svc == git.ReceivePack
 
-			// 匿名读 public 仓库
+			// Basic Auth：用户名 + PAT（全局或仓库级）或密码
+			if u, p, ok := r.BasicAuth(); ok && u != "" && p != "" {
+				user, pat := auth.BasicAuthGit(r.Context(), s.q, r)
+				if user == nil {
+					return false
+				}
+				if pat != nil {
+					// PAT 作用域判定（仓库级 PAT 最小权限，全局 PAT 走用户权限）
+					return auth.PATCanAccessRepo(r.Context(), s.q, *pat, *user, repo, write)
+				}
+				return auth.CanAccess(r.Context(), s.q, user, repo, write)
+			}
+			// 匿名：仅 public 可读
 			if !write && auth.CanAccess(r.Context(), s.q, UserFromContext(r.Context()), repo, false) {
 				return true
 			}
-			// Basic Auth（PAT 或密码）
-			user, ok2 := auth.BasicAuthUser(r.Context(), s.q, r)
-			if !ok2 {
-				return false
-			}
-			return auth.CanAccess(r.Context(), s.q, user, repo, write)
+			return false
 		},
 	}
 }

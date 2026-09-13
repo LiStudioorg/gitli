@@ -81,6 +81,16 @@ func (s *Server) routes() {
 	m.Post("/register", s.doRegister)
 	m.Post("/logout", s.doLogout)
 
+	// 安全设置：PAT（含仓库级令牌）与 TOTP 两步验证
+	m.Get("/settings/tokens", s.showTokens)
+	m.Post("/settings/tokens/create", s.doCreateToken)
+	m.Post("/settings/tokens/{id}/delete", s.doDeleteToken)
+	m.Get("/settings/security", s.showSecurity)
+	m.Get("/settings/totp/setup", s.showTotpSetup)
+	m.Post("/settings/totp/enable", s.doTotpEnable)
+	m.Post("/settings/totp/disable", s.doTotpDisable)
+	m.Post("/login/totp", s.doTotpVerify)
+
 	// 用户主页与仓库
 	m.Get("/{owner}", s.showUser)
 	m.Post("/{owner}/repos/create", s.doCreateRepo)

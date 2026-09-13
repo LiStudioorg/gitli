@@ -1,0 +1,30 @@
+{{define "content"}}
+<h1>访问令牌</h1>
+{{if .Data.NewToken}}
+<div class="flash flash-info">新令牌（仅显示一次）：<code>{{.Data.NewToken}}</code></div>
+{{end}}
+{{template "flash" .Data.Flash}}
+<h2>新建令牌</h2>
+<form method="post" action="/settings/tokens/create">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <label>名称 <input name="name" required></label>
+  <label>作用域
+    <select name="scope">
+      <option value="all">全局（所有有权限的仓库）</option>
+      <option value="repo:0:read">仓库级（创建后需修改 ID）</option>
+    </select>
+  </label>
+  <label>有效期（天，留空为永久） <input name="expires_days" pattern="[0-9]*"></label>
+  <button type="submit">生成</button>
+</form>
+<h2>已有令牌</h2>
+<table>
+<tr><th>名称</th><th>作用域</th><th>创建时间</th><th>最后使用</th><th></th></tr>
+{{range .Data.Pats}}
+<tr><td>{{.Name}}</td><td><code>{{.Scope}}</code></td><td>{{timefmt .Created}}</td>
+<td>{{if .LastUse}}{{timefmt .LastUse}}{{else}}—{{end}}</td>
+<td><form method="post" action="/settings/tokens/{{.ID}}/delete" class="inline"><input type="hidden" name="csrf_token" value="{{$.CSRF}}"><button class="linklike">吊销</button></form></td></tr>
+{{end}}
+</table>
+<p class="muted">仓库级令牌格式：<code>repo:&lt;仓库ID&gt;:&lt;read|write&gt;</code>，仅对指定仓库生效。</p>
+{{end}}

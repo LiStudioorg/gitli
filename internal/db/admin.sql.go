@@ -93,7 +93,7 @@ func (q *Queries) ListAllReposWithOwner(ctx context.Context) ([]ListAllReposWith
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, username, email, password_hash, is_admin, created_at, updated_at FROM users ORDER BY created_at ASC
+SELECT id, username, email, password_hash, is_admin, created_at, updated_at, totp_secret, totp_enabled FROM users ORDER BY created_at ASC
 `
 
 func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
@@ -113,6 +113,8 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.IsAdmin,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TotpSecret,
+			&i.TotpEnabled,
 		); err != nil {
 			return nil, err
 		}

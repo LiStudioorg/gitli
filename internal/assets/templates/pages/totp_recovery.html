@@ -1,0 +1,7 @@
+{{define "content"}}
+<h1>备用恢复码</h1>
+<p>请妥善保存，每个仅能用一次，用于丢失验证器时登录：</p>
+<pre>{{range .Data.Codes}}{{.}}
+{{end}}</pre>
+<p><a href="/settings/security"><button>完成</button></a></p>
+{{end}}

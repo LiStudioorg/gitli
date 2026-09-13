@@ -46,6 +46,11 @@ func (s *Server) doLogin(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	// TOTP 两步验证：已启用用户先不建 session，进入二次验证
+	if u, err := s.users.GetByUsername(r.Context(), auth.NormalizeUsername(username)); err == nil && u.TotpEnabled == 1 {
+		s.handleLogin2FA(w, r, u.ID, nil)
+		return
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Value:    sid,
