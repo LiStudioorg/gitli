@@ -71,6 +71,89 @@ max_connections = 32
 
 ---
 
+## 监听与对外地址
+
+gitli 将**实际监听地址**（进程绑定的网卡/端口）与**对外展示地址**（用户和第三方看到的地址）严格分离。在反向代理、端口映射、NAT 环境下二者必然不同，混用会导致克隆 URL、Webhook 回调、OAuth 重定向指向错误地址。
+
+配置项位于 `[server]`：
+
+- `http_listen`：HTTP 实际监听地址数组（支持 IPv4/IPv6，可不同端口）。
+- `http_external_url`：对外展示的 Web 地址，用于克隆 URL、Webhook 回调、OAuth 重定向等。
+- `ssh_enabled`：是否启用 SSH。
+- `ssh_listen`：SSH 实际监听地址数组。
+- `ssh_external`：SSH 对外地址，格式 `host` 或 `host:port`。
+
+### 场景示例
+
+**1. 无反向代理，直接监听**
+
+```toml
+[server]
+http_listen = ["0.0.0.0:8080"]
+http_external_url = ""            # 自动推断为 http://localhost:8080
+ssh_listen = ["0.0.0.0:2222"]
+ssh_external = ""                 # 自动推断为 localhost:2222
+```
+
+**2. Nginx 反代 + HTTPS**
+
+```toml
+[server]
+http_listen = ["127.0.0.1:8080"]  # 只监听本机回环
+http_external_url = "https://git.example.com"
+ssh_listen = ["0.0.0.0:2222"]
+ssh_external = "git.example.com:2222"
+```
+
+**3. 端口映射（内网 8080 → 公网 80）**
+
+```toml
+[server]
+http_listen = ["0.0.0.0:8080"]
+http_external_url = "http://example.com"   # 用户访问的是 80 端口
+```
+
+**4. NAT 环境（内网 IP，公网域名）**
+
+```toml
+[server]
+http_listen = ["10.0.0.5:8080"]
+http_external_url = "https://git.example.com"
+ssh_listen = ["10.0.0.5:2222"]
+ssh_external = "git.example.com:2222"
+```
+
+**5. IPv4/IPv6 双栈，不同端口**
+
+```toml
+[server]
+http_listen = ["0.0.0.0:8080", "[::]:8081"]
+http_external_url = "https://git.example.com"
+ssh_listen = ["0.0.0.0:2222", "[::]:2223"]
+```
+
+**6. SSH 独立域名和端口**
+
+```toml
+[server]
+http_external_url = "https://git.example.com"
+ssh_external = "ssh.example.com:2222"
+```
+
+环境变量同样支持，数组用逗号分隔：
+
+```bash
+export GITLI_SERVER_HTTP_LISTEN="0.0.0.0:8080,[::]:8080"
+export GITLI_SERVER_HTTP_EXTERNAL_URL="https://git.example.com"
+export GITLI_SERVER_SSH_ENABLED=true
+export GITLI_SERVER_SSH_LISTEN="0.0.0.0:2222,[::]:2222"
+export GITLI_SERVER_SSH_EXTERNAL="git.example.com:2222"
+```
+
+> 旧版 `http` / `ssh` / `external_url` 单地址配置仍可被识别，会自动转换为新的监听数组并打印告警，请尽快迁移。
+
+---
+
 ## 快速开始
 
 ### 1. 构建
@@ -281,19 +364,40 @@ sudo systemctl status gitli
 ### 常用命令
 
 ```bash
-make build        # 构建后端（含前端内嵌）
+make build        # 构建后端（纯静态、去符号，含前端内嵌）
 make frontend     # 构建前端
 make test         # 运行测试
 make lint         # gofmt + go vet
 make run          # 本地运行
 ```
 
+### 静态编译
+
+gitli 始终以**纯静态**方式编译，零运行时依赖（除系统 `git` 外）：
+
+```bash
+CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o gitli .
+```
+
+- `CGO_ENABLED=0`：不依赖 glibc / libc，可运行于 Alpine、scratch 及任意 Linux 发行版。
+- `-trimpath`：去掉本地构建路径。
+- `-ldflags="-s -w"`：去掉符号表与 DWARF 调试信息，体积可减小 30–40%。
+
+验证：
+
+```bash
+file gitli     # 应显示 "statically linked"
+ldd gitli      # 应显示 "not a dynamic executable"
+```
+
+SQLite 使用纯 Go 的 `modernc.org/sqlite`，全仓库不含任何 CGO 依赖。
+
 ### 验收命令
 
 ```bash
 gofmt -l .                 # 应无输出
 go vet ./...               # 应无错误
-go build -o gitli .        # 成功，只产出一个二进制
+CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o gitli .   # 成功，只产出一个二进制
 ./gitli version            # 打印版本
 cd web && npm run build    # 前端构建成功
 ```
@@ -301,6 +405,30 @@ cd web && npm run build    # 前端构建成功
 ### 代码约定
 
 详见 [`AGENTS.md`](./AGENTS.md)。核心要点：所有 `.go` 文件首行加 `// SPDX-License-Identifier: AGPL-3.0`；严格单向依赖；业务层只依赖 `database/sql`。
+
+---
+
+## CI 与发布
+
+仓库使用两个**完全独立、触发条件互斥**的工作流：
+
+| 工作流 | 触发 | 用途 |
+| --- | --- | --- |
+| `ci.yml`（CI） | 分支 push（`main`）/ PR，显式排除 tag | gofmt、go vet、go test、前端构建、静态编译验证、交叉编译验证、golangci-lint |
+| `release.yml`（Release） | 仅 `v*` tag | 前端构建 + 5 个分片并行全量构建 46 个平台目标 + goreleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
+
+**提交代码或开 PR** 时 CI 自动跑测试与验证（约 2 分钟内）；**打 tag（如 `v1.0.0`）** 时 Release 自动全量构建并发布。
+
+两个工作流使用不同的 `concurrency` group，不共享 job、不互相依赖。两者均可通过 `workflow_dispatch` 手动触发。
+
+### 构建时间优化
+
+为把单次 Release 控制在 8 分钟以内：
+
+- **分层触发**：只在 tag 时全量构建；分支/PR 仅构建 `linux/amd64`。
+- **缓存优先**：`~/.cache/go-build`、`~/go/pkg/mod`、`web/node_modules`、Docker layer（`type=gha`）。
+- **分片并行**：46 个目标拆到 5 个 matrix 分片，2 核 runner 并行编译。
+- **避免重复编译**：分片产出二进制上传 artifact，最终 job 用 `goreleaser release --skip=build` 只做打包与发布。
 
 ---
 

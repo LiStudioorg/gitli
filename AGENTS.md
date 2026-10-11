@@ -155,6 +155,7 @@ internal/domain    →  仅标准库（禁止 import 其它 internal 包）
 - **所有平台相关代码必须用 build tag 隔离**：例如 `//go:build !windows` 与 `//go:build windows`，集中放在 `internal/platform`。
 - **文件权限检查仅在 Unix 生效**；Windows 跳过权限位校验，仅校验目录存在。
 - **所有可选模块必须支持通过配置完全关闭**：关闭时不初始化、不分配资源、不启动 goroutine。
+- **监听地址与对外地址必须分离**：禁止把监听地址直接当作对外地址使用。所有对外 URL（克隆地址、Webhook 回调、OAuth 重定向、邮件链接、RSS、OpenGraph）必须从 `http_external_url` / `ssh_external` 解析生成，统一走 `config.ResolveExternalURLs`。
 
 ---
 
@@ -238,7 +239,26 @@ gitli version        # 版本
 ```bash
 gofmt -l .                 # 应无输出
 go vet ./...               # 应无错误
-go build -o gitli .        # 成功，只产出一个二进制
+CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o gitli .   # 成功，只产出一个静态二进制
 ./gitli version            # 打印版本
 cd web && npm run build    # 前端构建成功
 ```
+
+---
+
+## 14. 静态编译原则
+
+- 所有构建场景（`go build`、`go test`、goreleaser、CI、Makefile）必须统一使用：
+  `CGO_ENABLED=0`、`-trimpath`、`-ldflags="-s -w -X ...version -X ...commit -X ...date"`。
+- 纯静态二进制：不依赖 glibc/libc，可运行于 Alpine、scratch 与任意 Linux 发行版。
+- **禁止引入 CGO 依赖**；SQLite 必须使用 `modernc.org/sqlite`，禁止 `mattn/go-sqlite3`；禁止 libgit2、openssl 等 C 绑定。
+
+---
+
+## 15. CI 优化原则
+
+- **只在 tag 时全量构建**：分支/PR 仅做测试与 `linux/amd64` 验证；`v*` tag 才全量构建、打包、发布。
+- **工作流分离**：CI 与 Release 必须独立，触发条件互斥；禁止在 CI 中发布产物，禁止在 Release 中跑测试；两者不共享 job、不互相依赖、使用不同 concurrency group。
+- **缓存优先**：`~/.cache/go-build`、`~/go/pkg/mod`、`web/node_modules`、Docker layer（`type=gha`）。
+- **分片并行**：多个 matrix job 分摊平台矩阵。
+- **避免重复编译**：分片产出二进制，最终 job 只打包（`goreleaser release --skip=build`）。
