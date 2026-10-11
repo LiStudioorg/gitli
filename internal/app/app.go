@@ -22,6 +22,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/issue"
 	"github.com/LiStudioorg/gitli/internal/service/lfs"
+	"github.com/LiStudioorg/gitli/internal/service/metrics"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
@@ -139,6 +140,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Search:        search.New(runner),
 		Blobs:         pkgstore.NewBlobStore(st, cfg.Storage.Packages),
 		PackagesRoot:  cfg.Storage.Packages,
+		Metrics:       metrics.New(),
 	}
 	return &App{Cfg: cfg, DB: database, Log: log, Deps: deps}, nil
 }

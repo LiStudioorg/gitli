@@ -16,6 +16,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/issue"
 	"github.com/LiStudioorg/gitli/internal/service/lfs"
+	"github.com/LiStudioorg/gitli/internal/service/metrics"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
@@ -62,6 +63,8 @@ type Deps struct {
 	Search       *search.Service
 	Blobs        *pkgstore.BlobStore
 	PackagesRoot string
+
+	Metrics *metrics.Registry
 }
 
 // ExternalBase returns the externally visible HTTP base URL.

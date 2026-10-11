@@ -59,6 +59,11 @@ func (s *Server) Router() http.Handler {
 
 	api.Get("/version", s.handleVersion)
 
+	api.Route("/admin", func(ar chi.Router) {
+		ar.Get("/stats", s.handleAdminStats)
+		ar.Get("/audit", s.handleAdminAudit)
+	})
+
 	api.Route("/auth", func(ar chi.Router) {
 		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/register", s.handleRegister)
 		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/login", s.handleLogin)
@@ -193,7 +198,8 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	_, _ = w.Write([]byte(s.deps.Metrics.Prometheus()))
 }
 
 func (s *Server) handleVersion(w http.ResponseWriter, _ *http.Request) {
