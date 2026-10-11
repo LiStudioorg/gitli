@@ -33,11 +33,21 @@ func (a *App) Migrate(ctx context.Context) error {
 		return err
 	}
 	a.Log.Info("migrations applied", "count", len(migs), "dialect", a.DB.Dialect)
+	if a.Deps != nil && a.Deps.RBAC != nil {
+		if err := a.Deps.RBAC.Seed(ctx); err != nil {
+			return fmt.Errorf("seed rbac: %w", err)
+		}
+	}
 	return nil
 }
 
 // Serve starts all HTTP and (optionally) SSH listeners, blocking until cancelled.
 func (a *App) Serve(ctx context.Context) error {
+	if a.Deps != nil && a.Deps.RBAC != nil {
+		if err := a.Deps.RBAC.Seed(ctx); err != nil {
+			return fmt.Errorf("seed rbac: %w", err)
+		}
+	}
 	handler := httptransport.NewServer(a.Deps).Router()
 
 	httpServers, err := a.startHTTP(ctx, handler)

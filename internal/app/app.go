@@ -100,10 +100,6 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 
 	orgs := org.New(st)
 	rbacSvc := rbac.New(st)
-	if err := rbacSvc.Seed(ctx); err != nil {
-		_ = database.Close()
-		return nil, fmt.Errorf("seed rbac: %w", err)
-	}
 	repos := repo.New(st, layout, runner)
 	if exe, err := os.Executable(); err == nil {
 		repos.SetGitliBinary(exe)
