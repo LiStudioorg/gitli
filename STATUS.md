@@ -4,8 +4,32 @@
 
 ## 当前进度
 
-**阶段**：Block 2 上半部分（核心后端）进行中。
-**最近更新**：修复 CI 失败（golangci-lint 配置 v2 + errcheck/context key bug）。
+**阶段**：Block 4 完成 90%，全部核心功能已实现并通过本地测试。
+**最近更新**：修复 config/DB 相对路径 → 绝对路径（git 钩子跨 CWD 可用）；完成 README 功能清单与集成测试。
+
+## 关键 commit（最新）
+
+- `fc6e75e` docs: finalize README feature list, add integration test
+- `acf0ed8` fix: resolve config/db paths to absolute so git hooks work from any cwd
+- `2bc31da` feat: admin/settings frontend, unit tests, package docs
+- `3cb5e0e` feat: wire ci/ide/registry/package/mirror/import http routes
+- `49d50f2` feat: session ip/ua binding, commit graph
+- `7cad62a` feat: rbac core (nested teams, custom roles, permission cache)
+
+## 已验证
+
+- gofmt / go vet / go test 全绿；`go test -tags integration ./test/` 通过。
+- 静态二进制（CGO_ENABLED=0）构建成功。
+- Git HTTP Smart Protocol 端到端：注册→建仓→clone→push 成功。
+- pre-receive 钩子端到端：受保护分支推送被拒绝（跨 CWD 正确解析 DB）。
+- 免费内存实测 16.9 MB（目标 <150 MB）。
+- 服务启动：/healthz、/metrics、/v2/、前端首页均 200。
+
+## 待办
+
+- 推送 14 个本地提交到 origin main（等待 GH_TOKEN）。
+- 触发 CI 确认全绿；打 tag v1.0.0 触发 CD 发布。
+- 全部完成后清理 ROADMAP.md/STATUS.md/TODO.md。
 
 ## 已完成
 
