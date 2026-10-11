@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { useAuthStore, useRepoStore } from '../../stores'
+import { useAuthStore, useRepoStore, useUiStore } from '../../stores'
 
 const auth = useAuthStore()
 const repos = useRepoStore()
+const ui = useUiStore()
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ 'mobile-open': ui.sidebarOpen }">
     <section class="group">
       <h4>导航</h4>
       <nav class="nav">
@@ -118,6 +119,10 @@ h4 {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border);
+    display: none;
+  }
+  .sidebar.mobile-open {
+    display: flex;
   }
 }
 </style>

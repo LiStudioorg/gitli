@@ -1,8 +1,8 @@
 # gitli 开发任务清单
 
 ## 正在进行
-- [ ] CI 日志分析（等待 GH_TOKEN 设置）
-- [ ] RBAC RequirePermission 中间件 + API
+- [ ] 前端完善（暗色模式/响应式/命令面板/无障碍）
+- [ ] Web IDE 占位
 
 ## 已完成
 - [x] 项目初始化（AGENTS.md, README.md, LICENSE）
@@ -12,12 +12,14 @@
 - [x] 多地址监听 + 对外地址分离
 - [x] CI/Release 工作流分离（ci.yml / cd.yml）
 - [x] 静态编译（CGO_ENABLED=0 + -s -w）
-- [x] HTTP Smart Protocol（upload-pack / receive-pack）
-- [x] pre-receive 钩子基础设施
-- [x] 外部记忆（ROADMAP.md / STATUS.md / TODO.md）
-- [x] RBAC 迁移表（permissions/roles/teams 嵌套/org_members/team_repos/repo_collaborators/branch_protection_rules/path_permissions/permission_audit）
-- [x] RBAC 权限服务（嵌套团队继承、循环检测、深度限制、LRU 缓存、自定义角色、成员/协作者/团队仓库授权）
-- [x] RBAC 单元测试（继承、循环、深度、缓存）
+- [x] HTTP Smart Protocol + pre-receive 钩子
+- [x] RBAC（嵌套团队、自定义角色、LRU 缓存、API、中间件）
+- [x] 用户名 301 重定向、仓库 Fork、提交图、Session IP/UA 绑定
+- [x] 搜索（git grep）、徽章/RSS/Atom、LFS、包 Blob Store
+- [x] Wiki / Gist / Release、镜像 / 导入
+- [x] CI 调度器（限并发、ClaimJob）
+- [x] Docker Registry V2、包格式（Generic/NPM/Go/Maven）
+- [x] 指标 /metrics、管理面板 API、备份/恢复 CLI
 
 ## 待办（Block 2）
 - [x] 用户认证（注册、登录、Session）

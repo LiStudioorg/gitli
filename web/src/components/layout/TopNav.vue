@@ -1,16 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores'
+import { useAuthStore, useUiStore } from '../../stores'
+import { useTheme } from '../../composables/useTheme'
 
 const props = withDefaults(defineProps<{ variant?: 'landing' | 'app' }>(), {
   variant: 'landing',
 })
 
 const auth = useAuthStore()
+const ui = useUiStore()
 const router = useRouter()
+const { theme, cycleTheme } = useTheme()
 
 const variantClass = computed(() => `topnav-${props.variant}`)
+
+const themeIcon = computed(() => (theme.value === 'dark' ? '☀️' : '🌙'))
+const themeLabel = computed(() => {
+  if (theme.value === 'light') return '主题：浅色（点击切换到深色）'
+  if (theme.value === 'dark') return '主题：深色（点击切换到自动）'
+  return '主题：跟随系统（点击切换到浅色）'
+})
+
+function openPalette() {
+  ui.commandPaletteOpen = true
+}
 
 async function logout() {
   await auth.logout()
@@ -21,6 +35,15 @@ async function logout() {
 <template>
   <header class="topnav" :class="variantClass">
     <div class="left">
+      <button
+        v-if="variant === 'app'"
+        class="icon-btn hamburger"
+        type="button"
+        aria-label="切换侧边栏"
+        @click="ui.toggleSidebar()"
+      >
+        ☰
+      </button>
       <RouterLink class="brand" to="/">gitli</RouterLink>
       <template v-if="variant === 'landing'">
         <nav class="links">
@@ -35,6 +58,24 @@ async function logout() {
     </div>
 
     <div class="right">
+      <button
+        class="icon-btn palette-trigger"
+        type="button"
+        aria-label="打开命令面板"
+        title="命令面板 (Ctrl/Cmd+K)"
+        @click="openPalette"
+      >
+        ⌘K
+      </button>
+      <button
+        class="icon-btn theme-toggle"
+        type="button"
+        :aria-label="themeLabel"
+        :title="themeLabel"
+        @click="cycleTheme"
+      >
+        {{ themeIcon }}
+      </button>
       <template v-if="auth.isLoggedIn">
         <RouterLink v-if="variant === 'app'" class="icon-btn" to="/dashboard" title="通知">通知</RouterLink>
         <RouterLink v-if="variant === 'landing'" class="btn primary" to="/dashboard">进入控制台</RouterLink>
@@ -103,6 +144,23 @@ async function logout() {
 }
 .icon-btn {
   color: var(--color-fg);
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  line-height: 1;
+}
+.icon-btn:hover {
+  background: var(--hover-bg);
+}
+.palette-trigger {
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.hamburger {
+  display: none;
 }
 .avatar {
   display: inline-flex;
@@ -124,6 +182,11 @@ async function logout() {
   }
   .links {
     display: none;
+  }
+}
+@media (max-width: 768px) {
+  .topnav-app .hamburger {
+    display: inline-flex;
   }
 }
 </style>

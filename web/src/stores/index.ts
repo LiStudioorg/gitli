@@ -44,6 +44,21 @@ export interface CloneInfo {
   clone_default_branch: string
 }
 
+export const useUiStore = defineStore('ui', {
+  state: () => ({
+    commandPaletteOpen: false,
+    sidebarOpen: false,
+  }),
+  actions: {
+    toggleSidebar() {
+      this.sidebarOpen = !this.sidebarOpen
+    },
+    closeSidebar() {
+      this.sidebarOpen = false
+    },
+  },
+})
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as User | null,
