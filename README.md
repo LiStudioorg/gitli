@@ -18,7 +18,7 @@
 | 工作流 | 文件 | 触发 | 职责 |
 | --- | --- | --- | --- |
 | **CI** | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | 分支 push（`main`）/ PR / 手动，显式排除 tag | gofmt、go vet、go test(-race)、前端构建、静态编译与交叉编译验证、golangci-lint |
-| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | 5 分片并行构建 46 个平台目标 + GoReleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 推送多架构镜像 `ghcr.io` + 创建 GitHub Release |
+| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | 5 分片并行构建 46 个平台目标 + GoReleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 推送多架构镜像 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
 
 > 在 GitHub 页面点击 **Actions** 标签页可查看两者的实时状态徽章；本文档不内联易失效的徽章 URL。
 > 工作流细节见 [`docs/CI.md`](./docs/CI.md)，发布步骤见 [`docs/RELEASE.md`](./docs/RELEASE.md)。
@@ -27,17 +27,42 @@
 
 ## 功能特性
 
+下表对应**实际已实现**的服务模块（`internal/service/`）与 HTTP 路由（`internal/transport/http/server.go`）。
+
 | 模块 | 能力 |
 | --- | --- |
-| Git 托管 | HTTP + SSH 协议，clone / push / pull，pre-receive 钩子 |
-| 用户与认证 | 注册登录、Session、SSH Key、PAT（经典 / 细粒度）、TOTP 双因素 |
-| 组织与权限 | 组织、团队、协作者、分支 / 标签保护 |
-| 协作 | Issue、Pull Request、Review、评论、标签、里程碑 |
-| 内容 | Wiki、Gist、Release + 附件 |
-| Git 扩展 | Git LFS、提交签名验证（GPG / SSH）、仓库镜像与导入 |
-| 包管理 | Generic、NPM、Docker/OCI、Go modules、Maven |
-| CI | 宿主机执行、限并发、Runner 轮询、缓存、Artifacts、Secrets |
-| 其他 | 搜索、徽章、RSS、活动流、审计日志、Webhook、通知 |
+| 用户与认证 | 注册登录、Session、SSH Key、PAT（经典 / 细粒度）、TOTP 双因素、密码修改、用户名改名（旧名 301 重定向） |
+| 组织与 RBAC | 组织、成员、**多级嵌套团队**（可 reparent）、自定义角色、协作者、团队仓库授权 |
+| 仓库托管 | 仓库创建 / 删除、Fork、Transfer、分支 / 标签保护、归档下载、语言统计 |
+| Git 协议 | HTTP Smart 协议（`info/refs`、`git-upload-pack`、`git-receive-pack`）、**内置 SSH 服务器**、pre-receive 钩子 |
+| 协作 | Issue、Pull Request、Review、评论、标签、里程碑、状态流转、合并 |
+| 代码浏览 | 分支列表、目录树、文件 Blob、提交历史、**提交图（graph）**、Diff、Blame、代码搜索 |
+| Web IDE | 目录树、文件读取、声明 / 符号（symbols）搜索 |
+| 内容 | Wiki、Gist、Release + 附件（含发布 / 详情 / 资源列表） |
+| Git 扩展 | Git LFS（batch / 上传 / 下载）、仓库镜像（mirror）、外部仓库导入（import） |
+| 包管理 | Generic、NPM、Docker/OCI、Go modules、Maven；**内置 Docker Registry V2**（`/v2/` blobs / manifests / tags） |
+| CI | 宿主机执行的轻量调度器、限并发、Runner 轮询、Pipeline 与 Job 列表 |
+| 通知与事件 | 站内通知、**SSE 事件流**（`/api/v1/events`）、活动流、审计日志 |
+| Webhook | HMAC-SHA256 签名、SSRF 防护、重试与死信 |
+| 其他 | 代码搜索、徽章（badge SVG）、RSS / Atom、提交签名验证（GPG / SSH）、Prometheus 指标、管理端统计与审计 |
+
+---
+
+## 命令
+
+`gitli` 为单二进制，子命令通过 `gitli <command> [--config path/to/config.toml]` 调用：
+
+| 子命令 | 说明 |
+| --- | --- |
+| `serve` | 启动 HTTP + SSH 主服务 |
+| `migrate` | 按 `database.driver` 执行数据库迁移 |
+| `hook` | 执行服务端 git 钩子（`gitli hook <name> --owner <owner> --repo <repo>`） |
+| `backup` | 流式备份（`--out <file> [--source <dir>] [--encrypt]`，加密密钥取自 `GITLI_BACKUP_KEY`） |
+| `restore` | 从备份归档恢复（`--in <file> [--dest <dir>]`） |
+| `version` | 打印版本、commit 与构建时间 |
+| `help` | 显示帮助 |
+
+> **保留子命令（尚未实现）**：`runner`、`mirror`、`import`、`search-index`、`admin`。当前调用会返回 `subcommand "..." is not implemented yet`；对应能力已通过 `serve` 进程或 HTTP API 提供（如镜像 / 导入 / 搜索 / 管理端）。
 
 ---
 
@@ -331,7 +356,7 @@ server {
 }
 ```
 
-记得将 `server.external_url` 设置为对外访问地址（例如 `https://git.example.com`）。
+记得将 `server.http_external_url`（及 `server.ssh_external`）设置为对外访问地址（例如 `https://git.example.com`）。
 
 ---
 
@@ -471,7 +496,7 @@ A：修改 `config.toml` 的 `[database]` 段，重新执行 `gitli migrate` 即
 A：gitli 建议部署在反向代理（Caddy / Nginx）之后，由代理负责 TLS 终止；应用层强制 HSTS 与安全头。
 
 **Q：忘记了管理员密码怎么办？**
-A：使用 `gitli admin` 子命令重置（详见 `docs/`）。
+A：`admin` 子命令为保留项（尚未实现）。当前可通过直接更新数据库中的密码哈希，或删除用户后重新注册首个管理员账号来恢复访问。
 
 ---
 
