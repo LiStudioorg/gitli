@@ -38,8 +38,8 @@ dsn = "user@tcp(localhost)/gitli"
 	if cfg.Database.Driver != "mysql" {
 		t.Fatalf("got %s, want mysql", cfg.Database.Driver)
 	}
-	if cfg.Server.HTTP != ":8080" {
-		t.Fatalf("default should be preserved: %s", cfg.Server.HTTP)
+	if len(cfg.Server.HTTPListen) == 0 {
+		t.Fatalf("default http_listen should be preserved")
 	}
 }
 

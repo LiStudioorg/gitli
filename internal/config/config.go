@@ -15,13 +15,64 @@ type Config struct {
 	Mail     MailConfig     `toml:"mail"`
 	Git      GitConfig      `toml:"git"`
 	SSH      SSHConfig      `toml:"ssh"`
+	Webhook  WebhookConfig  `toml:"webhook"`
+	Backup   BackupConfig   `toml:"backup"`
+	OIDC     OIDCConfig     `toml:"oidc"`
+	LFS      LFSConfig      `toml:"lfs"`
+	CI       CIConfig       `toml:"ci"`
+	Search   SearchConfig   `toml:"search"`
 }
 
-// SSHConfig configures the SSH git transport.
+// WebhookConfig configures outbound webhook delivery.
+type WebhookConfig struct {
+	TimeoutSeconds        int  `toml:"timeout_seconds"`
+	MaxRetries            int  `toml:"max_retries"`
+	RetryIntervalSeconds  int  `toml:"retry_interval_seconds"`
+	BlockPrivateAddresses bool `toml:"block_private_addresses"`
+}
+
+// BackupConfig configures the backup subsystem.
+type BackupConfig struct {
+	Encrypt          bool   `toml:"encrypt"`
+	EncryptionKeyEnv string `toml:"encryption_key_env"`
+	BackupDir        string `toml:"backup_dir"`
+}
+
+// OIDCConfig configures OpenID Connect login.
+type OIDCConfig struct {
+	Enabled      bool     `toml:"enabled"`
+	Issuer       string   `toml:"issuer"`
+	ClientID     string   `toml:"client_id"`
+	ClientSecret string   `toml:"client_secret"`
+	RedirectURL  string   `toml:"redirect_url"`
+	Scopes       []string `toml:"scopes"`
+}
+
+// LFSConfig configures Git Large File Storage.
+type LFSConfig struct {
+	Enabled     bool   `toml:"enabled"`
+	StoragePath string `toml:"storage_path"`
+	MaxFileMB   int    `toml:"max_file_mb"`
+}
+
+// CIConfig configures the lightweight CI subsystem.
+type CIConfig struct {
+	Enabled              bool `toml:"enabled"`
+	MaxConcurrency       int  `toml:"max_concurrency"`
+	RunnerTimeoutSeconds int  `toml:"runner_timeout_seconds"`
+	ArtifactMaxMB        int  `toml:"artifact_max_mb"`
+}
+
+// SearchConfig configures the search engine backend.
+type SearchConfig struct {
+	Engine string `toml:"engine"`
+}
+
+// SSHConfig configures the SSH git transport behavior. Listen address and the
+// enabled switch live under [server] so that listen vs external separation is
+// consistent across HTTP and SSH.
 type SSHConfig struct {
-	Enabled                 bool   `toml:"enabled"`
 	Mode                    string `toml:"mode"` // builtin | system
-	Address                 string `toml:"address"`
 	HostKeyPath             string `toml:"host_key_path"`
 	HandshakeTimeoutSeconds int    `toml:"handshake_timeout_seconds"`
 	IdleTimeoutSeconds      int    `toml:"idle_timeout_seconds"`
@@ -36,12 +87,23 @@ type GitConfig struct {
 	MinVersion     string `toml:"min_version"`
 }
 
-// ServerConfig holds HTTP/SSH listener settings.
+// ServerConfig holds listen addresses and externally visible URLs.
+//
+// Listen addresses and external URLs are deliberately separated: under NAT,
+// port mapping or reverse proxying the address the process binds to is not the
+// address users must use.
 type ServerConfig struct {
+	HTTPListen      []string `toml:"http_listen"`
+	HTTPExternalURL string   `toml:"http_external_url"`
+	SSHEnabled      bool     `toml:"ssh_enabled"`
+	SSHListen       []string `toml:"ssh_listen"`
+	SSHExternal     string   `toml:"ssh_external"`
+	AllowRoot       bool     `toml:"allow_root"`
+
+	// Deprecated single-address fields, accepted for backward compatibility.
 	HTTP        string `toml:"http"`
 	SSH         string `toml:"ssh"`
 	ExternalURL string `toml:"external_url"`
-	AllowRoot   bool   `toml:"allow_root"`
 }
 
 // DatabaseConfig selects the SQL driver and connection pool.
@@ -67,6 +129,15 @@ type SecurityConfig struct {
 	Crypto   CryptoConfig   `toml:"crypto"`
 	Login    LoginConfig    `toml:"login"`
 	Session  SessionConfig  `toml:"session"`
+	PAT      PATConfig      `toml:"pat"`
+}
+
+// PATConfig configures personal access token policy.
+type PATConfig struct {
+	AllowClassic       bool `toml:"allow_classic"`
+	AllowFineGrained   bool `toml:"allow_fine_grained"`
+	DefaultScopesEmpty bool `toml:"default_scopes_empty"`
+	MaxExpiryDays      int  `toml:"max_expiry_days"`
 }
 
 // PasswordConfig holds Argon2id parameters and password policy.

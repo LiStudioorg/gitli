@@ -6,9 +6,11 @@ const defaultTemplate = `# gitli 配置文件（首次运行自动生成）
 # 环境变量优先级高于此文件，前缀 GITLI_。
 
 [server]
-http = ":8080"
-ssh = ":2222"
-external_url = "http://localhost:8080"
+http_listen = ["0.0.0.0:8080", "[::]:8080"]
+http_external_url = ""
+ssh_enabled = true
+ssh_listen = ["0.0.0.0:2222", "[::]:2222"]
+ssh_external = ""
 allow_root = false
 
 [database]
@@ -98,9 +100,7 @@ check_version = true
 min_version = "2.30"
 
 [ssh]
-enabled = true
 mode = "builtin"
-address = ":2222"
 host_key_path = "./data/ssh_host_ed25519_key"
 handshake_timeout_seconds = 10
 idle_timeout_seconds = 300

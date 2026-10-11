@@ -35,10 +35,19 @@ func WriteDefault(path string) error {
 }
 
 func applyEnvOverrides(cfg *Config) {
+	setStrSlice(&cfg.Server.HTTPListen, "GITLI_SERVER_HTTP_LISTEN")
+	setStr(&cfg.Server.HTTPExternalURL, "GITLI_SERVER_HTTP_EXTERNAL_URL")
+	setBool(&cfg.Server.SSHEnabled, "GITLI_SERVER_SSH_ENABLED")
+	setStrSlice(&cfg.Server.SSHListen, "GITLI_SERVER_SSH_LISTEN")
+	setStr(&cfg.Server.SSHExternal, "GITLI_SERVER_SSH_EXTERNAL")
+	setBool(&cfg.Server.AllowRoot, "GITLI_SERVER_ALLOW_ROOT")
+
+	// Legacy single-address env vars.
 	setStr(&cfg.Server.HTTP, "GITLI_SERVER_HTTP")
 	setStr(&cfg.Server.SSH, "GITLI_SERVER_SSH")
 	setStr(&cfg.Server.ExternalURL, "GITLI_SERVER_EXTERNAL_URL")
-	setBool(&cfg.Server.AllowRoot, "GITLI_SERVER_ALLOW_ROOT")
+
+	migrateLegacyServer(cfg)
 
 	setStr(&cfg.Database.Driver, "GITLI_DATABASE_DRIVER")
 	setStr(&cfg.Database.DSN, "GITLI_DATABASE_DSN")
@@ -80,13 +89,36 @@ func applyEnvOverrides(cfg *Config) {
 	setBool(&cfg.Git.CheckVersion, "GITLI_GIT_CHECK_VERSION")
 	setStr(&cfg.Git.MinVersion, "GITLI_GIT_MIN_VERSION")
 
-	setBool(&cfg.SSH.Enabled, "GITLI_SSH_ENABLED")
 	setStr(&cfg.SSH.Mode, "GITLI_SSH_MODE")
-	setStr(&cfg.SSH.Address, "GITLI_SSH_ADDRESS")
 	setStr(&cfg.SSH.HostKeyPath, "GITLI_SSH_HOST_KEY_PATH")
 	setInt(&cfg.SSH.HandshakeTimeoutSeconds, "GITLI_SSH_HANDSHAKE_TIMEOUT_SECONDS")
 	setInt(&cfg.SSH.IdleTimeoutSeconds, "GITLI_SSH_IDLE_TIMEOUT_SECONDS")
 	setInt(&cfg.SSH.MaxConnections, "GITLI_SSH_MAX_CONNECTIONS")
+
+	setInt(&cfg.Webhook.TimeoutSeconds, "GITLI_WEBHOOK_TIMEOUT_SECONDS")
+	setInt(&cfg.Webhook.MaxRetries, "GITLI_WEBHOOK_MAX_RETRIES")
+	setBool(&cfg.Webhook.BlockPrivateAddresses, "GITLI_WEBHOOK_BLOCK_PRIVATE_ADDRESSES")
+
+	setBool(&cfg.Backup.Encrypt, "GITLI_BACKUP_ENCRYPT")
+	setStr(&cfg.Backup.BackupDir, "GITLI_BACKUP_DIR")
+
+	setBool(&cfg.OIDC.Enabled, "GITLI_OIDC_ENABLED")
+	setStr(&cfg.OIDC.Issuer, "GITLI_OIDC_ISSUER")
+	setStr(&cfg.OIDC.ClientID, "GITLI_OIDC_CLIENT_ID")
+	setStr(&cfg.OIDC.ClientSecret, "GITLI_OIDC_CLIENT_SECRET")
+	setStr(&cfg.OIDC.RedirectURL, "GITLI_OIDC_REDIRECT_URL")
+
+	setBool(&cfg.LFS.Enabled, "GITLI_LFS_ENABLED")
+	setStr(&cfg.LFS.StoragePath, "GITLI_LFS_STORAGE_PATH")
+	setInt(&cfg.LFS.MaxFileMB, "GITLI_LFS_MAX_FILE_MB")
+
+	setBool(&cfg.CI.Enabled, "GITLI_CI_ENABLED")
+	setInt(&cfg.CI.MaxConcurrency, "GITLI_CI_MAX_CONCURRENCY")
+	setInt(&cfg.CI.RunnerTimeoutSeconds, "GITLI_CI_RUNNER_TIMEOUT_SECONDS")
+	setInt(&cfg.CI.ArtifactMaxMB, "GITLI_CI_ARTIFACT_MAX_MB")
+
+	setStr(&cfg.Search.Engine, "GITLI_SEARCH_ENGINE")
+	setStr(&cfg.Modules.Search, "GITLI_MODULES_SEARCH")
 }
 
 func setStr(dst *string, key string) {

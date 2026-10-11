@@ -5,9 +5,11 @@ package config
 func Defaults() *Config {
 	return &Config{
 		Server: ServerConfig{
-			HTTP:        ":8080",
-			SSH:         ":2222",
-			ExternalURL: "http://localhost:8080",
+			HTTPListen:      []string{"0.0.0.0:8080", "[::]:8080"},
+			HTTPExternalURL: "",
+			SSHEnabled:      true,
+			SSHListen:       []string{"0.0.0.0:2222", "[::]:2222"},
+			SSHExternal:     "",
 		},
 		Database: DatabaseConfig{
 			Driver:       "sqlite",
@@ -39,6 +41,12 @@ func Defaults() *Config {
 			},
 			Session: SessionConfig{
 				TTLHours: 720,
+			},
+			PAT: PATConfig{
+				AllowClassic:       true,
+				AllowFineGrained:   true,
+				DefaultScopesEmpty: true,
+				MaxExpiryDays:      365,
 			},
 		},
 		Modules: ModulesConfig{
@@ -89,13 +97,40 @@ func Defaults() *Config {
 			MinVersion:     "2.30",
 		},
 		SSH: SSHConfig{
-			Enabled:                 true,
 			Mode:                    "builtin",
-			Address:                 ":2222",
 			HostKeyPath:             "./data/ssh_host_ed25519_key",
 			HandshakeTimeoutSeconds: 10,
 			IdleTimeoutSeconds:      300,
 			MaxConnections:          32,
+		},
+		Webhook: WebhookConfig{
+			TimeoutSeconds:        15,
+			MaxRetries:            3,
+			RetryIntervalSeconds:  60,
+			BlockPrivateAddresses: true,
+		},
+		Backup: BackupConfig{
+			Encrypt:          false,
+			EncryptionKeyEnv: "GITLI_BACKUP_KEY",
+			BackupDir:        "./data/backups",
+		},
+		OIDC: OIDCConfig{
+			Enabled: false,
+			Scopes:  []string{"openid", "profile", "email"},
+		},
+		LFS: LFSConfig{
+			Enabled:     true,
+			StoragePath: "./data/lfs",
+			MaxFileMB:   5120,
+		},
+		CI: CIConfig{
+			Enabled:              false,
+			MaxConcurrency:       1,
+			RunnerTimeoutSeconds: 3600,
+			ArtifactMaxMB:        100,
+		},
+		Search: SearchConfig{
+			Engine: "grep",
 		},
 	}
 }

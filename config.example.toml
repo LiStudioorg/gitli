@@ -1,112 +1,491 @@
-# gitli 配置文件示例
+# =============================================================================
+# gitli 配置文件（config.example.toml）
+# -----------------------------------------------------------------------------
 # 复制为 config.toml 后按需修改：cp config.example.toml config.toml
-# 环境变量优先级高于此文件，前缀 GITLI_，嵌套字段用下划线连接。
+#
+# 加载方式：
+#   * 默认读取当前目录的 config.toml
+#   * 可用命令行参数指定：./gitli serve --config /etc/gitli/config.toml
+#   * 首次运行若 config.toml 不存在，会自动生成一份默认配置
+#
+# 环境变量覆盖规则：
+#   * 环境变量优先级高于配置文件（环境变量 > 配置文件 > 内置默认值）
+#   * 前缀固定为 GITLI_
+#   * 嵌套字段用下划线连接，例如：
+#       GITLI_DATABASE_DRIVER=postgres
+#       GITLI_DATABASE_DSN="postgres://..."
+#       GITLI_SERVER_HTTP_LISTEN="0.0.0.0:8080,[::]:8080"
+#   * 数组类型字段使用逗号分隔
+#
+# 敏感字段建议：
+#   * pepper、crypto_key、mail.password、oidc.client_secret 等敏感字段
+#     建议只从环境变量注入，不要写死在文件里，也不要把 config.toml 提交到仓库。
+# =============================================================================
 
+
+# -----------------------------------------------------------------------------
+# [server] 监听与对外地址
+# -----------------------------------------------------------------------------
+# 重要：监听地址（listen）与对外展示地址（external）必须分离。
+#   * listen 是进程实际绑定的网卡/端口，只对本机网络拓扑有意义。
+#   * external 是用户浏览器、git 客户端、Webhook 接收方看到的地址。
+# 在反向代理、端口映射、NAT 环境下二者一定不同：
+#   * Nginx 反代 + HTTPS：listen=127.0.0.1:8080，external=https://git.example.com
+#   * 端口映射（内网 8080 → 公网 80）：listen=0.0.0.0:8080，external=http://example.com
+#   * NAT（内网 IP，公网域名）：listen=0.0.0.0:8080，external=https://git.example.com
+# 克隆 URL、Webhook 回调、OAuth 重定向、邮件链接、RSS、OpenGraph 全部基于 external。
 [server]
-http = ":8080"
-ssh = ":2222"
-external_url = "https://git.example.com"
-allow_root = false   # 是否允许以 root 运行，默认 false。强烈建议保持 false，并创建专用用户运行。
+# 实际监听地址（数组，可多个）。IPv4 与 IPv6 可配置为不同端口。
+#   仅 IPv4：["0.0.0.0:8080"]
+#   仅 IPv6：["[::]:8080"]
+#   双栈同端口：["0.0.0.0:8080", "[::]:8080"]
+#   双栈不同端口：["0.0.0.0:8080", "[::]:8081"]
+# 默认：["0.0.0.0:8080", "[::]:8080"]
+http_listen = ["0.0.0.0:8080", "[::]:8080"]
 
+# 对外展示的 Web 地址，用于生成克隆 URL、Webhook 回调、OAuth 重定向等。
+# 留空则根据第一个 http_listen 自动推断（将 0.0.0.0 或 [::] 替换为 localhost，
+# 协议默认 http）。该自动推断仅适用于无反向代理场景。
+# 默认：""（自动推断）
+http_external_url = "https://git.example.com"
+
+# 是否启用 SSH 传输。false 时完全跳过 SSH 模块初始化（零开销）。
+# 可选值：true / false。默认：true
+ssh_enabled = true
+
+# SSH 实际监听地址（数组，可多个）。
+# 默认：["0.0.0.0:2222", "[::]:2222"]
+ssh_listen = ["0.0.0.0:2222", "[::]:2222"]
+
+# SSH 对外展示地址，格式为 host 或 host:port。
+# 留空则使用 http_external_url 的域名 + 第一个 ssh_listen 的端口。
+# 端口为 22 时克隆地址中省略 :22。
+# 默认：""（自动推断）
+ssh_external = "git.example.com:2222"
+
+# 是否允许以 root 运行。强烈建议保持 false，并创建专用用户（如 gitli）运行。
+# 可选值：true / false。默认：false
+allow_root = false
+
+
+# -----------------------------------------------------------------------------
+# [database] 数据库
+# -----------------------------------------------------------------------------
+# 支持 SQLite（纯 Go，无 CGO）、MySQL、PostgreSQL 三选一。
+# 业务层只依赖标准库 database/sql。
 [database]
-driver = "sqlite"          # sqlite | mysql | postgres
+# 驱动类型。可选值：sqlite / mysql / postgres。默认：sqlite
+driver = "sqlite"
+
+# 连接串（DSN）。三种驱动示例如下：
+#   SQLite：    "./data/gitli.db"
+#   MySQL：     "user:pass@tcp(127.0.0.1:3306)/gitli?charset=utf8mb4&parseTime=true&loc=Local"
+#   PostgreSQL："postgres://user:pass@127.0.0.1:5432/gitli?sslmode=disable"
+# 默认："./data/gitli.db"
 dsn = "./data/gitli.db"
+
+# 最大打开连接数。默认：25
 max_open_conns = 25
+
+# 最大空闲连接数。默认：5
 max_idle_conns = 5
 
-# MySQL 示例
-# driver = "mysql"
-# dsn = "user:pass@tcp(127.0.0.1:3306)/gitli?charset=utf8mb4&parseTime=true&loc=Local"
+# MySQL 示例：
+#   driver = "mysql"
+#   dsn = "user:pass@tcp(127.0.0.1:3306)/gitli?charset=utf8mb4&parseTime=true&loc=Local"
+#
+# PostgreSQL 示例：
+#   driver = "postgres"
+#   dsn = "postgres://user:pass@127.0.0.1:5432/gitli?sslmode=disable"
 
-# PostgreSQL 示例
-# driver = "postgres"
-# dsn = "postgres://user:pass@127.0.0.1:5432/gitli?sslmode=disable"
 
+# -----------------------------------------------------------------------------
+# [storage] 存储路径
+# -----------------------------------------------------------------------------
+# 所有路径相对于进程工作目录，建议使用绝对路径。
 [storage]
+# Git 裸仓库根目录。默认："./data/repos"
 repos = "./data/repos"
+
+# Git LFS 对象存储目录。默认："./data/lfs"
 lfs = "./data/lfs"
+
+# 包管理（NPM/Docker/Go/Maven/Generic）对象目录。默认："./data/packages"
 packages = "./data/packages"
+
+# 用户/组织头像目录。默认："./data/avatars"
 avatars = "./data/avatars"
+
+# Issue/PR/评论附件目录。默认："./data/attachments"
 attachments = "./data/attachments"
 
+
+# -----------------------------------------------------------------------------
+# [security.password] 密码哈希
+# -----------------------------------------------------------------------------
+# 使用 Argon2id，输出 PHC 格式：$argon2id$v=19$m=65536,t=3,p=2$...
+# 参数越高越安全但越耗资源，请根据服务器内存调整。
 [security.password]
+# 算法。可选值：argon2id。默认：argon2id
 algorithm = "argon2id"
+
+# 内存开销（MiB）。默认：64（即 m=65536）
 memory_mb = 64
+
+# 迭代次数。默认：3
 iterations = 3
+
+# 并行度（线程数）。默认：2
 parallelism = 2
+
+# 盐长度（字节）。默认：16
 salt_length = 16
+
+# 输出密钥长度（字节）。默认：32
 key_length = 32
-min_length = 12            # 密码最小长度，默认 12
-hibp = false               # 是否启用 HaveIBeenPwned k-匿名弱密码检测
-pepper = ""                # 从 GITLI_PEPPER 环境变量读
 
+# 密码最小长度。默认：12。低于该长度拒绝注册/改密。
+min_length = 12
+
+# 是否启用 HaveIBeenPwned k-匿名弱密码检测（会向 api.pwnedpasswords.com 发起请求）。
+# 可选值：true / false。默认：false
+hibp = false
+
+# 全局 pepper（密钥盐）。强烈建议只从环境变量注入：GITLI_PEPPER=<随机长字符串>
+# 默认：""（不启用）。注意：修改后所有既有密码将无法验证。
+pepper = ""
+
+
+# -----------------------------------------------------------------------------
+# [security.crypto] 对称加密
+# -----------------------------------------------------------------------------
 [security.crypto]
-key_hex = ""               # 从 GITLI_CRYPTO_KEY 环境变量读，32 字节 hex
+# AES-256-GCM 密钥，32 字节的 hex 字符串（64 个 hex 字符）。
+# 用于加密 TOTP secret、SMTP 密码、OAuth client secret、Git 镜像凭证等。
+# 强烈建议只从环境变量注入：GITLI_CRYPTO_KEY=$(openssl rand -hex 32)
+# 默认：""（不启用加密存储，生产环境务必配置）
+key_hex = ""
 
+
+# -----------------------------------------------------------------------------
+# [security.login] 登录限流
+# -----------------------------------------------------------------------------
 [security.login]
+# 窗口内允许的最大失败次数，超过后锁定。默认：5
 max_attempts = 5
+
+# 锁定时长（分钟）。默认：15
 lockout_minutes = 15
+
+# 统计窗口（分钟）。默认：15
 window_minutes = 15
 
+
+# -----------------------------------------------------------------------------
+# [security.session] 会话
+# -----------------------------------------------------------------------------
 [security.session]
-bind_ip = false            # 是否将 Session 绑定到 IP
-bind_agent = false         # 是否将 Session 绑定到 User-Agent
-ttl_hours = 720            # Session 有效期（小时）
+# 是否将会话绑定到客户端 IP。默认：false。启用后在 IP 变化时要求重新登录。
+bind_ip = false
 
+# 是否将会话绑定到 User-Agent。默认：false
+bind_agent = false
+
+# 会话有效期（小时）。默认：720（30 天）
+ttl_hours = 720
+
+
+# -----------------------------------------------------------------------------
+# [security.pat] 个人访问令牌（PAT）
+# -----------------------------------------------------------------------------
+[security.pat]
+# 是否允许创建经典 PAT（全局作用域）。默认：true
+allow_classic = true
+
+# 是否允许创建细粒度 PAT（指定仓库 + read/write）。默认：true
+allow_fine_grained = true
+
+# 经典 PAT 默认是否不勾选任何权限（遵循最小权限）。默认：true
+default_scopes_empty = true
+
+# PAT 最长有效期（天）。0 表示不限制。默认：365
+max_expiry_days = 365
+
+
+# -----------------------------------------------------------------------------
+# [modules] 模块开关
+# -----------------------------------------------------------------------------
+# 所有可选模块均可通过配置完全关闭；关闭时不初始化、不分配资源、不启动 goroutine。
 [modules]
+# 核心模块（用户、仓库、Git）。默认：true
 core = true
-collaboration = true
-git_ext = true
-registry = true
-ci = false
-ide = false
-ops = true
-search = "grep"            # grep | fts | zoekt
 
+# 协作模块（Issue、PR、Review、评论）。默认：true
+collaboration = true
+
+# Git 扩展（LFS、签名验证、镜像、导入）。默认：true
+git_ext = true
+
+# 包管理模块。默认：true
+registry = true
+
+# CI 模块。默认：false
+ci = false
+
+# Web IDE 模块。默认：false
+ide = false
+
+# 运维模块（审计、指标、备份）。默认：true
+ops = true
+
+# 搜索后端。可选值：grep（按需 git grep，零索引）/ fts（SQLite FTS 全文索引）/ zoekt。
+# 默认：grep
+search = "grep"
+
+
+# -----------------------------------------------------------------------------
+# [modules.packages] 包管理格式
+# -----------------------------------------------------------------------------
 [modules.packages]
+# 启用的包格式。可选值：generic / npm / docker / go / maven
+#   generic：通用文件仓库
+#   npm：     Node.js 包
+#   docker：  Docker/OCI 镜像仓库（Registry V2）
+#   go：      Go modules 代理
+#   maven：   Maven 构件仓库
+# 默认：["generic", "npm", "docker", "go", "maven"]
 enabled = ["generic", "npm", "docker", "go", "maven"]
 
+
+# -----------------------------------------------------------------------------
+# [limits] 全局限制
+# -----------------------------------------------------------------------------
 [limits]
+# Git 操作最大并发（clone/push/pull）。默认：4
 max_git_concurrency = 4
+
+# Webhook 投递最大并发。默认：8
 max_webhook_concurrency = 8
+
+# CI 任务最大并发。默认：1
 max_ci_concurrency = 1
+
+# 进程内存软上限（MiB），用于自我约束。默认：256
 mem_limit_mb = 256
 
+
+# -----------------------------------------------------------------------------
+# [limits.packages] 包管理限制
+# -----------------------------------------------------------------------------
 [limits.packages]
+# 包上传/下载最大并发。默认：4
 max_concurrent = 4
+
+# Generic 单文件上限（MiB）。默认：200
 generic_max_file_mb = 200
+
+# NPM tarball 上限（MiB）。默认：50
 npm_max_tarball_mb = 50
+
+# NPM 元数据上限（KiB）。默认：1024
 npm_max_metadata_kb = 1024
+
+# Docker blob 上限（MiB）。默认：500
 docker_max_blob_mb = 500
+
+# Docker manifest 上限（KiB）。默认：256
 docker_max_manifest_kb = 256
+
+# Docker 分块上传有效期（分钟）。默认：60
 docker_upload_ttl_minutes = 60
+
+# Go module zip 上限（MiB）。默认：100
 go_max_zip_mb = 100
+
+# Maven 构件上限（MiB）。默认：100
 maven_max_artifact_mb = 100
 
-[log]
-level = "info"             # debug | info | warn | error
-format = "text"            # text | json
 
-[mail]
-enabled = false
-host = "smtp.example.com"
-port = 587
-username = ""
-password = ""              # 从 GITLI_MAIL_PASSWORD 环境变量读
-from = "noreply@example.com"
-tls = true
-
+# -----------------------------------------------------------------------------
+# [git] Git 子进程
+# -----------------------------------------------------------------------------
+# 所有 Git 调用均带超时、白名单环境变量，且禁止 shell 字符串拼接。
 [git]
-bin = "/usr/bin/git"       # 留空则默认从 PATH 中查找
+# git 可执行文件路径。留空则自动从 PATH 查找。
+# 生产环境推荐显式指定，例如 "/usr/bin/git"，避免 PATH 被篡改。
+# 默认：""（自动查找）
+bin = "/usr/bin/git"
+
+# 单次 git 调用超时（秒）。默认：300
 timeout_seconds = 300
+
+# 启动时是否校验 git 版本。为 true 且版本低于 min_version 时拒绝启动。
+# 可选值：true / false。默认：true
 check_version = true
+
+# 最低 git 版本。默认："2.30"
 min_version = "2.30"
 
+
+# -----------------------------------------------------------------------------
+# [ssh] 内置 SSH 服务
+# -----------------------------------------------------------------------------
+# 是否启用与监听地址见 [server] 的 ssh_enabled / ssh_listen / ssh_external。
 [ssh]
-enabled = true             # 是否启用 SSH 传输，false 时零开销
-mode = "builtin"           # builtin | system
-address = ":2222"
+# 运行模式。可选值：builtin / system
+#   builtin：使用 gitli 内置 SSH 服务器，自动管理 Host Key 与公钥认证
+#   system：由系统 sshd + git-shell 提供服务，gitli 仅同步 authorized_keys
+# 默认：builtin
+mode = "builtin"
+
+# Host Key 路径（仅 builtin 模式）。不存在时自动生成（Ed25519）。
+# 默认："./data/ssh_host_ed25519_key"
 host_key_path = "./data/ssh_host_ed25519_key"
+
+# SSH 握手超时（秒）。默认：10
 handshake_timeout_seconds = 10
+
+# SSH 空闲超时（秒）。默认：300
 idle_timeout_seconds = 300
+
+# SSH 最大并发连接数。默认：32
 max_connections = 32
+
+
+# -----------------------------------------------------------------------------
+# [log] 日志
+# -----------------------------------------------------------------------------
+[log]
+# 日志级别。可选值：debug / info / warn / error。默认：info
+level = "info"
+
+# 日志格式。可选值：text / json。默认：text
+format = "text"
+
+
+# -----------------------------------------------------------------------------
+# [mail] 邮件通知
+# -----------------------------------------------------------------------------
+[mail]
+# 是否启用邮件。可选值：true / false。默认：false
+enabled = false
+
+# SMTP 服务器地址。默认："smtp.example.com"
+host = "smtp.example.com"
+
+# SMTP 端口。默认：587
+port = 587
+
+# SMTP 用户名。默认：""
+username = ""
+
+# SMTP 密码。强烈建议只从环境变量注入：GITLI_MAIL_PASSWORD=<password>
+# 默认：""
+password = ""
+
+# 发件人地址。默认："noreply@example.com"
+from = "noreply@example.com"
+
+# 是否使用 TLS。可选值：true / false。默认：true
+tls = true
+
+
+# -----------------------------------------------------------------------------
+# [webhook] Webhook 投递
+# -----------------------------------------------------------------------------
+[webhook]
+# 单次投递超时（秒）。默认：15
+timeout_seconds = 15
+
+# 失败最大重试次数。默认：3
+max_retries = 3
+
+# 重试间隔（秒）。默认：60
+retry_interval_seconds = 60
+
+# 是否禁止投递到内网/元数据地址（SSRF 防护）。默认：true
+block_private_addresses = true
+
+
+# -----------------------------------------------------------------------------
+# [backup] 备份
+# -----------------------------------------------------------------------------
+[backup]
+# 备份是否加密（输出 .tar.gz.enc）。可选值：true / false。默认：false
+encrypt = false
+
+# 加密密钥所在的环境变量名，恢复时校验 HMAC。
+# 默认："GITLI_BACKUP_KEY"
+encryption_key_env = "GITLI_BACKUP_KEY"
+
+# 备份输出目录。默认："./data/backups"
+backup_dir = "./data/backups"
+
+
+# -----------------------------------------------------------------------------
+# [oidc] OIDC / OAuth2 登录
+# -----------------------------------------------------------------------------
+[oidc]
+# 是否启用 OIDC 登录。可选值：true / false。默认：false
+enabled = false
+
+# 签发者（Issuer）URL，例如 "https://accounts.example.com"。
+# 留空则自动使用 discovery（{issuer}/.well-known/openid-configuration）。
+issuer = ""
+
+# 客户端 ID。默认：""
+client_id = ""
+
+# 客户端密钥。强烈建议只从环境变量注入：GITLI_OIDC_CLIENT_SECRET=<secret>
+# 默认：""
+client_secret = ""
+
+# 回调地址，需与 IdP 注册值一致。
+# 建议基于 http_external_url 生成，例如 "https://git.example.com/api/v1/auth/oidc/callback"
+redirect_url = ""
+
+# 请求的 scopes。默认：["openid", "profile", "email"]
+scopes = ["openid", "profile", "email"]
+
+
+# -----------------------------------------------------------------------------
+# [lfs] Git LFS
+# -----------------------------------------------------------------------------
+[lfs]
+# 是否启用 Git LFS。可选值：true / false。默认：true
+enabled = true
+
+# LFS 对象存储目录。留空则使用 [storage].lfs。默认："./data/lfs"
+storage_path = "./data/lfs"
+
+# 单个 LFS 文件上限（MiB）。默认：5120（5 GiB）
+max_file_mb = 5120
+
+
+# -----------------------------------------------------------------------------
+# [ci] CI
+# -----------------------------------------------------------------------------
+[ci]
+# 是否启用 CI。可选值：true / false。默认：false
+enabled = false
+
+# CI 任务最大并发。默认：1
+max_concurrency = 1
+
+# 单个任务超时（秒）。默认：3600
+runner_timeout_seconds = 3600
+
+# 单个 artifact 上限（MiB）。默认：100
+artifact_max_mb = 100
+
+
+# -----------------------------------------------------------------------------
+# [search] 搜索
+# -----------------------------------------------------------------------------
+[search]
+# 搜索引擎。可选值：grep / fts / zoekt
+#   grep： 按需执行 git grep，零索引、零额外内存，适合小中型仓库（默认）
+#   fts：  基于 SQLite FTS，支持全文索引，查询更快但需维护索引
+#   zoekt：外部索引服务，适合大规模代码搜索，资源开销较高
+# 默认：grep
+engine = "grep"

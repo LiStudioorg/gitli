@@ -104,6 +104,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Log:           log,
 		FS:            layout,
 		GitCmd:        runner,
+		External:      config.ResolveExternalURLs(cfg),
 		Auth:          authSvc,
 		Users:         users,
 		Tokens:        tokens,

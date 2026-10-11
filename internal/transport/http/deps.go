@@ -31,6 +31,8 @@ type Deps struct {
 	FS     *fsrepo.Layout
 	GitCmd *gitcmd.Runner
 
+	External config.ExternalURLs
+
 	Auth          *auth.Service
 	Users         *user.Service
 	Tokens        *pat.Service
@@ -45,3 +47,9 @@ type Deps struct {
 	Activities    *activity.Service
 	Audit         *audit.Service
 }
+
+// ExternalBase returns the externally visible HTTP base URL.
+func (d *Deps) ExternalBase() string { return d.External.HTTPBase }
+
+// HTTPSecure reports whether the external URL uses https.
+func (d *Deps) HTTPSecure() bool { return isHTTPS(d.External.HTTPBase) }

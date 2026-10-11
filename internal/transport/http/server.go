@@ -33,8 +33,8 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger(d.Log))
 	r.Use(middleware.Recover(d.Log))
-	r.Use(middleware.SecurityHeaders(isHTTPS(d.Cfg.Server.ExternalURL)))
-	r.Use(middleware.CORS(d.Cfg.Server.ExternalURL))
+	r.Use(middleware.SecurityHeaders(d.HTTPSecure()))
+	r.Use(middleware.CORS(d.ExternalBase()))
 
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/metrics", s.handleMetrics)

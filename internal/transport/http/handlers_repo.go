@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
@@ -145,37 +144,12 @@ func (s *Server) handleCloneInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	owner := urlParam(r, "owner")
-	external := strings.TrimRight(s.deps.Cfg.Server.ExternalURL, "/")
-	httpsURL := fmt.Sprintf("%s/%s/%s.git", external, owner, rp.Name)
-	sshHost := s.deps.Cfg.Server.SSH
-	if strings.HasPrefix(sshHost, ":") {
-		sshHost = "git@" + strings.TrimPrefix(external, "https://") + sshHost
-	} else if i := strings.LastIndex(sshHost, ":"); i > 0 {
-		sshHost = "git@" + hostPart(external) + sshHost[i:]
-	}
-	sshURL := fmt.Sprintf("ssh://%s/%s/%s.git", strings.TrimPrefix(sshHost, "git@"), owner, rp.Name)
-	if s.deps.Cfg.Server.SSH != "" && strings.HasPrefix(s.deps.Cfg.Server.SSH, ":") {
-		sshURL = fmt.Sprintf("git@%s:%s/%s.git", hostPart(external), owner, rp.Name)
-	}
+	ext := s.deps.External
 	writeJSON(w, http.StatusOK, map[string]any{
-		"https":                httpsURL,
-		"ssh":                  sshURL,
+		"https":                ext.HTTPSCloneURL(owner, rp.Name),
+		"ssh":                  ext.SSHCloneURL(owner, rp.Name),
 		"clone_default_branch": rp.DefaultBranch,
 	})
-}
-
-func hostPart(externalURL string) string {
-	x := externalURL
-	if i := strings.Index(x, "://"); i >= 0 {
-		x = x[i+3:]
-	}
-	if i := strings.IndexByte(x, '/'); i >= 0 {
-		x = x[:i]
-	}
-	if i := strings.IndexByte(x, ':'); i >= 0 {
-		x = x[:i]
-	}
-	return x
 }
 
 // handleArchive streams a zip/tar.gz archive or git bundle.

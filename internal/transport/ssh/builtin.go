@@ -11,11 +11,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 
 	"github.com/LiStudioorg/gitli/internal/config"
+	"github.com/LiStudioorg/gitli/internal/infra/netutil"
 )
 
 // Options configures the built-in SSH server.
@@ -85,7 +87,7 @@ func NewServer(opts Options) (*Server, error) {
 
 // ListenAndServe accepts connections until ctx is cancelled.
 func (s *Server) ListenAndServe(ctx context.Context) error {
-	if !s.cfg.SSH.Enabled {
+	if !s.cfg.Server.SSHEnabled {
 		s.log.Info("SSH server disabled by config")
 		<-ctx.Done()
 		return nil
@@ -101,23 +103,38 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 	sshCfg.AddHostKey(s.signer)
 
-	lc := net.ListenConfig{}
-	ln, err := lc.Listen(ctx, "tcp", s.cfg.SSH.Address)
-	if err != nil {
-		return fmt.Errorf("ssh: listen %s: %w", s.cfg.SSH.Address, err)
+	addrs := s.cfg.Server.SSHListen
+	if len(addrs) == 0 {
+		addrs = []string{"0.0.0.0:2222"}
 	}
-	s.log.Info("ssh server listening", "addr", s.cfg.SSH.Address, "mode", "builtin")
-	go func() {
-		<-ctx.Done()
-		_ = ln.Close()
-	}()
+	var wg sync.WaitGroup
+	for _, addr := range addrs {
+		ln, err := net.Listen(netutil.NetworkFor(addr), addr)
+		if err != nil {
+			return fmt.Errorf("ssh: listen %s: %w", addr, err)
+		}
+		family := netutil.Family(ln.Addr())
+		s.log.Info("SSH listening", "addr", ln.Addr().String(), "family", family)
+		wg.Add(1)
+		go func(l net.Listener) {
+			defer wg.Done()
+			s.serveListener(ctx, l, sshCfg)
+		}(ln)
+		go func(l net.Listener) {
+			<-ctx.Done()
+			_ = l.Close()
+		}(ln)
+	}
+	wg.Wait()
+	return nil
+}
+
+// serveListener accepts connections from a single listener.
+func (s *Server) serveListener(ctx context.Context, ln net.Listener, sshCfg *ssh.ServerConfig) {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			if ctx.Err() != nil {
-				return nil
-			}
-			return err
+			return
 		}
 		select {
 		case s.sem <- struct{}{}:

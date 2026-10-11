@@ -76,7 +76,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   isHTTPS(s.deps.Cfg.Server.ExternalURL),
+		Secure:   s.deps.HTTPSecure(),
 		MaxAge:   30 * 24 * 3600,
 	})
 	writeJSON(w, http.StatusOK, map[string]any{"id": res.User.ID, "username": res.User.Username})
