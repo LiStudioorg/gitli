@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: AGPL-3.0
+name: CI
+
+# 只做测试与验证：不发布、不推送镜像、不上传构建产物（coverage 除外）。
+# 触发条件与 Release 互斥：分支/PR 触发，显式排除 tag。
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags-ignore: ['**']
+  pull_request:
+    branches: [main]
+
+# 与 Release 使用不同的 concurrency group，避免互相阻塞。
+concurrency: ci-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+
+      - name: Cache go build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go', 'go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./... -race -coverprofile=coverage.out
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+          retention-days: 7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build frontend
+        run: |
+          cd web
+          npm ci
+          npm run build
+
+      - name: Build (verify embed)
+        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o gitli .
+
+      - name: Cross-compile check (linux/arm64)
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o /dev/null .
+
+      - name: Verify static
+        run: |
+          file gitli
+          if ldd gitli 2>&1 | grep -q "not a dynamic executable\|statically linked\|不是动态可执行文件"; then
+            echo "static OK"
+          else
+            echo "binary is dynamic"; exit 1
+          fi
+
+      - name: golangci-lint
+        if: hashFiles('.golangci.yml') != ''
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest

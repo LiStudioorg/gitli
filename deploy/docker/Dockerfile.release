@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0
+# 供 GoReleaser 使用的镜像定义：直接复用预构建的静态二进制，不重新编译。
+# gitli 为纯静态二进制（CGO_ENABLED=0），无需 glibc。
+FROM alpine:3.19
+RUN apk add --no-cache git openssh ca-certificates \
+    && adduser -D -H -s /sbin/nologin gitli
+WORKDIR /var/lib/gitli
+COPY gitli /usr/local/bin/gitli
+EXPOSE 8080 2222
+VOLUME ["/var/lib/gitli"]
+USER gitli
+ENTRYPOINT ["/usr/local/bin/gitli"]
+CMD ["serve", "--config", "/etc/gitli/config.toml"]

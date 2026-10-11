@@ -1,0 +1,151 @@
+# SPDX-License-Identifier: AGPL-3.0
+name: Release
+
+# 只做全量构建、打包、发布；不跑单元测试（测试交给 CI）。
+# 触发条件与 CI 互斥：仅 tag 触发。
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0)'
+        required: true
+
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  GO_VERSION: '1.22.x'
+  NODE_VERSION: '20'
+
+jobs:
+  frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build
+        run: |
+          cd web
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 1
+
+  build:
+    name: Build shard ${{ matrix.shard }}
+    needs: frontend
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1
+            targets: 'linux/amd64,linux/arm64,linux/armv6,linux/armv7'
+          - shard: 2
+            targets: 'linux/386,linux/riscv64,linux/loong64,linux/ppc64le,linux/s390x,linux/mips,linux/mipsle,linux/mips64,linux/mips64le,linux/ppc64'
+          - shard: 3
+            targets: 'darwin/amd64,darwin/arm64,windows/amd64,windows/arm64,windows/386'
+          - shard: 4
+            targets: 'freebsd/386,freebsd/amd64,freebsd/arm,freebsd/arm64,openbsd/386,openbsd/amd64,openbsd/arm,openbsd/arm64,openbsd/ppc64,openbsd/riscv64,netbsd/386,netbsd/amd64,netbsd/arm,netbsd/arm64'
+          - shard: 5
+            targets: 'android/386,android/amd64,android/arm,android/arm64,aix/ppc64,dragonfly/amd64,illumos/amd64,solaris/amd64,plan9/386,plan9/amd64,plan9/arm,js/wasm,wasip1/wasm'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Cache go build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go', 'go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+      - name: Build targets
+        env:
+          VERSION: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          DATE="$DATE" bash scripts/build-targets.sh "${{ matrix.targets }}" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.shard }}
+          path: dist/*
+          retention-days: 1
+
+  publish:
+    name: Package and release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Cache go build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go', 'go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: binaries-*
+          merge-multiple: true
+      - name: Prepare release binaries
+        run: |
+          mkdir -p release
+          for f in dist/gitli-*; do
+            case "$f" in
+              *.sha256) continue ;;
+            esac
+            base="$(basename "$f")"
+            cp "$f" "release/${base}_${GITHUB_REF_NAME#v}"
+          done
+          ls -1 release | head
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run GoReleaser (package only)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean --skip=build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
