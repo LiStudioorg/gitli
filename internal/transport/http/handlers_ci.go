@@ -6,6 +6,7 @@ import (
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/service/ci"
+	"github.com/LiStudioorg/gitli/internal/service/rbac"
 )
 
 type createPipelineReq struct {
@@ -51,12 +52,22 @@ func (s *Server) handleListPipelines(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListPipelineJobs(w http.ResponseWriter, r *http.Request) {
-	if requireUser(w, r) == nil {
+	u := requireUser(w, r)
+	if u == nil {
 		return
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid pipeline id")
+		return
+	}
+	repoID, err := s.deps.CI.PipelineRepoID(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "pipeline not found")
+		return
+	}
+	if !s.deps.RBAC.Check(r.Context(), u.ID, u.IsAdmin, rbac.Requirement{Resource: "actions", Action: "read", RepoID: repoID}) {
+		writeError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 	jobs, err := s.deps.CI.ListJobs(r.Context(), id)

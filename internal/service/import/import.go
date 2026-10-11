@@ -5,6 +5,8 @@ package importer
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
 	"github.com/LiStudioorg/gitli/internal/service/store"
@@ -60,6 +62,9 @@ func (s *Service) Create(ctx context.Context, repoID int64, source, sourceURL st
 	}
 	if sourceURL == "" {
 		return nil, fmt.Errorf("source url is required")
+	}
+	if err := validateSourceURL(sourceURL); err != nil {
+		return nil, err
 	}
 	q := s.st.Rebind(`INSERT INTO repo_imports (repo_id, source, source_url, status, message) VALUES (?, ?, ?, ?, ?)`)
 	res, err := s.st.DB.ExecContext(ctx, q, repoID, source, sourceURL, StatusPending, "")
@@ -135,6 +140,26 @@ func (s *Service) setStatus(ctx context.Context, jobID int64, status, message st
 	q := s.st.Rebind(`UPDATE repo_imports SET status = ?, message = ? WHERE id = ?`)
 	if _, err := s.st.DB.ExecContext(ctx, q, status, message, jobID); err != nil {
 		return fmt.Errorf("update import status: %w", err)
+	}
+	return nil
+}
+
+// validateSourceURL rejects import URLs with unsupported schemes or no host.
+func validateSourceURL(raw string) error {
+	if strings.HasPrefix(raw, "git@") {
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid source url: %w", err)
+	}
+	switch u.Scheme {
+	case "http", "https", "git", "ssh":
+	default:
+		return fmt.Errorf("unsupported source url scheme %q", u.Scheme)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("source url missing host")
 	}
 	return nil
 }

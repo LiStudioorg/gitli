@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
@@ -46,6 +48,9 @@ func (s *Service) Create(ctx context.Context, repoID int64, remoteURL, direction
 	}
 	if remoteURL == "" {
 		return nil, fmt.Errorf("remote url is required")
+	}
+	if err := validateRemoteURL(remoteURL); err != nil {
+		return nil, err
 	}
 	if intervalMinutes <= 0 {
 		intervalMinutes = 60
@@ -122,6 +127,27 @@ func (s *Service) Sync(ctx context.Context, mirrorID int64, localPath string) er
 	uq := s.st.Rebind(`UPDATE repo_mirrors SET last_synced_at = ? WHERE id = ?`)
 	if _, err := s.st.DB.ExecContext(ctx, uq, time.Now().UTC(), m.ID); err != nil {
 		return fmt.Errorf("update last_synced_at: %w", err)
+	}
+	return nil
+}
+
+// validateRemoteURL rejects remote URLs with unsupported schemes or no host.
+// Private hosts are permitted (internal mirrors are a legitimate use case).
+func validateRemoteURL(raw string) error {
+	if strings.HasPrefix(raw, "git@") || strings.HasPrefix(raw, "ssh://") {
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid remote url: %w", err)
+	}
+	switch u.Scheme {
+	case "http", "https", "git", "ssh":
+	default:
+		return fmt.Errorf("unsupported remote url scheme %q", u.Scheme)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("remote url missing host")
 	}
 	return nil
 }

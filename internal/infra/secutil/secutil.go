@@ -5,6 +5,8 @@ package secutil
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,6 +32,67 @@ func ValidateName(kind, name string) error {
 	}
 	if !nameRe.MatchString(name) {
 		return fmt.Errorf("%s: name %q does not match allowed pattern", kind, name)
+	}
+	return nil
+}
+
+// ValidateRef rejects git revision arguments that could be interpreted as
+// options (leading '-') or contain control characters. This prevents argument
+// injection such as `--output=/path` reaching git as a positional revision.
+func ValidateRef(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("git: empty ref")
+	}
+	if strings.HasPrefix(ref, "-") {
+		return fmt.Errorf("git: ref may not start with '-'")
+	}
+	if strings.ContainsAny(ref, "\x00\n\r") {
+		return fmt.Errorf("git: ref contains control characters")
+	}
+	return nil
+}
+
+// ValidateSubPath rejects option-like or traversal path arguments passed to git.
+func ValidateSubPath(p string) error {
+	if p == "" {
+		return fmt.Errorf("git: empty path")
+	}
+	if strings.HasPrefix(p, "-") {
+		return fmt.Errorf("git: path may not start with '-'")
+	}
+	if strings.Contains(p, "..") || strings.ContainsAny(p, "\x00\n\r") {
+		return fmt.Errorf("git: path contains forbidden characters")
+	}
+	return nil
+}
+
+// ValidateOutboundURL rejects non-http(s) schemes and, when blockPrivate is
+// set, hosts that resolve to private, loopback or link-local addresses.
+// It is used to mitigate SSRF for webhooks, mirrors and imports.
+func ValidateOutboundURL(raw string, blockPrivate bool) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("secutil: invalid url: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("secutil: unsupported scheme %q", u.Scheme)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("secutil: missing host")
+	}
+	if !blockPrivate {
+		return nil
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		// Unresolvable hosts are allowed; the connection attempt will fail.
+		return nil
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsPrivate() || ip.IsUnspecified() {
+			return fmt.Errorf("secutil: refusing private address %s", ip)
+		}
 	}
 	return nil
 }

@@ -61,11 +61,17 @@ func (s *Service) DefaultBranch(ctx context.Context, path string) (string, error
 
 // Tree lists entries at a path on a ref.
 func (s *Service) Tree(ctx context.Context, path, ref, subPath string) ([]TreeEntry, error) {
+	if err := validateRef(ref); err != nil {
+		return nil, err
+	}
 	target := ref
 	if subPath != "" {
+		if err := validateSubPath(subPath); err != nil {
+			return nil, err
+		}
 		target = ref + ":" + subPath
 	}
-	out, err := s.runner.Run(ctx, path, "ls-tree", "--long", "-z", target)
+	out, err := s.runner.Run(ctx, path, "ls-tree", "--long", "-z", target, "--")
 	if err != nil {
 		return nil, err
 	}
@@ -74,16 +80,25 @@ func (s *Service) Tree(ctx context.Context, path, ref, subPath string) ([]TreeEn
 
 // Blob returns the raw bytes of a file at ref:subPath.
 func (s *Service) Blob(ctx context.Context, path, ref, subPath string) ([]byte, error) {
+	if err := validateRef(ref); err != nil {
+		return nil, err
+	}
+	if err := validateSubPath(subPath); err != nil {
+		return nil, err
+	}
 	return s.runner.RunStream(ctx, path, "show", ref+":"+subPath)
 }
 
 // Commits returns up to limit commits reachable from ref.
 func (s *Service) Commits(ctx context.Context, path, ref string, limit int) ([]Commit, error) {
+	if err := validateRef(ref); err != nil {
+		return nil, err
+	}
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
 	format := "%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%P%x1f%s%x1e"
-	out, err := s.runner.Run(ctx, path, "log", fmt.Sprintf("-%d", limit), "--format="+format, ref)
+	out, err := s.runner.Run(ctx, path, "log", fmt.Sprintf("-%d", limit), "--format="+format, ref, "--")
 	if err != nil {
 		return nil, err
 	}
@@ -92,11 +107,23 @@ func (s *Service) Commits(ctx context.Context, path, ref string, limit int) ([]C
 
 // Diff returns the unified diff between base and head refs.
 func (s *Service) Diff(ctx context.Context, path, base, head string) (string, error) {
-	return s.runner.Run(ctx, path, "diff", "--no-color", base, head)
+	if err := validateRef(base); err != nil {
+		return "", err
+	}
+	if err := validateRef(head); err != nil {
+		return "", err
+	}
+	return s.runner.Run(ctx, path, "diff", "--no-color", base, head, "--")
 }
 
 // Blame returns porcelain blame for a file.
 func (s *Service) Blame(ctx context.Context, path, ref, subPath string) (string, error) {
+	if err := validateRef(ref); err != nil {
+		return "", err
+	}
+	if err := validateSubPath(subPath); err != nil {
+		return "", err
+	}
 	return s.runner.Run(ctx, path, "blame", "--porcelain", ref, "--", subPath)
 }
 

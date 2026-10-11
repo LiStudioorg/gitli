@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 )
 
 // DefaultReadLimit caps how many bytes ReadFile will return.
@@ -50,11 +51,17 @@ func (s *Service) ListDir(ctx context.Context, repoPath, ref, dir string) ([]Fil
 	if ref == "" {
 		ref = "HEAD"
 	}
+	if err := secutil.ValidateRef(ref); err != nil {
+		return nil, err
+	}
 	spec := ref
 	if dir != "" {
+		if err := secutil.ValidateSubPath(strings.Trim(dir, "/")); err != nil {
+			return nil, err
+		}
 		spec = ref + ":" + strings.Trim(dir, "/")
 	}
-	out, err := s.runner.Run(ctx, repoPath, "ls-tree", "-l", "--full-tree", spec)
+	out, err := s.runner.Run(ctx, repoPath, "ls-tree", "-l", "--full-tree", spec, "--")
 	if err != nil {
 		return nil, fmt.Errorf("ide: ls-tree: %w", err)
 	}
@@ -115,6 +122,12 @@ func (s *Service) ReadFile(ctx context.Context, repoPath, ref, path string, maxB
 	if ref == "" {
 		ref = "HEAD"
 	}
+	if err := secutil.ValidateRef(ref); err != nil {
+		return nil, err
+	}
+	if err := secutil.ValidateSubPath(strings.Trim(path, "/")); err != nil {
+		return nil, err
+	}
 	if maxBytes <= 0 {
 		maxBytes = DefaultReadLimit
 	}
@@ -142,11 +155,14 @@ func (s *Service) Symbols(ctx context.Context, repoPath, ref, query string, limi
 	if ref == "" {
 		ref = "HEAD"
 	}
+	if err := secutil.ValidateRef(ref); err != nil {
+		return nil, err
+	}
 	if limit <= 0 {
 		limit = DefaultSymbolLimit
 	}
 	pattern := `(func|class|interface|type|struct|const|var|def) +.*` + regexp.QuoteMeta(query)
-	out, err := s.runner.Run(ctx, repoPath, "grep", "-n", "-I", "-E", "-e", pattern, ref)
+	out, err := s.runner.Run(ctx, repoPath, "grep", "-n", "-I", "-E", "-e", pattern, ref, "--")
 	if err != nil {
 		if isNoMatch(err) {
 			return nil, nil

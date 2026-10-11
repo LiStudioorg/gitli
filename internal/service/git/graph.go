@@ -27,8 +27,11 @@ func (s *Service) Graph(ctx context.Context, path, ref string, limit int) ([]Gra
 	if ref == "" {
 		ref = "HEAD"
 	}
+	if err := validateRef(ref); err != nil {
+		return nil, err
+	}
 	const fs = "%H%x1f%h%x1f%an%x1f%aI%x1f%P%x1f%D%x1f%s%x1e"
-	out, err := s.runner.Run(ctx, path, "log", fmt.Sprintf("-%d", limit), "--format="+fs, ref)
+	out, err := s.runner.Run(ctx, path, "log", fmt.Sprintf("-%d", limit), "--format="+fs, ref, "--")
 	if err != nil {
 		return nil, err
 	}

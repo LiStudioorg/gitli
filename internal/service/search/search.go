@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 )
 
 // DefaultLimit caps the number of matches returned when the caller passes a
@@ -45,7 +46,10 @@ func (s *Service) Grep(ctx context.Context, repoPath, query, ref string, limit i
 	if ref == "" {
 		ref = "HEAD"
 	}
-	out, err := s.runner.Run(ctx, repoPath, "grep", "-n", "-I", "-e", query, ref)
+	if err := secutil.ValidateRef(ref); err != nil {
+		return nil, err
+	}
+	out, err := s.runner.Run(ctx, repoPath, "grep", "-n", "-I", "-e", query, ref, "--")
 	if err != nil {
 		if isNoMatch(err) {
 			return nil, nil
