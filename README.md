@@ -11,6 +11,20 @@
 
 ---
 
+## CI/CD 状态
+
+仓库包含两个**触发条件互斥**的 GitHub Actions 工作流（在仓库 Actions 页面按名称查看运行状态）：
+
+| 工作流 | 文件 | 触发 | 职责 |
+| --- | --- | --- | --- |
+| **CI** | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | 分支 push（`main`）/ PR / 手动，显式排除 tag | gofmt、go vet、go test(-race)、前端构建、静态编译与交叉编译验证、golangci-lint |
+| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | 5 分片并行构建 46 个平台目标 + GoReleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 推送多架构镜像 `ghcr.io` + 创建 GitHub Release |
+
+> 在 GitHub 页面点击 **Actions** 标签页可查看两者的实时状态徽章；本文档不内联易失效的徽章 URL。
+> 工作流细节见 [`docs/CI.md`](./docs/CI.md)，发布步骤见 [`docs/RELEASE.md`](./docs/RELEASE.md)。
+
+---
+
 ## 功能特性
 
 | 模块 | 能力 |
@@ -31,12 +45,14 @@
 
 gitli 为纯 Go 实现（SQLite 使用 `modernc.org/sqlite`，无 CGO），支持广泛的平台与架构。
 
-| 平台 | 架构 | 说明 |
-| --- | --- | --- |
-| Linux | amd64 / arm64 / armv7 | 主推部署平台 |
-| macOS | amd64 / arm64 | 开发与自托管 |
-| Windows | amd64 / arm64 | 作为 Windows Service 运行 |
-| Android (Termux) | arm64 / armv7 | 见 `deploy/termux/README.md` |
+| 平台 | amd64 | arm64 | armv7 | 说明 |
+| --- | :---: | :---: | :---: | --- |
+| Linux | ✅ | ✅ | ✅ | 主推部署平台（另含 386 / riscv64 / loong64 / ppc64le / s390x / mips 等） |
+| macOS (darwin) | ✅ | ✅ | — | 开发与自托管 |
+| Windows | ✅ | ✅ | — | 可作为 Windows Service 运行（含 386） |
+| Android (Termux) | ✅ | ✅ | ✅ | 见 `deploy/termux/README.md` |
+
+> 完整目标矩阵另含 BSD 家族（FreeBSD / OpenBSD / NetBSD / DragonFly）、Solaris / illumos / AIX、plan9 与 `js/wasm`、`wasip1/wasm`，共 **46 个平台/架构目标**，由发布流水线分片构建。
 
 交叉编译示例：
 
@@ -46,7 +62,7 @@ GOOS=darwin  GOARCH=arm64 go build -o gitli-darwin-arm64 .
 GOOS=windows GOARCH=amd64 go build -o gitli.exe .
 ```
 
-发布版本由 CI 构建矩阵产出各平台二进制及 SHA-256 校验和，见 `.github/workflows/build.yml`。
+发布版本由 `.github/workflows/cd.yml` 的构建矩阵产出各平台二进制及 SHA-256 校验和，详见 [`docs/CI.md`](./docs/CI.md)。
 
 ---
 
@@ -406,6 +422,14 @@ cd web && npm run build    # 前端构建成功
 
 详见 [`AGENTS.md`](./AGENTS.md)。核心要点：所有 `.go` 文件首行加 `// SPDX-License-Identifier: AGPL-3.0`；严格单向依赖；业务层只依赖 `database/sql`。
 
+### 更多文档
+
+- [架构（ARCHITECTURE）](./docs/ARCHITECTURE.md)
+- [配置参考](./docs/configuration.md)
+- [安全模型（SECURITY）](./docs/SECURITY.md)
+- [CI/CD 流水线](./docs/CI.md)
+- [发布流程（RELEASE）](./docs/RELEASE.md)
+
 ---
 
 ## CI 与发布
@@ -415,7 +439,7 @@ cd web && npm run build    # 前端构建成功
 | 工作流 | 触发 | 用途 |
 | --- | --- | --- |
 | `ci.yml`（CI） | 分支 push（`main`）/ PR，显式排除 tag | gofmt、go vet、go test、前端构建、静态编译验证、交叉编译验证、golangci-lint |
-| `release.yml`（Release） | 仅 `v*` tag | 前端构建 + 5 个分片并行全量构建 46 个平台目标 + goreleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
+| `cd.yml`（Release） | 仅 `v*` tag | 前端构建 + 5 个分片并行全量构建 46 个平台目标 + goreleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
 
 **提交代码或开 PR** 时 CI 自动跑测试与验证（约 2 分钟内）；**打 tag（如 `v1.0.0`）** 时 Release 自动全量构建并发布。
 

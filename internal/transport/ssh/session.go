@@ -26,6 +26,11 @@ func (s *Server) handleSession(ctx context.Context, username string, ch ssh.Chan
 			if !ok {
 				return
 			}
+			// Only "exec" is ever honored. Every other request type — including
+			// interactive shells, PTYs, subsystems (sftp), env, agent/X11
+			// forwarding and port forwarding — is rejected outright. We never
+			// allocate a shell, never enable forwarding and never run anything
+			// for these requests.
 			switch req.Type {
 			case "exec":
 				cmd, ok := decodeExecPayload(req.Payload)
@@ -36,7 +41,15 @@ func (s *Server) handleSession(ctx context.Context, username string, ch ssh.Chan
 				_ = req.Reply(true, nil)
 				s.runCommand(ctx, username, cmd, ch)
 				return
+			case "shell", "pty-req", "window-change":
+				// A rejected shell/pty still leaves the session open: keep the
+				// channel alive and continue waiting rather than acting on it.
+				_ = req.Reply(false, nil)
+				continue
 			default:
+				// subsystem (sftp), env, signal, x11-req,
+				// auth-agent-req@openssh.com, exec-less forwards, etc.
+				s.logRejectedRequest(req.Type)
 				_ = req.Reply(false, nil)
 			}
 		case <-timer.C:
@@ -44,6 +57,12 @@ func (s *Server) handleSession(ctx context.Context, username string, ch ssh.Chan
 		case <-ctx.Done():
 			return
 		}
+	}
+}
+
+func (s *Server) logRejectedRequest(reqType string) {
+	if s.log != nil {
+		s.log.Debug("ssh: rejected session request", "type", reqType)
 	}
 }
 

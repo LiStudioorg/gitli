@@ -97,10 +97,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 		<-ctx.Done()
 		return nil
 	}
-	sshCfg := &ssh.ServerConfig{
-		PublicKeyCallback: s.authorize,
-		ServerVersion:     "SSH-2.0-gitli",
-	}
+	sshCfg := s.serverConfig()
 	sshCfg.AddHostKey(s.signer)
 
 	addrs := s.cfg.Server.SSHListen
@@ -127,6 +124,21 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+// serverConfig builds the hardened ssh.ServerConfig used for every connection.
+//
+// Only public-key authentication is permitted (NoClientAuth=false) and the
+// number of authentication attempts is bounded. Port/agent/X11 forwarding are
+// intentionally never enabled: the struct exposes no option to turn them on and
+// the connection handler rejects any non-session channel.
+func (s *Server) serverConfig() *ssh.ServerConfig {
+	return &ssh.ServerConfig{
+		PublicKeyCallback: s.authorize,
+		ServerVersion:     "SSH-2.0-gitli",
+		NoClientAuth:      false,
+		MaxAuthTries:      6,
+	}
 }
 
 // serveListener accepts connections from a single listener.
@@ -219,6 +231,17 @@ func loadOrCreateHostKey(path string) (ssh.Signer, error) {
 	return signer, nil
 }
 
+// IsAllowedVerb reports whether verb is a git transport command that the
+// built-in SSH server is willing to dispatch.
+func IsAllowedVerb(verb string) bool {
+	switch verb {
+	case "git-upload-pack", "git-receive-pack", "git-upload-archive":
+		return true
+	default:
+		return false
+	}
+}
+
 // ParseCommand extracts the git command from an SSH exec request, rejecting
 // anything that is not a well-formed git-{upload,receive}-pack invocation.
 func ParseCommand(cmd string) (string, bool) {
@@ -226,15 +249,34 @@ func ParseCommand(cmd string) (string, bool) {
 	if cmd == "" {
 		return "", false
 	}
+	// Reject embedded NUL bytes anywhere in the request.
+	if strings.ContainsRune(cmd, '\x00') {
+		return "", false
+	}
 	for _, verb := range []string{"git-upload-pack", "git-receive-pack", "git-upload-archive"} {
-		if strings.HasPrefix(cmd, verb+" ") {
-			arg := strings.Trim(strings.TrimPrefix(cmd, verb+" "), "'\"")
-			arg = strings.TrimPrefix(arg, "/")
-			if strings.ContainsAny(arg, "\x00") {
+		if !IsAllowedVerb(verb) {
+			continue
+		}
+		prefix := verb + " "
+		if !strings.HasPrefix(cmd, prefix) {
+			continue
+		}
+		arg := strings.Trim(strings.TrimPrefix(cmd, prefix), "'\"")
+		// Shell metacharacters must never survive into the argument.
+		if strings.ContainsAny(arg, ";&|`$<>\n\r") {
+			return "", false
+		}
+		arg = strings.TrimPrefix(arg, "/")
+		// Reject NUL bytes and path traversal segments.
+		if strings.ContainsAny(arg, "\x00") {
+			return "", false
+		}
+		for _, seg := range strings.Split(arg, "/") {
+			if seg == ".." {
 				return "", false
 			}
-			return verb + " " + arg, true
 		}
+		return verb + " " + arg, true
 	}
 	return "", false
 }
