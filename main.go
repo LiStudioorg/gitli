@@ -39,6 +39,8 @@ func run(args []string) error {
 		info := version.Get()
 		fmt.Printf("gitli %s (commit %s, built %s)\n", info.Version, info.Commit, info.Date)
 		return nil
+	case "hook":
+		return runHookCommand(rest)
 	}
 
 	if err := fs.Parse(rest); err != nil {
@@ -89,6 +91,33 @@ func runMigrate(ctx context.Context, cfg *config.Config) error {
 
 func runPlaceholder(name string) error {
 	return fmt.Errorf("subcommand %q is not implemented yet", name)
+}
+
+// runHookCommand executes a server-side git hook. Usage:
+//
+//	gitli hook <name> --owner <owner> --repo <repo> [--config path]
+func runHookCommand(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("hook: missing hook name")
+	}
+	name := args[0]
+	fs := flag.NewFlagSet("hook", flag.ContinueOnError)
+	configPath := fs.String("config", "config.toml", "path to config.toml")
+	owner := fs.String("owner", "", "repository owner")
+	repo := fs.String("repo", "", "repository name")
+	if err := fs.Parse(args[1:]); err != nil {
+		return err
+	}
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		return err
+	}
+	a, err := app.New(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = a.Close() }()
+	return a.RunHook(context.Background(), name, *owner, *repo)
 }
 
 func usage() {

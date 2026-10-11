@@ -164,7 +164,7 @@ func (s *Server) authorize(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permi
 }
 
 func (s *Server) handleConn(ctx context.Context, nConn net.Conn, sshCfg *ssh.ServerConfig) {
-	defer nConn.Close()
+	defer func() { _ = nConn.Close() }()
 	handshakeTimeout := time.Duration(s.cfg.SSH.HandshakeTimeoutSeconds) * time.Second
 	if handshakeTimeout <= 0 {
 		handshakeTimeout = 10 * time.Second
@@ -175,7 +175,7 @@ func (s *Server) handleConn(ctx context.Context, nConn net.Conn, sshCfg *ssh.Ser
 		s.log.Debug("ssh: handshake failed", "error", err)
 		return
 	}
-	defer sconn.Close()
+	defer func() { _ = sconn.Close() }()
 	_ = nConn.SetDeadline(time.Time{})
 	go ssh.DiscardRequests(reqs)
 

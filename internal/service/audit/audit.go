@@ -46,7 +46,7 @@ func (s *Service) List(ctx context.Context, limit, offset int) ([]*domain.AuditL
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.AuditLog
 	for rows.Next() {
 		var a domain.AuditLog

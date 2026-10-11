@@ -105,7 +105,7 @@ func (s *Service) List(ctx context.Context, userID int64) ([]*domain.AccessToken
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.AccessToken
 	for rows.Next() {
 		var t domain.AccessToken
@@ -160,7 +160,7 @@ func (s *Service) loadScopes(ctx context.Context, t *domain.AccessToken) error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var sc string
 		if err := rows.Scan(&sc); err != nil {
@@ -178,7 +178,7 @@ func (s *Service) loadScopes(ctx context.Context, t *domain.AccessToken) error {
 	if err != nil {
 		return err
 	}
-	defer grows.Close()
+	defer func() { _ = grows.Close() }()
 	for grows.Next() {
 		var g domain.TokenRepoGrant
 		if err := grows.Scan(&g.RepoID, &g.Permission); err != nil {

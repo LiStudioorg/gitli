@@ -36,7 +36,7 @@ func (s *Service) ListSSHKeys(ctx context.Context, userID int64) ([]*domain.SSHK
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.SSHKey
 	for rows.Next() {
 		var k domain.SSHKey

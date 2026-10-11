@@ -39,7 +39,7 @@ func (s *Service) Languages(ctx context.Context, repoID int64) ([]LanguageStat, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var raw []LanguageStat
 	var sum int64
 	for rows.Next() {

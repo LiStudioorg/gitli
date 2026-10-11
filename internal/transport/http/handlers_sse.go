@@ -23,7 +23,7 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
 
-	fmt.Fprintf(w, "event: ready\ndata: {\"user_id\":%d}\n\n", u.ID)
+	_, _ = fmt.Fprintf(w, "event: ready\ndata: {\"user_id\":%d}\n\n", u.ID)
 	flusher.Flush()
 
 	ticker := time.NewTicker(25 * time.Second)

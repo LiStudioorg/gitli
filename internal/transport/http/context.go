@@ -4,23 +4,15 @@ package http
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
+	"github.com/LiStudioorg/gitli/internal/service/auth"
 )
 
-type ctxKey int
-
-const (
-	ctxKeyUser ctxKey = iota
-	ctxKeySessionToken
-	ctxKeyToken
-)
-
-// userFrom returns the authenticated user, or nil.
+// userFrom returns the authenticated user, or nil. It reads the value stored
+// by auth.AuthenticateMiddleware so both layers share the same context key.
 func userFrom(ctx context.Context) *domain.User {
-	u, _ := ctx.Value(ctxKeyUser).(*domain.User)
-	return u
+	return auth.UserFrom(ctx)
 }
 
 // requireUser writes 401 and returns nil when unauthenticated.
@@ -31,16 +23,4 @@ func requireUser(w http.ResponseWriter, r *http.Request) *domain.User {
 		return nil
 	}
 	return u
-}
-
-// bearerToken extracts a bearer token or the session cookie value.
-func bearerToken(r *http.Request) string {
-	h := r.Header.Get("Authorization")
-	if strings.HasPrefix(h, "Bearer ") {
-		return strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
-	}
-	if c, err := r.Cookie("gitli_session"); err == nil {
-		return c.Value
-	}
-	return ""
 }

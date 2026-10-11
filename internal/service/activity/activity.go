@@ -37,7 +37,7 @@ func (s *Service) ListByActor(ctx context.Context, actorID int64, limit int) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return scan(rows)
 }
 
@@ -51,7 +51,7 @@ func (s *Service) ListByRepo(ctx context.Context, repoID int64, limit int) ([]*d
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return scan(rows)
 }
 

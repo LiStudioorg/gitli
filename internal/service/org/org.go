@@ -86,7 +86,7 @@ func (s *Service) TeamPermission(ctx context.Context, orgID, userID int64) (doma
 	if err != nil {
 		return domain.PermNone, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	best := domain.PermNone
 	for rows.Next() {
 		var perm string

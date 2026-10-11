@@ -72,7 +72,7 @@ func (s *Service) list(ctx context.Context, column string, id int64) ([]*domain.
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Comment
 	for rows.Next() {
 		var c domain.Comment

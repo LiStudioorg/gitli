@@ -97,6 +97,9 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 
 	orgs := org.New(st)
 	repos := repo.New(st, layout, runner)
+	if exe, err := os.Executable(); err == nil {
+		repos.SetGitliBinary(exe)
+	}
 
 	deps := &httptransport.Deps{
 		Cfg:           cfg,

@@ -114,10 +114,6 @@ func (a *App) startHTTP(ctx context.Context, handler http.Handler) ([]*http.Serv
 	return servers, nil
 }
 
-func ipFamily(addr net.Addr) string {
-	return netutil.Family(addr)
-}
-
 // Close releases the database handle.
 func (a *App) Close() error {
 	if a.DB != nil {

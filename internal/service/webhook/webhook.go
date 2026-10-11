@@ -63,7 +63,7 @@ func (s *Service) ListForRepo(ctx context.Context, repoID int64) ([]*domain.Webh
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Webhook
 	for rows.Next() {
 		var w domain.Webhook
@@ -102,7 +102,7 @@ func (s *Service) Deliver(ctx context.Context, w *domain.Webhook, event string, 
 		_ = s.record(ctx, delivery)
 		return delivery, fmt.Errorf("webhook: deliver: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, s.maxBody))
 	delivery.StatusCode = resp.StatusCode
 	delivery.ResponseBody = string(respBody)

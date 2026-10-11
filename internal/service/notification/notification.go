@@ -49,7 +49,7 @@ func (s *Service) List(ctx context.Context, userID int64, unreadOnly bool, limit
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Notification
 	for rows.Next() {
 		var n domain.Notification

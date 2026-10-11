@@ -24,14 +24,22 @@ var ErrExists = errors.New("repo: already exists")
 
 // Service manages repositories.
 type Service struct {
-	st  *store.Store
-	fs  *fsrepo.Layout
-	git *gitcmd.Runner
+	st       *store.Store
+	fs       *fsrepo.Layout
+	git      *gitcmd.Runner
+	gitliBin string
 }
 
 // New builds a repo Service.
 func New(st *store.Store, layout *fsrepo.Layout, runner *gitcmd.Runner) *Service {
-	return &Service{st: st, fs: layout, git: runner}
+	return &Service{st: st, fs: layout, git: runner, gitliBin: "gitli"}
+}
+
+// SetGitliBinary sets the absolute path to the gitli executable used in hooks.
+func (s *Service) SetGitliBinary(path string) {
+	if path != "" {
+		s.gitliBin = path
+	}
 }
 
 // CreateParams describes repository creation.
@@ -80,6 +88,9 @@ func (s *Service) Create(ctx context.Context, p CreateParams) (*domain.Repo, err
 	if err := s.git.Init(ctx, path, p.DefaultBranch); err != nil {
 		return nil, err
 	}
+	if err := s.fs.InstallHooks(path, owner, p.Name, s.gitliBin); err != nil {
+		return nil, err
+	}
 	return s.ByID(ctx, id)
 }
 
@@ -105,7 +116,7 @@ func (s *Service) ListByOwner(ctx context.Context, ownerID int64, limit, offset 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return s.scanMany(rows)
 }
 
@@ -172,7 +183,7 @@ func (s *Service) ListBranchProtections(ctx context.Context, repoID int64) ([]*d
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.BranchProtection
 	for rows.Next() {
 		var b domain.BranchProtection
@@ -189,6 +200,25 @@ func (s *Service) AddTagProtection(ctx context.Context, repoID int64, pattern st
 	q := s.st.Rebind(`INSERT INTO tag_protections (repo_id, pattern) VALUES (?, ?)`)
 	_, err := s.st.DB.ExecContext(ctx, q, repoID, pattern)
 	return err
+}
+
+// ListTagProtectionPatterns returns the protected tag patterns for a repo.
+func (s *Service) ListTagProtectionPatterns(ctx context.Context, repoID int64) ([]string, error) {
+	q := s.st.Rebind(`SELECT pattern FROM tag_protections WHERE repo_id = ?`)
+	rows, err := s.st.DB.QueryContext(ctx, q, repoID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 
 func (s *Service) ownerSlug(ctx context.Context, ownerID int64, ownerType domain.OwnerType, orgID *int64) string {

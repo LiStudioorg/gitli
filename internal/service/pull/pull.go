@@ -95,7 +95,7 @@ func (s *Service) List(ctx context.Context, repoID int64, state string, limit, o
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Pull
 	for rows.Next() {
 		var p domain.Pull
@@ -138,7 +138,7 @@ func (s *Service) ListReviews(ctx context.Context, pullID int64) ([]*domain.Revi
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Review
 	for rows.Next() {
 		var r domain.Review

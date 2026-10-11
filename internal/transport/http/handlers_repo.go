@@ -170,7 +170,7 @@ func (s *Server) handleArchive(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	base := fmt.Sprintf("%s-%s", rp.Name, refOrDefault(ref, rp.DefaultBranch))
 	switch format {

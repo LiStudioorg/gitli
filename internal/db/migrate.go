@@ -39,7 +39,7 @@ func (d *DB) ApplyMigrations(ctx context.Context, migs []Migration) error {
 }
 
 func (d *DB) applyOne(ctx context.Context, m Migration) error {
-	tx, err := d.DB.BeginTx(ctx, nil)
+	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (d *DB) appliedVersions(ctx context.Context) (map[string]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := map[string]bool{}
 	for rows.Next() {
 		var v string

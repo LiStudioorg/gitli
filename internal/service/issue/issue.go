@@ -83,7 +83,7 @@ func (s *Service) List(ctx context.Context, repoID int64, state string, limit, o
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Issue
 	for rows.Next() {
 		var i domain.Issue
@@ -118,7 +118,7 @@ func (s *Service) Labels(ctx context.Context, issueID int64) ([]*domain.Label, e
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*domain.Label
 	for rows.Next() {
 		var l domain.Label

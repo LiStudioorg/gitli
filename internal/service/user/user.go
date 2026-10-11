@@ -92,7 +92,7 @@ func (s *Service) List(ctx context.Context, limit, offset int) ([]*domain.User, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return s.scanMany(rows)
 }
 

@@ -4,6 +4,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/config"
@@ -98,7 +99,7 @@ func (d *DB) Rebind(query string) string {
 		if query[i] == '?' {
 			n++
 			b.WriteByte('$')
-			b.WriteString(fmt.Sprintf("%d", n))
+			b.WriteString(strconv.Itoa(n))
 			continue
 		}
 		b.WriteByte(query[i])

@@ -67,7 +67,7 @@ func (s *Server) handleGitService(w http.ResponseWriter, r *http.Request, servic
 			writeError(w, http.StatusBadRequest, "invalid gzip body")
 			return
 		}
-		defer gz.Close()
+		defer func() { _ = gz.Close() }()
 		body = gz
 	}
 	w.Header().Set("Content-Type", git.ResultContentType(service))

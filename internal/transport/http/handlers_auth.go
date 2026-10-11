@@ -35,7 +35,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.deps.Audit.Record(r.Context(), audit.Entry{
+	_ = s.deps.Audit.Record(r.Context(), audit.Entry{
 		ActorID: &u.ID, Action: "user.register", TargetType: "user", TargetID: &u.ID,
 		IP: clientIP(r), Detail: "ok",
 	})

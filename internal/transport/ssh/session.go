@@ -9,31 +9,42 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// handleSession processes channel requests, honoring exec and timeouts.
+// handleSession processes channel requests, honoring the exec request and the
+// configured idle timeout.
 func (s *Server) handleSession(ctx context.Context, username string, ch ssh.Channel, reqs <-chan *ssh.Request) {
-	defer ch.Close()
+	defer func() { _ = ch.Close() }()
 	idle := time.Duration(s.cfg.SSH.IdleTimeoutSeconds) * time.Second
 	if idle <= 0 {
 		idle = 300 * time.Second
 	}
-	for req := range reqs {
-		switch req.Type {
-		case "exec":
-			cmd, ok := decodeExecPayload(req.Payload)
+	timer := time.NewTimer(idle)
+	defer timer.Stop()
+
+	for {
+		select {
+		case req, ok := <-reqs:
 			if !ok {
-				req.Reply(false, nil)
-				continue
+				return
 			}
-			req.Reply(true, nil)
-			s.runCommand(ctx, username, cmd, ch)
+			switch req.Type {
+			case "exec":
+				cmd, ok := decodeExecPayload(req.Payload)
+				if !ok {
+					_ = req.Reply(false, nil)
+					continue
+				}
+				_ = req.Reply(true, nil)
+				s.runCommand(ctx, username, cmd, ch)
+				return
+			default:
+				_ = req.Reply(false, nil)
+			}
+		case <-timer.C:
 			return
-		case "env", "pty-req":
-			req.Reply(false, nil)
-		default:
-			req.Reply(false, nil)
+		case <-ctx.Done():
+			return
 		}
 	}
-	_ = idle
 }
 
 func decodeExecPayload(payload []byte) (string, bool) {
@@ -50,17 +61,17 @@ func decodeExecPayload(payload []byte) (string, bool) {
 func (s *Server) runCommand(ctx context.Context, username, raw string, ch ssh.Channel) {
 	cmd, ok := ParseCommand(raw)
 	if !ok {
-		fmt.Fprintln(ch.Stderr(), "gitli: unsupported command")
+		_, _ = fmt.Fprintln(ch.Stderr(), "gitli: unsupported command")
 		sendExit(ch, 128)
 		return
 	}
 	if s.dispatch == nil {
-		fmt.Fprintln(ch.Stderr(), "gitli: git dispatcher not configured")
+		_, _ = fmt.Fprintln(ch.Stderr(), "gitli: git dispatcher not configured")
 		sendExit(ch, 1)
 		return
 	}
 	if err := s.dispatch.Dispatch(ctx, username, cmd, ch, ch, ch.Stderr()); err != nil {
-		fmt.Fprintf(ch.Stderr(), "gitli: %v\n", err)
+		_, _ = fmt.Fprintf(ch.Stderr(), "gitli: %v\n", err)
 		sendExit(ch, 1)
 		return
 	}
