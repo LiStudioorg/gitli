@@ -69,9 +69,9 @@ func run(args []string) error {
 
 	switch cmd {
 	case "serve":
-		return runServe(ctx, cfg)
+		return runServe(ctx, cfg, *configPath)
 	case "migrate":
-		return runMigrate(ctx, cfg)
+		return runMigrate(ctx, cfg, *configPath)
 	case "runner", "mirror", "import", "search-index", "admin":
 		return runPlaceholder(cmd)
 	default:
@@ -180,8 +180,8 @@ func backupKey() ([]byte, error) {
 	return sum[:], nil
 }
 
-func runServe(ctx context.Context, cfg *config.Config) error {
-	a, err := app.New(ctx, cfg)
+func runServe(ctx context.Context, cfg *config.Config, configPath string) error {
+	a, err := app.New(ctx, cfg, configPath)
 	if err != nil {
 		return err
 	}
@@ -189,8 +189,8 @@ func runServe(ctx context.Context, cfg *config.Config) error {
 	return a.Serve(ctx)
 }
 
-func runMigrate(ctx context.Context, cfg *config.Config) error {
-	a, err := app.New(ctx, cfg)
+func runMigrate(ctx context.Context, cfg *config.Config, configPath string) error {
+	a, err := app.New(ctx, cfg, configPath)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func runHookCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-	a, err := app.New(context.Background(), cfg)
+	a, err := app.New(context.Background(), cfg, *configPath)
 	if err != nil {
 		return err
 	}

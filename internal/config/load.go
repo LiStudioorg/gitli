@@ -4,7 +4,9 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -23,7 +25,44 @@ func Load(path string) (*Config, error) {
 		}
 	}
 	applyEnvOverrides(cfg)
+	resolvePaths(cfg, path)
 	return cfg, nil
+}
+
+// resolvePaths makes filesystem paths absolute, resolved relative to the config
+// file's directory. This keeps git hooks (which run with an arbitrary CWD)
+// working regardless of where git invokes them.
+func resolvePaths(cfg *Config, configPath string) {
+	base := "."
+	if configPath != "" {
+		if abs, err := filepath.Abs(configPath); err == nil {
+			base = filepath.Dir(abs)
+		}
+	}
+	abs := func(p string) string {
+		if p == "" || filepath.IsAbs(p) {
+			return p
+		}
+		return filepath.Join(base, p)
+	}
+	if cfg.Database.Driver == "sqlite" || cfg.Database.Driver == "" {
+		if cfg.Database.DSN != "" && !strings.Contains(cfg.Database.DSN, "://") && !strings.HasPrefix(cfg.Database.DSN, ":") {
+			// Strip query params before path resolution and re-attach.
+			dsnPath := cfg.Database.DSN
+			suffix := ""
+			if i := strings.IndexByte(dsnPath, '?'); i >= 0 {
+				dsnPath, suffix = dsnPath[:i], dsnPath[i:]
+			}
+			cfg.Database.DSN = abs(dsnPath) + suffix
+		}
+	}
+	cfg.Storage.Repos = abs(cfg.Storage.Repos)
+	cfg.Storage.LFS = abs(cfg.Storage.LFS)
+	cfg.Storage.Packages = abs(cfg.Storage.Packages)
+	cfg.Storage.Avatars = abs(cfg.Storage.Avatars)
+	cfg.Storage.Attachments = abs(cfg.Storage.Attachments)
+	cfg.SSH.HostKeyPath = abs(cfg.SSH.HostKeyPath)
+	cfg.Backup.BackupDir = abs(cfg.Backup.BackupDir)
 }
 
 // WriteDefault writes a default config file to path if it does not exist.

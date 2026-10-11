@@ -51,7 +51,7 @@ func (s *Service) Fork(ctx context.Context, p ForkParams) (*domain.Repo, error) 
 		_ = s.fs.Remove(dstOwner, p.TargetName)
 		return nil, fmt.Errorf("repo: fork clone: %w", err)
 	}
-	_ = s.fs.InstallHooks(dstPath, dstOwner, p.TargetName, s.gitliBin)
+	_ = s.fs.InstallHooks(dstPath, dstOwner, p.TargetName, s.gitliBin, s.configPath)
 
 	forkID := p.Source.ID
 	q := s.st.Rebind(`INSERT INTO repos (owner_id, owner_type, org_id, name, description, default_branch, is_private, is_fork, fork_id) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`)

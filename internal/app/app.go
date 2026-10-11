@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/LiStudioorg/gitli/internal/config"
 	"github.com/LiStudioorg/gitli/internal/db"
@@ -57,7 +58,7 @@ type App struct {
 }
 
 // New builds an App from configuration, opening the database and wiring services.
-func New(ctx context.Context, cfg *config.Config) (*App, error) {
+func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, error) {
 	log := NewLogger(cfg.Log)
 
 	if err := ensureDirs(cfg); err != nil {
@@ -119,6 +120,11 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	repos := repo.New(st, layout, runner)
 	if exe, err := os.Executable(); err == nil {
 		repos.SetGitliBinary(exe)
+	}
+	if len(configPath) > 0 && configPath[0] != "" {
+		if abs, err := filepath.Abs(configPath[0]); err == nil {
+			repos.SetConfigPath(abs)
+		}
 	}
 
 	deps := &httptransport.Deps{

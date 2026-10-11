@@ -24,10 +24,11 @@ var ErrExists = errors.New("repo: already exists")
 
 // Service manages repositories.
 type Service struct {
-	st       *store.Store
-	fs       *fsrepo.Layout
-	git      *gitcmd.Runner
-	gitliBin string
+	st         *store.Store
+	fs         *fsrepo.Layout
+	git        *gitcmd.Runner
+	gitliBin   string
+	configPath string
 }
 
 // New builds a repo Service.
@@ -40,6 +41,11 @@ func (s *Service) SetGitliBinary(path string) {
 	if path != "" {
 		s.gitliBin = path
 	}
+}
+
+// SetConfigPath sets the absolute config path baked into installed hooks.
+func (s *Service) SetConfigPath(path string) {
+	s.configPath = path
 }
 
 // CreateParams describes repository creation.
@@ -88,7 +94,7 @@ func (s *Service) Create(ctx context.Context, p CreateParams) (*domain.Repo, err
 	if err := s.git.Init(ctx, path, p.DefaultBranch); err != nil {
 		return nil, err
 	}
-	if err := s.fs.InstallHooks(path, owner, p.Name, s.gitliBin); err != nil {
+	if err := s.fs.InstallHooks(path, owner, p.Name, s.gitliBin, s.configPath); err != nil {
 		return nil, err
 	}
 	return s.ByID(ctx, id)

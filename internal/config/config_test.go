@@ -4,6 +4,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -50,7 +51,7 @@ func TestEnvOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Database.DSN != "override.db" {
+	if !strings.HasSuffix(cfg.Database.DSN, "override.db") {
 		t.Fatalf("env override failed: %s", cfg.Database.DSN)
 	}
 	if cfg.Security.Password.Pepper != "envpepper" {
