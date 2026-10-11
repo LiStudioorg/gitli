@@ -24,6 +24,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
+	"github.com/LiStudioorg/gitli/internal/service/rbac"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 	"github.com/LiStudioorg/gitli/internal/service/user"
@@ -96,6 +97,11 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	authSvc.SetTokenResolver(tokens)
 
 	orgs := org.New(st)
+	rbacSvc := rbac.New(st)
+	if err := rbacSvc.Seed(ctx); err != nil {
+		_ = database.Close()
+		return nil, fmt.Errorf("seed rbac: %w", err)
+	}
 	repos := repo.New(st, layout, runner)
 	if exe, err := os.Executable(); err == nil {
 		repos.SetGitliBinary(exe)
@@ -112,6 +118,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Users:         users,
 		Tokens:        tokens,
 		Orgs:          orgs,
+		RBAC:          rbacSvc,
 		Repos:         repos,
 		Git:           git.New(runner),
 		Issues:        issue.New(st),

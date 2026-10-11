@@ -1,7 +1,8 @@
 # gitli 开发任务清单
 
 ## 正在进行
-- [ ] 修复 CI 失败（golangci-lint v2 配置 + errcheck + context key bug）
+- [ ] CI 日志分析（等待 GH_TOKEN 设置）
+- [ ] RBAC RequirePermission 中间件 + API
 
 ## 已完成
 - [x] 项目初始化（AGENTS.md, README.md, LICENSE）
@@ -9,10 +10,14 @@
 - [x] 数据库驱动（SQLite / MySQL / PostgreSQL）
 - [x] 安全原语（Argon2id, SHA-256, AES-256-GCM）
 - [x] 多地址监听 + 对外地址分离
-- [x] CI/Release 工作流分离
+- [x] CI/Release 工作流分离（ci.yml / cd.yml）
 - [x] 静态编译（CGO_ENABLED=0 + -s -w）
 - [x] HTTP Smart Protocol（upload-pack / receive-pack）
 - [x] pre-receive 钩子基础设施
+- [x] 外部记忆（ROADMAP.md / STATUS.md / TODO.md）
+- [x] RBAC 迁移表（permissions/roles/teams 嵌套/org_members/team_repos/repo_collaborators/branch_protection_rules/path_permissions/permission_audit）
+- [x] RBAC 权限服务（嵌套团队继承、循环检测、深度限制、LRU 缓存、自定义角色、成员/协作者/团队仓库授权）
+- [x] RBAC 单元测试（继承、循环、深度、缓存）
 
 ## 待办（Block 2）
 - [x] 用户认证（注册、登录、Session）

@@ -18,6 +18,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
+	"github.com/LiStudioorg/gitli/internal/service/rbac"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
@@ -37,6 +38,7 @@ type Deps struct {
 	Users         *user.Service
 	Tokens        *pat.Service
 	Orgs          *org.Service
+	RBAC          *rbac.Service
 	Repos         *repo.Service
 	Git           *git.Service
 	Issues        *issue.Service
