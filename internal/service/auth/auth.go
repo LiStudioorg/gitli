@@ -176,6 +176,19 @@ func (s *Service) Login(ctx context.Context, p LoginParams) (*LoginResult, error
 	return &LoginResult{User: u, Session: sess, RawToken: raw}, nil
 }
 
+// VerifyPassword checks a username/password pair without creating a session.
+// Used by the git HTTP Basic auth flow.
+func (s *Service) VerifyPassword(ctx context.Context, username, password string) (*domain.User, error) {
+	u, err := s.users.ByUsername(ctx, username)
+	if err != nil {
+		return nil, ErrInvalidCredentials
+	}
+	if err := s.hasher.Verify(password, u.PasswordHash); err != nil {
+		return nil, ErrInvalidCredentials
+	}
+	return u, nil
+}
+
 // Authenticate resolves a session token to a user.
 func (s *Service) Authenticate(ctx context.Context, rawToken string) (*domain.User, *domain.Session, error) {
 	hash := token.Hash(rawToken)

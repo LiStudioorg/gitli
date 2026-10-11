@@ -39,6 +39,18 @@ func (s *Server) Router() http.Handler {
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/metrics", s.handleMetrics)
 
+	// Git smart HTTP protocol. No CSRF (git clients), Basic/PAT auth.
+	r.Group(func(gr chi.Router) {
+		gr.Use(d.Auth.AuthenticateMiddleware)
+		gr.Get("/{owner}/{repo}/info/refs", s.handleGitInfoRefs)
+		gr.Post("/{owner}/{repo}/git-upload-pack", func(w http.ResponseWriter, r *http.Request) {
+			s.handleGitService(w, r, "git-upload-pack")
+		})
+		gr.Post("/{owner}/{repo}/git-receive-pack", func(w http.ResponseWriter, r *http.Request) {
+			s.handleGitService(w, r, "git-receive-pack")
+		})
+	})
+
 	api := chi.NewRouter()
 	api.Use(middleware.MaxBody(middleware.BodyLimitLarge))
 	api.Use(d.Auth.AuthenticateMiddleware)
