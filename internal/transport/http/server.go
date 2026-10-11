@@ -40,6 +40,18 @@ func (s *Server) Router() http.Handler {
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/metrics", s.handleMetrics)
 
+	// OCI Distribution API (/v2). No CSRF; auth via session, PAT or Basic.
+	r.Group(func(vr chi.Router) {
+		vr.Use(d.Auth.AuthenticateMiddleware)
+		vr.Get("/v2/", s.handleV2Check)
+		vr.Post("/v2/{owner}/{repo}/blobs/uploads/", s.handleBlobUploadStart)
+		vr.Put("/v2/{owner}/{repo}/blobs/uploads/{uuid}", s.handleBlobUploadFinish)
+		vr.Get("/v2/{owner}/{repo}/blobs/{digest}", s.handleGetBlob)
+		vr.Put("/v2/{owner}/{repo}/manifests/{reference}", s.handlePutManifest)
+		vr.Get("/v2/{owner}/{repo}/manifests/{reference}", s.handleGetManifest)
+		vr.Get("/v2/{owner}/{repo}/tags/list", s.handleListTags)
+	})
+
 	// Git smart HTTP protocol. No CSRF (git clients), Basic/PAT auth.
 	r.Group(func(gr chi.Router) {
 		gr.Use(d.Auth.AuthenticateMiddleware)
@@ -117,6 +129,11 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/blob/{ref}/*", s.handleBlob)
 		rr.Get("/{owner}/{repo}/commits/{ref}", s.handleCommits)
 		rr.Get("/{owner}/{repo}/graph", s.handleGraph)
+		rr.Get("/{owner}/{repo}/pipelines", s.handleListPipelines)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/pipelines", s.handleCreatePipeline)
+		rr.Get("/{owner}/{repo}/ide/tree", s.handleIDETree)
+		rr.Get("/{owner}/{repo}/ide/file", s.handleIDEFile)
+		rr.Get("/{owner}/{repo}/ide/symbols", s.handleIDESymbols)
 		rr.Get("/{owner}/{repo}/diff", s.handleDiff)
 		rr.Get("/{owner}/{repo}/blame/{ref}/*", s.handleBlame)
 		rr.Get("/{owner}/{repo}/protections", s.handleListProtections)
@@ -146,6 +163,13 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/lfs/objects/batch", s.handleLFSBatch)
 		rr.Put("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSUpload)
 		rr.Get("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSDownload)
+		rr.Get("/{owner}/{repo}/packages/{type}", s.handleListPackageVersions)
+		rr.Post("/{owner}/{repo}/packages/{type}/{name}/{version}", s.handlePublishPackageVersion)
+		rr.Get("/{owner}/{repo}/packages/{type}/{name}/{version}/files/{filename}", s.handleDownloadPackageFile)
+		rr.Post("/{owner}/{repo}/mirrors", s.handleCreateMirror)
+		rr.Get("/{owner}/{repo}/mirrors", s.handleListMirrors)
+		rr.Post("/{owner}/{repo}/imports", s.handleCreateImport)
+		rr.Get("/{owner}/{repo}/imports", s.handleListImports)
 	})
 
 	api.Route("/gists", func(gr chi.Router) {
@@ -174,6 +198,7 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api.Get("/notifications", s.handleListNotifications)
+	api.Get("/pipelines/{id}/jobs", s.handleListPipelineJobs)
 	api.Post("/notifications/{id}/read", s.handleMarkNotificationRead)
 	api.Get("/events", s.handleSSE)
 	api.Get("/activities", s.handleActivities)

@@ -83,6 +83,19 @@ func DigestOf(body []byte) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
+// StagedPath returns the staged file path recorded for an upload session.
+func (s *Service) StagedPath(ctx context.Context, repoID int64, uuid string) (string, error) {
+	q := s.st.Rebind(`SELECT stored_path FROM docker_uploads WHERE repo_id = ? AND uuid = ?`)
+	var path string
+	if err := s.st.DB.QueryRowContext(ctx, q, repoID, uuid).Scan(&path); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return path, nil
+}
+
 // StartUpload creates a blob upload session and returns its UUID.
 func (s *Service) StartUpload(ctx context.Context, repoID int64, name string) (string, error) {
 	if s.st == nil || s.st.DB == nil {
