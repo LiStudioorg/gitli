@@ -1,1 +1,0 @@
-import{T as a,_ as s}from"./TopNav-CGXyjNgq.js";import{d as r,c as t,b as n,a as e,o as p}from"./index-kdo6zyiF.js";const l=r({__name:"ExploreView",setup(c){return(_,o)=>(p(),t("div",null,[n(a),o[0]||(o[0]=e("main",{class:"explore"},[e("h2",null,"探索"),e("p",null,"在这里发现公开仓库与热门项目（占位）。")],-1))]))}}),i=s(l,[["__scopeId","data-v-397134c9"]]);export{i as default};

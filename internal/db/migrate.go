@@ -116,11 +116,25 @@ func splitStatements(sqlText string) []string {
 	parts := strings.Split(sqlText, ";")
 	out := make([]string, 0, len(parts))
 	for _, p := range parts {
-		s := strings.TrimSpace(p)
-		if s == "" || strings.HasPrefix(s, "--") {
+		s := stripSQLComments(p)
+		if s == "" {
 			continue
 		}
 		out = append(out, s)
 	}
 	return out
+}
+
+// stripSQLComments removes full-line "--" comments while preserving statement
+// text, so a leading comment block never causes an entire statement to be lost.
+func stripSQLComments(s string) string {
+	lines := strings.Split(s, "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "--") {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return strings.TrimSpace(strings.Join(kept, "\n"))
 }

@@ -1,0 +1,1 @@
+import{T as o,_ as n}from"./TopNav-BvlYF6FL.js";import{d as s,c as t,b as r,a as e,o as d}from"./index-CKtUFVtH.js";const m=s({__name:"AdminView",setup(p){return(c,a)=>(d(),t("div",null,[r(o),a[0]||(a[0]=e("main",{class:"admin"},[e("h2",null,"管理面板"),e("p",null,"用户、仓库、任务、审计日志、系统状态（占位，仅管理员可见）。")],-1))]))}}),_=n(m,[["__scopeId","data-v-a46bdfa1"]]);export{_ as default};
