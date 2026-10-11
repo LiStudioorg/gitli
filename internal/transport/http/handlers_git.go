@@ -68,6 +68,28 @@ func (s *Server) handleCommits(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, commits)
 }
 
+func (s *Server) handleGraph(w http.ResponseWriter, r *http.Request) {
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermRead)
+	if !ok {
+		return
+	}
+	path, err := s.repoPath(r, rp)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	ref := r.URL.Query().Get("ref")
+	if ref == "" {
+		ref = rp.DefaultBranch
+	}
+	nodes, err := s.deps.Git.Graph(r.Context(), path, ref, 100)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, nodes)
+}
+
 func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermRead)
 	if !ok {

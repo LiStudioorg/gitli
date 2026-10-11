@@ -36,14 +36,16 @@ var (
 
 // Service coordinates authentication.
 type Service struct {
-	st       *store.Store
-	users    *user.Service
-	hasher   *password.Hasher
-	cipher   *infraCrypto.Cipher
-	log      *slog.Logger
-	limiter  *loginLimiter
-	resolver TokenResolver
-	weak     *weakpass.Checker
+	st        *store.Store
+	users     *user.Service
+	hasher    *password.Hasher
+	cipher    *infraCrypto.Cipher
+	log       *slog.Logger
+	limiter   *loginLimiter
+	resolver  TokenResolver
+	weak      *weakpass.Checker
+	bindIP    bool
+	bindAgent bool
 }
 
 // Options configures the auth service.
@@ -54,6 +56,8 @@ type Options struct {
 	MaxAttempt        int
 	Lockout           time.Duration
 	MinPasswordLength int
+	BindIP            bool
+	BindAgent         bool
 }
 
 // New builds the auth Service.
@@ -68,13 +72,15 @@ func New(st *store.Store, opts Options) *Service {
 		opts.Lockout = 15 * time.Minute
 	}
 	return &Service{
-		st:      st,
-		users:   opts.Users,
-		hasher:  password.NewHasher(password.DefaultParams(), ""),
-		cipher:  opts.Cipher,
-		log:     opts.Log,
-		limiter: newLoginLimiter(opts.MaxAttempt, opts.Lockout),
-		weak:    weakpass.New(opts.MinPasswordLength),
+		st:        st,
+		users:     opts.Users,
+		hasher:    password.NewHasher(password.DefaultParams(), ""),
+		cipher:    opts.Cipher,
+		log:       opts.Log,
+		limiter:   newLoginLimiter(opts.MaxAttempt, opts.Lockout),
+		weak:      weakpass.New(opts.MinPasswordLength),
+		bindIP:    opts.BindIP,
+		bindAgent: opts.BindAgent,
 	}
 }
 
@@ -189,8 +195,14 @@ func (s *Service) VerifyPassword(ctx context.Context, username, password string)
 	return u, nil
 }
 
-// Authenticate resolves a session token to a user.
+// Authenticate resolves a session token to a user without binding checks.
 func (s *Service) Authenticate(ctx context.Context, rawToken string) (*domain.User, *domain.Session, error) {
+	return s.AuthenticateRequest(ctx, rawToken, "", "")
+}
+
+// AuthenticateRequest resolves a session token and, when configured, verifies
+// that the client IP and User-Agent still match the session binding.
+func (s *Service) AuthenticateRequest(ctx context.Context, rawToken, ip, agent string) (*domain.User, *domain.Session, error) {
 	hash := token.Hash(rawToken)
 	q := s.st.Rebind(`SELECT id, user_id, token_hash, ip, user_agent, expires_at, created_at FROM sessions WHERE token_hash = ?`)
 	var sess domain.Session
@@ -203,6 +215,12 @@ func (s *Service) Authenticate(ctx context.Context, rawToken string) (*domain.Us
 	}
 	if sess.ExpiresAt != nil && sess.ExpiresAt.Before(time.Now()) {
 		_ = s.Logout(ctx, rawToken)
+		return nil, nil, ErrInvalidCredentials
+	}
+	if s.bindIP && ip != "" && sess.IP != "" && sess.IP != ip {
+		return nil, nil, ErrInvalidCredentials
+	}
+	if s.bindAgent && agent != "" && sess.UserAgent != "" && sess.UserAgent != agent {
 		return nil, nil, ErrInvalidCredentials
 	}
 	u, err := s.users.ByID(ctx, sess.UserID)

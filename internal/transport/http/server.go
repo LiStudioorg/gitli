@@ -111,6 +111,7 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/tree/{ref}/*", s.handleTree)
 		rr.Get("/{owner}/{repo}/blob/{ref}/*", s.handleBlob)
 		rr.Get("/{owner}/{repo}/commits/{ref}", s.handleCommits)
+		rr.Get("/{owner}/{repo}/graph", s.handleGraph)
 		rr.Get("/{owner}/{repo}/diff", s.handleDiff)
 		rr.Get("/{owner}/{repo}/blame/{ref}/*", s.handleBlame)
 		rr.Get("/{owner}/{repo}/protections", s.handleListProtections)

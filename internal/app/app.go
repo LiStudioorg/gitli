@@ -88,6 +88,8 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		MaxAttempt:        cfg.Security.Login.MaxAttempts,
 		Lockout:           cfg.Security.Login.LockoutDuration(),
 		MinPasswordLength: cfg.Security.Password.MinLength,
+		BindIP:            cfg.Security.Session.BindIP,
+		BindAgent:         cfg.Security.Session.BindAgent,
 	})
 	authSvc.SetPepper(cfg.Security.Password.Pepper)
 	if cfg.Security.Password.HIBP {

@@ -3,6 +3,7 @@ package auth
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strings"
 
@@ -57,7 +58,8 @@ func (s *Service) AuthenticateMiddleware(next http.Handler) http.Handler {
 		}
 		ctx := r.Context()
 		if isSessionToken(raw) {
-			if u, _, err := s.Authenticate(ctx, raw); err == nil {
+			ip, agent := clientMeta(r)
+			if u, _, err := s.AuthenticateRequest(ctx, raw, ip, agent); err == nil {
 				next.ServeHTTP(w, r.WithContext(WithUser(ctx, u)))
 				return
 			}
@@ -87,4 +89,20 @@ func extractCredential(r *http.Request) string {
 
 func isSessionToken(raw string) bool {
 	return strings.HasPrefix(raw, "gls_")
+}
+
+// clientMeta extracts the client IP and User-Agent for session binding checks.
+func clientMeta(r *http.Request) (ip, agent string) {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.IndexByte(xff, ','); i >= 0 {
+			ip = strings.TrimSpace(xff[:i])
+		} else {
+			ip = strings.TrimSpace(xff)
+		}
+	} else if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		ip = host
+	} else {
+		ip = r.RemoteAddr
+	}
+	return ip, r.UserAgent()
 }
