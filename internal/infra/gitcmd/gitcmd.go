@@ -85,6 +85,12 @@ func (r *Runner) CloneBare(ctx context.Context, url, dst string) error {
 	return err
 }
 
+// CloneLocal copies a local bare repository to dst without hardlinks.
+func (r *Runner) CloneLocal(ctx context.Context, src, dst string) error {
+	_, err := r.run(ctx, "", "clone", "--bare", "--no-hardlinks", src, dst)
+	return err
+}
+
 // Run executes an arbitrary git command in dir and returns stdout.
 func (r *Runner) Run(ctx context.Context, dir string, args ...string) (string, error) {
 	return r.run(ctx, dir, args...)

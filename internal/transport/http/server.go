@@ -35,6 +35,7 @@ func (s *Server) Router() http.Handler {
 	r.Use(middleware.Recover(d.Log))
 	r.Use(middleware.SecurityHeaders(d.HTTPSecure()))
 	r.Use(middleware.CORS(d.ExternalBase()))
+	r.Use(s.usernameRedirect)
 
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/metrics", s.handleMetrics)
@@ -83,6 +84,18 @@ func (s *Server) Router() http.Handler {
 
 	api.Route("/orgs", func(or chi.Router) {
 		or.Post("/", s.handleCreateOrg)
+		or.Group(func(gr chi.Router) {
+			gr.Use(s.RequireOrgPermission("org", "admin"))
+			gr.Post("/{org}/members", s.handleAddOrgMember)
+			gr.Delete("/{org}/members/{username}", s.handleRemoveOrgMember)
+			gr.Post("/{org}/teams", s.handleCreateTeam)
+			gr.Post("/{org}/teams/{team}/reparent", s.handleReparentTeam)
+			gr.Post("/{org}/teams/{team}/members", s.handleAddTeamMember)
+			gr.Delete("/{org}/teams/{team}/members/{username}", s.handleRemoveTeamMember)
+			gr.Post("/{org}/teams/{team}/repos", s.handleGrantTeamRepo)
+			gr.Post("/{org}/roles", s.handleCreateRole)
+			gr.Delete("/{org}/roles/{role}", s.handleDeleteRole)
+		})
 	})
 
 	api.Route("/repos", func(rr chi.Router) {
@@ -91,6 +104,7 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/clone-info", s.handleCloneInfo)
 		rr.Get("/{owner}/{repo}/archive/{format}", s.handleArchive)
 		rr.Delete("/{owner}/{repo}", s.handleDeleteRepo)
+		rr.Post("/{owner}/{repo}/fork", s.handleForkRepo)
 		rr.Post("/{owner}/{repo}/transfer", s.handleTransferRepo)
 		rr.Get("/{owner}/{repo}/branches", s.handleBranches)
 		rr.Get("/{owner}/{repo}/tree/{ref}", s.handleTree)
@@ -103,8 +117,15 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/protections/branches", s.handleAddBranchProtection)
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/protections/tags", s.handleAddTagProtection)
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/collaborators", s.handleAddCollaborator)
-		rr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{owner}/{repo}/webhooks", s.handleCreateWebhook)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/webhooks", s.handleCreateWebhook)
 		rr.Get("/{owner}/{repo}/webhooks", s.handleListWebhooks)
+		rr.Group(func(gr chi.Router) {
+			gr.Use(s.RequirePermission("settings", "write"))
+			gr.Post("/{owner}/{repo}/rbac/collaborators", s.handleSetCollaborator)
+			gr.Delete("/{owner}/{repo}/rbac/collaborators/{username}", s.handleRemoveCollaborator)
+			gr.Post("/{owner}/{repo}/rbac/branch-rules", s.handleAddBranchRule)
+		})
+		rr.Get("/{owner}/{repo}/rbac/branch-rules", s.handleListBranchRules)
 	})
 
 	api.Route("/issues", func(ir chi.Router) {
