@@ -18,17 +18,23 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/auth"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
+	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/issue"
+	"github.com/LiStudioorg/gitli/internal/service/lfs"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
 	"github.com/LiStudioorg/gitli/internal/service/org"
+	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
+	"github.com/LiStudioorg/gitli/internal/service/release"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
+	"github.com/LiStudioorg/gitli/internal/service/search"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
+	"github.com/LiStudioorg/gitli/internal/service/wiki"
 	httptransport "github.com/LiStudioorg/gitli/internal/transport/http"
 )
 
@@ -126,6 +132,13 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Notifications: notification.New(st),
 		Activities:    activity.New(st),
 		Audit:         audit.New(st),
+		Wiki:          wiki.New(st),
+		Gists:         gist.New(st),
+		Releases:      release.New(st),
+		LFS:           lfs.New(st, cfg.Storage.LFS),
+		Search:        search.New(runner),
+		Blobs:         pkgstore.NewBlobStore(st, cfg.Storage.Packages),
+		PackagesRoot:  cfg.Storage.Packages,
 	}
 	return &App{Cfg: cfg, DB: database, Log: log, Deps: deps}, nil
 }

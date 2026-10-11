@@ -127,6 +127,27 @@ func (s *Server) Router() http.Handler {
 			gr.Post("/{owner}/{repo}/rbac/branch-rules", s.handleAddBranchRule)
 		})
 		rr.Get("/{owner}/{repo}/rbac/branch-rules", s.handleListBranchRules)
+		rr.Get("/{owner}/{repo}/wiki", s.handleListWikiPages)
+		rr.Get("/{owner}/{repo}/wiki/{slug}", s.handleGetWikiPage)
+		rr.With(middleware.MaxBody(middleware.BodyLimitLarge)).Post("/{owner}/{repo}/wiki", s.handleCreateWikiPage)
+		rr.With(middleware.MaxBody(middleware.BodyLimitLarge)).Put("/{owner}/{repo}/wiki/{slug}", s.handleUpdateWikiPage)
+		rr.Delete("/{owner}/{repo}/wiki/{slug}", s.handleDeleteWikiPage)
+		rr.Get("/{owner}/{repo}/releases", s.handleListReleases)
+		rr.Get("/{owner}/{repo}/releases/{tag}", s.handleGetRelease)
+		rr.Post("/{owner}/{repo}/releases", s.handleCreateRelease)
+		rr.Post("/{owner}/{repo}/releases/{tag}/publish", s.handlePublishRelease)
+		rr.Get("/{owner}/{repo}/releases/{tag}/assets", s.handleListReleaseAssets)
+		rr.Get("/{owner}/{repo}/search", s.handleSearch)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/lfs/objects/batch", s.handleLFSBatch)
+		rr.Put("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSUpload)
+		rr.Get("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSDownload)
+	})
+
+	api.Route("/gists", func(gr chi.Router) {
+		gr.Get("/", s.handleListGists)
+		gr.Post("/", s.handleCreateGist)
+		gr.Get("/{id}", s.handleGetGist)
+		gr.Delete("/{id}", s.handleDeleteGist)
 	})
 
 	api.Route("/issues", func(ir chi.Router) {
@@ -153,6 +174,11 @@ func (s *Server) Router() http.Handler {
 	api.Get("/activities", s.handleActivities)
 
 	r.Mount("/api/v1", api)
+
+	// Public badge and feed endpoints (no authentication).
+	r.Get("/badges/{owner}/{repo}/status.svg", s.handleBadge)
+	r.Get("/feed/{owner}/{repo}.xml", s.handleRSS)
+	r.Get("/feed/{owner}/{repo}.atom", s.handleAtom)
 
 	web.Mount(r, d.Log)
 	return r
