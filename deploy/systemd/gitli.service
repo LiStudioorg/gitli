@@ -1,0 +1,18 @@
+[Unit]
+Description=gitli Git service
+After=network.target
+
+[Service]
+Type=simple
+User=gitli
+Group=gitli
+WorkingDirectory=/var/lib/gitli
+ExecStart=/usr/local/bin/gitli serve --config /etc/gitli/config.toml
+Environment=GITLI_PEPPER=change-me
+Environment=GITLI_CRYPTO_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,593 @@
+-- SPDX-License-Identifier: AGPL-3.0
+-- gitli initial schema (SQLite)
+
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL DEFAULT '',
+    bio TEXT NOT NULL DEFAULT '',
+    avatar_url VARCHAR(512) NOT NULL DEFAULT '',
+    website VARCHAR(512) NOT NULL DEFAULT '',
+    location VARCHAR(255) NOT NULL DEFAULT '',
+    is_admin BOOLEAN NOT NULL DEFAULT false,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    totp_enabled BOOLEAN NOT NULL DEFAULT false,
+    totp_secret TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_redirects (
+    id BIGSERIAL PRIMARY KEY,
+    old_username VARCHAR(255) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ssh_keys (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT '',
+    fingerprint VARCHAR(255) NOT NULL UNIQUE,
+    public_key TEXT NOT NULL,
+    verified BOOLEAN NOT NULL DEFAULT false,
+    last_used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE access_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    kind VARCHAR(32) NOT NULL DEFAULT 'classic',
+    last_used_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE token_classic_scopes (
+    id BIGSERIAL PRIMARY KEY,
+    token_id BIGINT NOT NULL,
+    scope VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE token_fine_grained_scopes (
+    id BIGSERIAL PRIMARY KEY,
+    token_id BIGINT NOT NULL,
+    scope VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE token_repositories (
+    id BIGSERIAL PRIMARY KEY,
+    token_id BIGINT NOT NULL,
+    repo_id BIGINT NOT NULL,
+    permission VARCHAR(16) NOT NULL DEFAULT 'read'
+);
+
+CREATE TABLE sessions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    ip VARCHAR(64) NOT NULL DEFAULT '',
+    user_agent VARCHAR(512) NOT NULL DEFAULT '',
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE totp_used_codes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    code_hash VARCHAR(255) NOT NULL,
+    used_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_blocks (
+    id BIGSERIAL PRIMARY KEY,
+    blocker_id BIGINT NOT NULL,
+    blocked_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_secrets (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    ciphertext TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_webhooks (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    url VARCHAR(1024) NOT NULL,
+    secret VARCHAR(255) NOT NULL DEFAULT '',
+    events TEXT NOT NULL DEFAULT '',
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orgs (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    display_name VARCHAR(255) NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    avatar_url VARCHAR(512) NOT NULL DEFAULT '',
+    owner_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teams (
+    id BIGSERIAL PRIMARY KEY,
+    org_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    permission VARCHAR(16) NOT NULL DEFAULT 'read',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE team_members (
+    id BIGSERIAL PRIMARY KEY,
+    team_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    role VARCHAR(16) NOT NULL DEFAULT 'member',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE org_2fa_policies (
+    id BIGSERIAL PRIMARY KEY,
+    org_id BIGINT NOT NULL UNIQUE,
+    required BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repos (
+    id BIGSERIAL PRIMARY KEY,
+    owner_id BIGINT NOT NULL,
+    owner_type VARCHAR(16) NOT NULL DEFAULT 'user',
+    org_id BIGINT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    default_branch VARCHAR(255) NOT NULL DEFAULT 'main',
+    is_private BOOLEAN NOT NULL DEFAULT false,
+    is_fork BOOLEAN NOT NULL DEFAULT false,
+    fork_id BIGINT,
+    is_mirror BOOLEAN NOT NULL DEFAULT false,
+    stars_count BOOLEAN NOT NULL DEFAULT false,
+    forks_count BOOLEAN NOT NULL DEFAULT false,
+    size_kb BOOLEAN NOT NULL DEFAULT false,
+    archived BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE collaborators (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    permission VARCHAR(16) NOT NULL DEFAULT 'read',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE branch_protections (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    pattern VARCHAR(255) NOT NULL,
+    require_reviews BOOLEAN NOT NULL DEFAULT false,
+    require_signed BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tag_protections (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    pattern VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repo_mirrors (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    remote_url VARCHAR(1024) NOT NULL,
+    direction VARCHAR(16) NOT NULL DEFAULT 'pull',
+    interval_minutes BIGINT NOT NULL DEFAULT 60,
+    last_synced_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repo_imports (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    source VARCHAR(64) NOT NULL,
+    source_url VARCHAR(1024) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    message TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repo_topics (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    topic VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE repo_languages (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    language VARCHAR(64) NOT NULL,
+    bytes BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE issues (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    number BIGINT NOT NULL,
+    title VARCHAR(512) NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    author_id BIGINT NOT NULL,
+    state VARCHAR(16) NOT NULL DEFAULT 'open',
+    milestone_id BIGINT,
+    closed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE pulls (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    number BIGINT NOT NULL,
+    title VARCHAR(512) NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    author_id BIGINT NOT NULL,
+    head_repo_id BIGINT,
+    head_branch VARCHAR(255) NOT NULL DEFAULT '',
+    base_branch VARCHAR(255) NOT NULL DEFAULT '',
+    state VARCHAR(16) NOT NULL DEFAULT 'open',
+    merged BOOLEAN NOT NULL DEFAULT false,
+    merged_by BIGINT,
+    merged_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE comments (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    issue_id BIGINT,
+    pull_id BIGINT,
+    author_id BIGINT NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE labels (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    color VARCHAR(16) NOT NULL DEFAULT '#cccccc',
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE issue_labels (
+    id BIGSERIAL PRIMARY KEY,
+    issue_id BIGINT NOT NULL,
+    label_id BIGINT NOT NULL
+);
+
+CREATE TABLE milestones (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    due_at TIMESTAMPTZ,
+    state VARCHAR(16) NOT NULL DEFAULT 'open',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reviews (
+    id BIGSERIAL PRIMARY KEY,
+    pull_id BIGINT NOT NULL,
+    author_id BIGINT NOT NULL,
+    state VARCHAR(32) NOT NULL DEFAULT 'pending',
+    body TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE review_comments (
+    id BIGSERIAL PRIMARY KEY,
+    review_id BIGINT NOT NULL,
+    path VARCHAR(1024) NOT NULL DEFAULT '',
+    line BOOLEAN NOT NULL DEFAULT false,
+    body TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reactions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_id BIGINT NOT NULL,
+    emoji VARCHAR(32) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE subscriptions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE wiki_pages (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    title VARCHAR(512) NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE gists (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    description VARCHAR(512) NOT NULL DEFAULT '',
+    is_public BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE releases (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    tag VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    is_draft BOOLEAN NOT NULL DEFAULT false,
+    is_prerelease BOOLEAN NOT NULL DEFAULT false,
+    author_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE release_assets (
+    id BIGSERIAL PRIMARY KEY,
+    release_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    size_bytes BOOLEAN NOT NULL DEFAULT false,
+    download_count BOOLEAN NOT NULL DEFAULT false,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE lfs_objects (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    oid VARCHAR(64) NOT NULL,
+    size_bytes BOOLEAN NOT NULL DEFAULT false,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE lfs_locks (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    path VARCHAR(1024) NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE commit_signatures (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    commit_sha VARCHAR(64) NOT NULL,
+    signer_id BIGINT,
+    signature_type VARCHAR(16) NOT NULL DEFAULT 'gpg',
+    verified BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE webhooks (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT,
+    org_id BIGINT,
+    url VARCHAR(1024) NOT NULL,
+    secret VARCHAR(255) NOT NULL DEFAULT '',
+    events TEXT NOT NULL DEFAULT '',
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE webhook_deliveries (
+    id BIGSERIAL PRIMARY KEY,
+    webhook_id BIGINT NOT NULL,
+    event VARCHAR(64) NOT NULL,
+    status_code BOOLEAN NOT NULL DEFAULT false,
+    request_body TEXT NOT NULL DEFAULT '',
+    response_body TEXT NOT NULL DEFAULT '',
+    attempts BOOLEAN NOT NULL DEFAULT false,
+    delivered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    subject_type VARCHAR(32) NOT NULL,
+    subject_id BIGINT NOT NULL,
+    title VARCHAR(512) NOT NULL DEFAULT '',
+    url VARCHAR(1024) NOT NULL DEFAULT '',
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notification_prefs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    key VARCHAR(64) NOT NULL,
+    value VARCHAR(64) NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE activities (
+    id BIGSERIAL PRIMARY KEY,
+    actor_id BIGINT NOT NULL,
+    verb VARCHAR(64) NOT NULL,
+    object_type VARCHAR(32) NOT NULL,
+    object_id BIGINT NOT NULL,
+    repo_id BIGINT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_blobs (
+    id BIGSERIAL PRIMARY KEY,
+    digest VARCHAR(128) NOT NULL UNIQUE,
+    size_bytes BOOLEAN NOT NULL DEFAULT false,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_files (
+    id BIGSERIAL PRIMARY KEY,
+    version_id BIGINT NOT NULL,
+    filename VARCHAR(512) NOT NULL,
+    blob_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_versions (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    package_type VARCHAR(32) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    version VARCHAR(255) NOT NULL,
+    metadata TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docker_manifests (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    digest VARCHAR(128) NOT NULL,
+    media_type VARCHAR(128) NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docker_tags (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    tag VARCHAR(255) NOT NULL,
+    manifest_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docker_uploads (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    uuid VARCHAR(64) NOT NULL UNIQUE,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    received_bytes BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_pipelines (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    commit_sha VARCHAR(64) NOT NULL DEFAULT '',
+    ref VARCHAR(255) NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_jobs (
+    id BIGSERIAL PRIMARY KEY,
+    pipeline_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    stage VARCHAR(64) NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    runner_id BIGINT,
+    script TEXT NOT NULL DEFAULT '',
+    log_path VARCHAR(1024) NOT NULL DEFAULT '',
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_artifacts (
+    id BIGSERIAL PRIMARY KEY,
+    job_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    size_bytes BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_cache (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    key VARCHAR(255) NOT NULL,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    size_bytes BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_secrets (
+    id BIGSERIAL PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    ciphertext TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_runners (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    tags TEXT NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'offline',
+    last_seen_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    actor_id BIGINT,
+    action VARCHAR(64) NOT NULL,
+    target_type VARCHAR(32) NOT NULL DEFAULT '',
+    target_id BIGINT,
+    ip VARCHAR(64) NOT NULL DEFAULT '',
+    detail TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE jobs (
+    id BIGSERIAL PRIMARY KEY,
+    kind VARCHAR(64) NOT NULL,
+    payload TEXT NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    attempts BOOLEAN NOT NULL DEFAULT false,
+    run_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_repos_owner ON repos (owner_id, owner_type);
+CREATE INDEX idx_issues_repo ON issues (repo_id, number);
+CREATE INDEX idx_pulls_repo ON pulls (repo_id, number);
+CREATE INDEX idx_comments_repo ON comments (repo_id);
+CREATE INDEX idx_access_tokens_hash ON access_tokens (token_hash);
+CREATE INDEX idx_sessions_hash ON sessions (token_hash);
+CREATE INDEX idx_ssh_keys_fp ON ssh_keys (fingerprint);
+CREATE INDEX idx_activities_actor ON activities (actor_id);
+CREATE INDEX idx_notifications_user ON notifications (user_id, is_read);
+CREATE INDEX idx_jobs_status ON jobs (status);

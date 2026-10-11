@@ -1,0 +1,593 @@
+-- SPDX-License-Identifier: AGPL-3.0
+-- gitli initial schema (SQLite)
+
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL DEFAULT '',
+    bio TEXT,
+    avatar_url VARCHAR(512) NOT NULL DEFAULT '',
+    website VARCHAR(512) NOT NULL DEFAULT '',
+    location VARCHAR(255) NOT NULL DEFAULT '',
+    is_admin TINYINT(1) NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    totp_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    totp_secret TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_redirects (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    old_username VARCHAR(255) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ssh_keys (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT '',
+    fingerprint VARCHAR(255) NOT NULL UNIQUE,
+    public_key TEXT NOT NULL,
+    verified TINYINT(1) NOT NULL DEFAULT 0,
+    last_used_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE access_tokens (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    kind VARCHAR(32) NOT NULL DEFAULT 'classic',
+    last_used_at DATETIME,
+    expires_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE token_classic_scopes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token_id BIGINT NOT NULL,
+    scope VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE token_fine_grained_scopes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token_id BIGINT NOT NULL,
+    scope VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE token_repositories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token_id BIGINT NOT NULL,
+    repo_id BIGINT NOT NULL,
+    permission VARCHAR(16) NOT NULL DEFAULT 'read'
+);
+
+CREATE TABLE sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    ip VARCHAR(64) NOT NULL DEFAULT '',
+    user_agent VARCHAR(512) NOT NULL DEFAULT '',
+    expires_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE totp_used_codes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    code_hash VARCHAR(255) NOT NULL,
+    used_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_blocks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    blocker_id BIGINT NOT NULL,
+    blocked_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_secrets (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    ciphertext TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_webhooks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    url VARCHAR(1024) NOT NULL,
+    secret VARCHAR(255) NOT NULL DEFAULT '',
+    events TEXT,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orgs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    display_name VARCHAR(255) NOT NULL DEFAULT '',
+    description TEXT,
+    avatar_url VARCHAR(512) NOT NULL DEFAULT '',
+    owner_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teams (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    org_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    permission VARCHAR(16) NOT NULL DEFAULT 'read',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE team_members (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    team_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    role VARCHAR(16) NOT NULL DEFAULT 'member',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE org_2fa_policies (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    org_id BIGINT NOT NULL UNIQUE,
+    required TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repos (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    owner_id BIGINT NOT NULL,
+    owner_type VARCHAR(16) NOT NULL DEFAULT 'user',
+    org_id BIGINT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    default_branch VARCHAR(255) NOT NULL DEFAULT 'main',
+    is_private TINYINT(1) NOT NULL DEFAULT 0,
+    is_fork TINYINT(1) NOT NULL DEFAULT 0,
+    fork_id BIGINT,
+    is_mirror TINYINT(1) NOT NULL DEFAULT 0,
+    stars_count TINYINT(1) NOT NULL DEFAULT 0,
+    forks_count TINYINT(1) NOT NULL DEFAULT 0,
+    size_kb TINYINT(1) NOT NULL DEFAULT 0,
+    archived TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE collaborators (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    permission VARCHAR(16) NOT NULL DEFAULT 'read',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE branch_protections (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    pattern VARCHAR(255) NOT NULL,
+    require_reviews TINYINT(1) NOT NULL DEFAULT 0,
+    require_signed TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tag_protections (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    pattern VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repo_mirrors (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    remote_url VARCHAR(1024) NOT NULL,
+    direction VARCHAR(16) NOT NULL DEFAULT 'pull',
+    interval_minutes BIGINT NOT NULL DEFAULT 60,
+    last_synced_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repo_imports (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    source VARCHAR(64) NOT NULL,
+    source_url VARCHAR(1024) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    message TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE repo_topics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    topic VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE repo_languages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    language VARCHAR(64) NOT NULL,
+    bytes TINYINT(1) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE issues (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    number BIGINT NOT NULL,
+    title VARCHAR(512) NOT NULL,
+    body TEXT,
+    author_id BIGINT NOT NULL,
+    state VARCHAR(16) NOT NULL DEFAULT 'open',
+    milestone_id BIGINT,
+    closed_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE pulls (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    number BIGINT NOT NULL,
+    title VARCHAR(512) NOT NULL,
+    body TEXT,
+    author_id BIGINT NOT NULL,
+    head_repo_id BIGINT,
+    head_branch VARCHAR(255) NOT NULL DEFAULT '',
+    base_branch VARCHAR(255) NOT NULL DEFAULT '',
+    state VARCHAR(16) NOT NULL DEFAULT 'open',
+    merged TINYINT(1) NOT NULL DEFAULT 0,
+    merged_by BIGINT,
+    merged_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE comments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    issue_id BIGINT,
+    pull_id BIGINT,
+    author_id BIGINT NOT NULL,
+    body TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE labels (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    color VARCHAR(16) NOT NULL DEFAULT '#cccccc',
+    description TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE issue_labels (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    issue_id BIGINT NOT NULL,
+    label_id BIGINT NOT NULL
+);
+
+CREATE TABLE milestones (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_at DATETIME,
+    state VARCHAR(16) NOT NULL DEFAULT 'open',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reviews (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    pull_id BIGINT NOT NULL,
+    author_id BIGINT NOT NULL,
+    state VARCHAR(32) NOT NULL DEFAULT 'pending',
+    body TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE review_comments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT NOT NULL,
+    path VARCHAR(1024) NOT NULL DEFAULT '',
+    line TINYINT(1) NOT NULL DEFAULT 0,
+    body TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_id BIGINT NOT NULL,
+    emoji VARCHAR(32) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE subscriptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE wiki_pages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    title VARCHAR(512) NOT NULL,
+    body TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE gists (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    description VARCHAR(512) NOT NULL DEFAULT '',
+    is_public TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE releases (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    tag VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    body TEXT,
+    is_draft TINYINT(1) NOT NULL DEFAULT 0,
+    is_prerelease TINYINT(1) NOT NULL DEFAULT 0,
+    author_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE release_assets (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    release_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    size_bytes TINYINT(1) NOT NULL DEFAULT 0,
+    download_count TINYINT(1) NOT NULL DEFAULT 0,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE lfs_objects (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    oid VARCHAR(64) NOT NULL,
+    size_bytes TINYINT(1) NOT NULL DEFAULT 0,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE lfs_locks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    path VARCHAR(1024) NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE commit_signatures (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    commit_sha VARCHAR(64) NOT NULL,
+    signer_id BIGINT,
+    signature_type VARCHAR(16) NOT NULL DEFAULT 'gpg',
+    verified TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE webhooks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT,
+    org_id BIGINT,
+    url VARCHAR(1024) NOT NULL,
+    secret VARCHAR(255) NOT NULL DEFAULT '',
+    events TEXT,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE webhook_deliveries (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    webhook_id BIGINT NOT NULL,
+    event VARCHAR(64) NOT NULL,
+    status_code TINYINT(1) NOT NULL DEFAULT 0,
+    request_body TEXT,
+    response_body TEXT,
+    attempts TINYINT(1) NOT NULL DEFAULT 0,
+    delivered_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    subject_type VARCHAR(32) NOT NULL,
+    subject_id BIGINT NOT NULL,
+    title VARCHAR(512) NOT NULL DEFAULT '',
+    url VARCHAR(1024) NOT NULL DEFAULT '',
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notification_prefs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    key VARCHAR(64) NOT NULL,
+    value VARCHAR(64) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE activities (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    actor_id BIGINT NOT NULL,
+    verb VARCHAR(64) NOT NULL,
+    object_type VARCHAR(32) NOT NULL,
+    object_id BIGINT NOT NULL,
+    repo_id BIGINT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_blobs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    digest VARCHAR(128) NOT NULL UNIQUE,
+    size_bytes TINYINT(1) NOT NULL DEFAULT 0,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_files (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    version_id BIGINT NOT NULL,
+    filename VARCHAR(512) NOT NULL,
+    blob_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_versions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    package_type VARCHAR(32) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    version VARCHAR(255) NOT NULL,
+    metadata TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docker_manifests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    digest VARCHAR(128) NOT NULL,
+    media_type VARCHAR(128) NOT NULL DEFAULT '',
+    content TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docker_tags (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    tag VARCHAR(255) NOT NULL,
+    manifest_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE docker_uploads (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    uuid VARCHAR(64) NOT NULL UNIQUE,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    received_bytes TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_pipelines (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    commit_sha VARCHAR(64) NOT NULL DEFAULT '',
+    ref VARCHAR(255) NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_jobs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    pipeline_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    stage VARCHAR(64) NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    runner_id BIGINT,
+    script TEXT,
+    log_path VARCHAR(1024) NOT NULL DEFAULT '',
+    started_at DATETIME,
+    finished_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_artifacts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    job_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    size_bytes TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_cache (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    key VARCHAR(255) NOT NULL,
+    stored_path VARCHAR(1024) NOT NULL DEFAULT '',
+    size_bytes TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_secrets (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    repo_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    ciphertext TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ci_runners (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    tags TEXT,
+    status VARCHAR(32) NOT NULL DEFAULT 'offline',
+    last_seen_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    actor_id BIGINT,
+    action VARCHAR(64) NOT NULL,
+    target_type VARCHAR(32) NOT NULL DEFAULT '',
+    target_id BIGINT,
+    ip VARCHAR(64) NOT NULL DEFAULT '',
+    detail TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE jobs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    kind VARCHAR(64) NOT NULL,
+    payload TEXT,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    attempts TINYINT(1) NOT NULL DEFAULT 0,
+    run_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_repos_owner ON repos (owner_id, owner_type);
+CREATE INDEX idx_issues_repo ON issues (repo_id, number);
+CREATE INDEX idx_pulls_repo ON pulls (repo_id, number);
+CREATE INDEX idx_comments_repo ON comments (repo_id);
+CREATE INDEX idx_access_tokens_hash ON access_tokens (token_hash);
+CREATE INDEX idx_sessions_hash ON sessions (token_hash);
+CREATE INDEX idx_ssh_keys_fp ON ssh_keys (fingerprint);
+CREATE INDEX idx_activities_actor ON activities (actor_id);
+CREATE INDEX idx_notifications_user ON notifications (user_id, is_read);
+CREATE INDEX idx_jobs_status ON jobs (status);

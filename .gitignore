@@ -14,10 +14,10 @@
 
 # 前端
 /web/node_modules/
-/web/dist/
 /web/.vite/
 node_modules/
-dist/
+# 前端构建产物随源码一并提交，保证 go build 单二进制可复现
+!/web/dist/
 
 # 编辑器 / 系统
 .idea/
