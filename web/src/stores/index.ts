@@ -6,6 +6,10 @@ export interface User {
   username: string
   email: string
   full_name: string
+  bio: string
+  avatar_url: string
+  website: string
+  location: string
   is_admin: boolean
   totp_enabled: boolean
 }

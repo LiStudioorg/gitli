@@ -7,15 +7,64 @@ import (
 )
 
 func TestParsePermission(t *testing.T) {
-	p, err := ParsePermission("pulls:merge")
-	if err != nil {
-		t.Fatal(err)
+	okCases := []struct {
+		in       string
+		resource string
+		action   string
+	}{
+		{"pulls:merge", "pulls", "merge"},
+		{"repo:read", "repo", "read"},
+		{"org:admin", "org", "admin"},
+		{"a:b:c", "a", "b:c"},
+		{":action", "", "action"},
+		{"resource:", "resource", ""},
 	}
-	if p.Resource != "pulls" || p.Action != "merge" {
-		t.Fatalf("got %+v", p)
+	for _, c := range okCases {
+		p, err := ParsePermission(c.in)
+		if err != nil {
+			t.Fatalf("ParsePermission(%q): %v", c.in, err)
+		}
+		if p.Resource != c.resource || p.Action != c.action {
+			t.Fatalf("ParsePermission(%q)=%+v want %s:%s", c.in, p, c.resource, c.action)
+		}
 	}
-	if _, err := ParsePermission("bad"); err == nil {
-		t.Fatal("expected error for malformed permission")
+	for _, in := range []string{"plain", "", "nocolon"} {
+		if _, err := ParsePermission(in); err == nil {
+			t.Fatalf("ParsePermission(%q): expected error", in)
+		}
+	}
+}
+
+func TestParsePermissionRoundTrip(t *testing.T) {
+	for _, want := range BuiltinPermissions {
+		got, err := ParsePermission(want.String())
+		if err != nil {
+			t.Fatalf("%s: %v", want, err)
+		}
+		if got != want {
+			t.Fatalf("round trip %s => %+v", want, got)
+		}
+	}
+}
+
+func TestRankOf(t *testing.T) {
+	cases := []struct {
+		name string
+		want int
+	}{
+		{"read", 0},
+		{"triage", 1},
+		{"write", 2},
+		{"maintain", 3},
+		{"admin", 4},
+		{"none", -1},
+		{"", -1},
+		{"unknown", -1},
+	}
+	for _, c := range cases {
+		if got := RankOf(c.name); got != c.want {
+			t.Fatalf("RankOf(%q)=%d want %d", c.name, got, c.want)
+		}
 	}
 }
 

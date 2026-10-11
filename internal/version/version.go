@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
+//
+// Package version exposes build version metadata and formatting helpers.
 package version
 
 // Info describes the build version metadata.

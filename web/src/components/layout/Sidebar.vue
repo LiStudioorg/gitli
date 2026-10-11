@@ -18,6 +18,8 @@ const ui = useUiStore()
         <RouterLink to="/explore">组织</RouterLink>
         <RouterLink to="/explore">工单</RouterLink>
         <RouterLink to="/explore">合并请求</RouterLink>
+        <RouterLink to="/settings">设置</RouterLink>
+        <RouterLink v-if="auth.isAdmin" to="/admin">管理面板</RouterLink>
       </nav>
     </section>
 

@@ -21,23 +21,51 @@ func TestRebindSQLiteNoop(t *testing.T) {
 }
 
 func TestResolveDriver(t *testing.T) {
-	cases := map[string]Dialect{
-		"":         DialectSQLite,
-		"sqlite":   DialectSQLite,
-		"mysql":    DialectMySQL,
-		"postgres": DialectPostgres,
-		"pgx":      DialectPostgres,
+	cases := []struct {
+		in      string
+		dialect Dialect
+		driver  string
+	}{
+		{"", DialectSQLite, "sqlite"},
+		{"sqlite", DialectSQLite, "sqlite"},
+		{"sqlite3", DialectSQLite, "sqlite"},
+		{"  SQLITE3 ", DialectSQLite, "sqlite"},
+		{"mysql", DialectMySQL, "mysql"},
+		{"postgres", DialectPostgres, "pgx"},
+		{"postgresql", DialectPostgres, "pgx"},
+		{"pgx", DialectPostgres, "pgx"},
+		{"PGX", DialectPostgres, "pgx"},
 	}
-	for in, want := range cases {
-		d, _, err := resolveDriver(in)
+	for _, c := range cases {
+		d, driver, err := resolveDriver(c.in)
 		if err != nil {
-			t.Fatalf("%s: %v", in, err)
+			t.Fatalf("%q: %v", c.in, err)
 		}
-		if d != want {
-			t.Fatalf("%s: got %s, want %s", in, d, want)
+		if d != c.dialect || driver != c.driver {
+			t.Fatalf("%q: got %s/%s, want %s/%s", c.in, d, driver, c.dialect, c.driver)
 		}
 	}
 	if _, _, err := resolveDriver("oracle"); err == nil {
 		t.Fatal("expected error for unsupported driver")
+	}
+}
+
+func TestNormalizeSQLiteDSN(t *testing.T) {
+	const pragmas = "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"empty defaults to data path", "", "./data/gitli.db" + pragmas},
+		{"plain path gets pragmas", "./data/gitli.db", "./data/gitli.db" + pragmas},
+		{"path with query uses ampersand", "file:x.db?_fk=1", "file:x.db?_fk=1&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"},
+		{"url without query gets pragmas", "file://x.db", "file://x.db" + pragmas},
+		{"url with query untouched", "file://x.db?_pragma=cache(shared)", "file://x.db?_pragma=cache(shared)"},
+	}
+	for _, c := range cases {
+		if got := normalizeSQLiteDSN(c.in); got != c.want {
+			t.Fatalf("%s: normalizeSQLiteDSN(%q)=%q want %q", c.name, c.in, got, c.want)
+		}
 	}
 }

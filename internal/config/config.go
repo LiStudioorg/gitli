@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
+//
+// Package config defines the TOML configuration schema, defaults and loading.
 package config
 
 import "time"

@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
+//
+// Package app wires together configuration, services and transports and
+// manages the application lifecycle.
 package app
 
 import (

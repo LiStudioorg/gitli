@@ -81,6 +81,8 @@ async function logout() {
         <RouterLink v-if="variant === 'landing'" class="btn primary" to="/dashboard">进入控制台</RouterLink>
         <template v-else>
           <span class="avatar">{{ auth.user?.username?.[0]?.toUpperCase() }}</span>
+          <RouterLink class="icon-btn" to="/settings" title="用户设置">设置</RouterLink>
+          <RouterLink v-if="auth.isAdmin" class="icon-btn" to="/admin" title="管理面板">管理</RouterLink>
           <button class="btn dropdown-toggle" @click="logout">退出</button>
         </template>
       </template>

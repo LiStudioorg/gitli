@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
+//
+// Package db opens database connections, resolves dialects and runs migrations.
 package db
 
 import (
