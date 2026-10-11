@@ -1,0 +1,31 @@
+# 二进制
+/gitli
+/gitli.exe
+*.exe
+*.test
+*.out
+
+# 数据与配置
+/data/
+/config.toml
+.env
+*.pepper
+*.key
+
+# 前端
+/web/node_modules/
+/web/dist/
+/web/.vite/
+node_modules/
+dist/
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log

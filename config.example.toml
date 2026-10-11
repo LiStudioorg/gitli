@@ -1,0 +1,89 @@
+# gitli 配置文件示例
+# 复制为 config.toml 后按需修改：cp config.example.toml config.toml
+# 环境变量优先级高于此文件，前缀 GITLI_，嵌套字段用下划线连接。
+
+[server]
+http = ":8080"
+ssh = ":2222"
+external_url = "https://git.example.com"
+
+[database]
+driver = "sqlite"          # sqlite | mysql | postgres
+dsn = "./data/gitli.db"
+max_open_conns = 25
+max_idle_conns = 5
+
+# MySQL 示例
+# driver = "mysql"
+# dsn = "user:pass@tcp(127.0.0.1:3306)/gitli?charset=utf8mb4&parseTime=true&loc=Local"
+
+# PostgreSQL 示例
+# driver = "postgres"
+# dsn = "postgres://user:pass@127.0.0.1:5432/gitli?sslmode=disable"
+
+[storage]
+repos = "./data/repos"
+lfs = "./data/lfs"
+packages = "./data/packages"
+avatars = "./data/avatars"
+attachments = "./data/attachments"
+
+[security.password]
+algorithm = "argon2id"
+memory_mb = 64
+iterations = 3
+parallelism = 2
+salt_length = 16
+key_length = 32
+pepper = ""                # 从 GITLI_PEPPER 环境变量读
+
+[security.crypto]
+key_hex = ""               # 从 GITLI_CRYPTO_KEY 环境变量读，32 字节 hex
+
+[security.login]
+max_attempts = 5
+lockout_minutes = 15
+window_minutes = 15
+
+[modules]
+core = true
+collaboration = true
+git_ext = true
+registry = true
+ci = false
+ide = false
+ops = true
+search = "grep"            # grep | fts | zoekt
+
+[modules.packages]
+enabled = ["generic", "npm", "docker", "go", "maven"]
+
+[limits]
+max_git_concurrency = 4
+max_webhook_concurrency = 8
+max_ci_concurrency = 1
+mem_limit_mb = 256
+
+[limits.packages]
+max_concurrent = 4
+generic_max_file_mb = 200
+npm_max_tarball_mb = 50
+npm_max_metadata_kb = 1024
+docker_max_blob_mb = 500
+docker_max_manifest_kb = 256
+docker_upload_ttl_minutes = 60
+go_max_zip_mb = 100
+maven_max_artifact_mb = 100
+
+[log]
+level = "info"             # debug | info | warn | error
+format = "text"            # text | json
+
+[mail]
+enabled = false
+host = "smtp.example.com"
+port = 587
+username = ""
+password = ""              # 从 GITLI_MAIL_PASSWORD 环境变量读
+from = "noreply@example.com"
+tls = true
