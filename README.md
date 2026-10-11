@@ -27,6 +27,50 @@
 
 ---
 
+## 支持的平台与架构
+
+gitli 为纯 Go 实现（SQLite 使用 `modernc.org/sqlite`，无 CGO），支持广泛的平台与架构。
+
+| 平台 | 架构 | 说明 |
+| --- | --- | --- |
+| Linux | amd64 / arm64 / armv7 | 主推部署平台 |
+| macOS | amd64 / arm64 | 开发与自托管 |
+| Windows | amd64 / arm64 | 作为 Windows Service 运行 |
+| Android (Termux) | arm64 / armv7 | 见 `deploy/termux/README.md` |
+
+交叉编译示例：
+
+```bash
+GOOS=linux   GOARCH=amd64 go build -o gitli-linux-amd64 .
+GOOS=darwin  GOARCH=arm64 go build -o gitli-darwin-arm64 .
+GOOS=windows GOARCH=amd64 go build -o gitli.exe .
+```
+
+发布版本由 CI 构建矩阵产出各平台二进制及 SHA-256 校验和，见 `.github/workflows/build.yml`。
+
+---
+
+## SSH 服务
+
+SSH Git 传输可按配置开启或关闭：
+
+```toml
+[ssh]
+enabled = true             # false 时完全关闭，零开销
+mode = "builtin"           # builtin | system
+address = ":2222"
+host_key_path = "./data/ssh_host_ed25519_key"
+handshake_timeout_seconds = 10
+idle_timeout_seconds = 300
+max_connections = 32
+```
+
+- **enabled = false**：完全跳过 SSH 模块初始化——不监听端口、不加载 Host Key、不创建 goroutine，日志记录 `SSH server disabled by config`。此时只能通过 HTTP(S) 访问 Git。
+- **mode = "builtin"**：使用 gitli 内置 SSH 服务器，自动生成/加载 Host Key，公钥认证对接数据库中的 SSH Key。
+- **mode = "system"**：由系统 `sshd` + `git-shell` 提供服务，gitli 仅同步用户公钥到 `authorized_keys`。
+
+---
+
 ## 快速开始
 
 ### 1. 构建
@@ -56,7 +100,19 @@ cp config.example.toml config.toml
 
 默认 HTTP 监听 `:8080`，SSH 监听 `:2222`。
 
-### 4. 验证
+> **安全基线：禁止以 root 运行。** gitli 在 Linux/Unix 下检测到 `os.Getuid() == 0` 时默认拒绝启动并退出（退出码 1）。请创建专用用户运行；确需强制时在 `[server]` 设置 `allow_root = true`（强烈不建议）。
+
+```bash
+# 创建 gitli 用户（无登录权限）
+sudo useradd -r -s /bin/false -d /var/lib/gitli gitli
+sudo mkdir -p /var/lib/gitli
+sudo chown -R gitli:gitli /var/lib/gitli
+
+# 以 gitli 用户运行
+sudo -u gitli ./gitli serve
+```
+
+### 5. 验证
 
 ```bash
 ./gitli version
@@ -80,6 +136,18 @@ curl http://127.0.0.1:8080/healthz
 - `[limits]`：并发与包体大小限制。
 - `[log]`：日志级别与格式。
 - `[mail]`：SMTP 配置。
+- `[git]`：系统 git 二进制与调用约束。
+
+### [git]
+
+| 键 | 说明 | 默认 |
+| --- | --- | --- |
+| `bin` | git 可执行文件路径，留空则从 `PATH` 查找 | 空 |
+| `timeout_seconds` | 单次 git 调用超时（秒） | `300` |
+| `check_version` | 版本低于 `min_version` 时是否拒绝启动 | `true` |
+| `min_version` | 最低 git 版本 | `2.30` |
+
+生产环境**推荐显式指定** `bin = "/usr/bin/git"`，避免受 `PATH` 影响导致加载到非预期的二进制。所有 git 调用均带超时、白名单环境变量，且禁止 shell 拼接。
 
 ### 配置优先级
 

@@ -32,8 +32,9 @@ func SecurityHeaders(secure bool) func(http.Handler) http.Handler {
 			h.Set("X-Content-Type-Options", "nosniff")
 			h.Set("X-Frame-Options", "DENY")
 			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			h.Set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()")
 			h.Set("Content-Security-Policy",
-				"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'")
+				"default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'")
 			if secure {
 				h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 			}

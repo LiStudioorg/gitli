@@ -30,11 +30,15 @@ func Defaults() *Config {
 				Parallelism: 2,
 				SaltLength:  16,
 				KeyLength:   32,
+				MinLength:   12,
 			},
 			Login: LoginConfig{
 				MaxAttempts:    5,
 				LockoutMinutes: 15,
 				WindowMinutes:  15,
+			},
+			Session: SessionConfig{
+				TTLHours: 720,
 			},
 		},
 		Modules: ModulesConfig{
@@ -77,6 +81,21 @@ func Defaults() *Config {
 			Port:    587,
 			From:    "noreply@example.com",
 			TLS:     true,
+		},
+		Git: GitConfig{
+			Bin:            "",
+			TimeoutSeconds: 300,
+			CheckVersion:   true,
+			MinVersion:     "2.30",
+		},
+		SSH: SSHConfig{
+			Enabled:                 true,
+			Mode:                    "builtin",
+			Address:                 ":2222",
+			HostKeyPath:             "./data/ssh_host_ed25519_key",
+			HandshakeTimeoutSeconds: 10,
+			IdleTimeoutSeconds:      300,
+			MaxConnections:          32,
 		},
 	}
 }

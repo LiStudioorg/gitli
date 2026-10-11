@@ -1,95 +1,128 @@
 // SPDX-License-Identifier: AGPL-3.0
-// Package app wires configuration, storage, database and servers together.
 package app
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/LiStudioorg/gitli/internal/config"
 	"github.com/LiStudioorg/gitli/internal/db"
-	"github.com/LiStudioorg/gitli/internal/migrations"
+	"github.com/LiStudioorg/gitli/internal/infra/crypto"
+	"github.com/LiStudioorg/gitli/internal/infra/fsrepo"
+	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/secutil"
+	"github.com/LiStudioorg/gitli/internal/infra/weakpass"
+	"github.com/LiStudioorg/gitli/internal/service/activity"
+	"github.com/LiStudioorg/gitli/internal/service/audit"
+	"github.com/LiStudioorg/gitli/internal/service/auth"
+	"github.com/LiStudioorg/gitli/internal/service/comment"
+	"github.com/LiStudioorg/gitli/internal/service/git"
+	"github.com/LiStudioorg/gitli/internal/service/issue"
+	"github.com/LiStudioorg/gitli/internal/service/notification"
+	"github.com/LiStudioorg/gitli/internal/service/org"
+	"github.com/LiStudioorg/gitli/internal/service/pat"
+	"github.com/LiStudioorg/gitli/internal/service/pull"
+	"github.com/LiStudioorg/gitli/internal/service/repo"
+	"github.com/LiStudioorg/gitli/internal/service/store"
+	"github.com/LiStudioorg/gitli/internal/service/user"
+	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	httptransport "github.com/LiStudioorg/gitli/internal/transport/http"
 )
 
 // App is the top-level application runtime.
 type App struct {
-	Cfg *config.Config
-	DB  *db.DB
-	Log *slog.Logger
+	Cfg  *config.Config
+	DB   *db.DB
+	Log  *slog.Logger
+	Deps *httptransport.Deps
 }
 
-// New builds an App from configuration, opening the database and ensuring storage roots.
+// New builds an App from configuration, opening the database and wiring services.
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	log := NewLogger(cfg.Log)
+
 	if err := ensureDirs(cfg); err != nil {
 		return nil, err
 	}
+	if err := enforcePerms(cfg); err != nil {
+		return nil, err
+	}
+
 	database, err := db.Open(&cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	return &App{Cfg: cfg, DB: database, Log: log}, nil
-}
 
-// Migrate applies all embedded migrations for the configured dialect.
-func (a *App) Migrate(ctx context.Context) error {
-	paths, err := migrations.All(a.DB.Dialect)
-	if err != nil {
-		return err
-	}
-	migs, err := db.LoadMigrations(migrations.FS(), paths)
-	if err != nil {
-		return err
-	}
-	if err := a.DB.ApplyMigrations(ctx, migs); err != nil {
-		return err
-	}
-	a.Log.Info("migrations applied", "count", len(migs), "dialect", a.DB.Dialect)
-	return nil
-}
-
-// Serve starts the HTTP server and blocks until the context is cancelled.
-func (a *App) Serve(ctx context.Context) error {
-	handler := httptransport.NewServer(a.Cfg, a.DB, a.Log).Router()
-	srv := &http.Server{
-		Addr:              a.Cfg.Server.HTTP,
-		Handler:           handler,
-		ReadHeaderTimeout: 15 * time.Second,
-	}
-
-	errCh := make(chan error, 1)
-	go func() {
-		a.Log.Info("http server listening", "addr", a.Cfg.Server.HTTP)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
+	var cipher *crypto.Cipher
+	if cfg.Security.Crypto.KeyHex != "" {
+		cipher, err = crypto.NewFromHex(cfg.Security.Crypto.KeyHex)
+		if err != nil {
+			_ = database.Close()
+			return nil, fmt.Errorf("init cipher: %w", err)
 		}
-	}()
-
-	sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	select {
-	case err := <-errCh:
-		return err
-	case <-sigCtx.Done():
-		a.Log.Info("shutting down")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		return srv.Shutdown(shutdownCtx)
 	}
+
+	runner, err := gitcmd.Configure(gitcmd.Options{
+		Bin:            cfg.Git.Bin,
+		TimeoutSeconds: cfg.Git.TimeoutSeconds,
+		CheckVersion:   cfg.Git.CheckVersion,
+		MinVersion:     cfg.Git.MinVersion,
+		Log:            log,
+	})
+	if err != nil {
+		_ = database.Close()
+		return nil, fmt.Errorf("init git: %w", err)
+	}
+
+	st := store.New(database)
+	layout := fsrepo.New(cfg.Storage.Repos)
+
+	users := user.New(st)
+	authSvc := auth.New(st, auth.Options{
+		Users:             users,
+		Cipher:            cipher,
+		Log:               log,
+		MaxAttempt:        cfg.Security.Login.MaxAttempts,
+		Lockout:           cfg.Security.Login.LockoutDuration(),
+		MinPasswordLength: cfg.Security.Password.MinLength,
+	})
+	authSvc.SetPepper(cfg.Security.Password.Pepper)
+	if cfg.Security.Password.HIBP {
+		authSvc.SetHIBP(weakpass.NewHIBP())
+	}
+	tokens := pat.New(st)
+	authSvc.SetTokenResolver(tokens)
+
+	orgs := org.New(st)
+	repos := repo.New(st, layout, runner)
+
+	deps := &httptransport.Deps{
+		Cfg:           cfg,
+		DB:            database,
+		Log:           log,
+		FS:            layout,
+		GitCmd:        runner,
+		Auth:          authSvc,
+		Users:         users,
+		Tokens:        tokens,
+		Orgs:          orgs,
+		Repos:         repos,
+		Git:           git.New(runner),
+		Issues:        issue.New(st),
+		Pulls:         pull.New(st),
+		Comments:      comment.New(st),
+		Webhooks:      webhook.New(st),
+		Notifications: notification.New(st),
+		Activities:    activity.New(st),
+		Audit:         audit.New(st),
+	}
+	return &App{Cfg: cfg, DB: database, Log: log, Deps: deps}, nil
 }
 
-// Close releases the database handle.
-func (a *App) Close() error {
-	if a.DB != nil {
-		return a.DB.Close()
-	}
-	return nil
+func enforcePerms(cfg *config.Config) error {
+	return secutil.EnforceDirPerms(map[string]os.FileMode{
+		cfg.Storage.Repos: 0o750,
+	})
 }

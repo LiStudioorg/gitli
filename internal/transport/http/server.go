@@ -3,13 +3,11 @@
 package http
 
 import (
-	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/LiStudioorg/gitli/internal/config"
-	"github.com/LiStudioorg/gitli/internal/db"
 	"github.com/LiStudioorg/gitli/internal/transport/http/middleware"
 	"github.com/LiStudioorg/gitli/internal/version"
 	"github.com/LiStudioorg/gitli/web"
@@ -17,41 +15,124 @@ import (
 
 // Server holds dependencies for the HTTP transport.
 type Server struct {
-	cfg *config.Config
-	db  *db.DB
-	log *slog.Logger
+	deps   *Deps
+	apiLim *middleware.RateLimiter
 }
 
 // NewServer constructs the HTTP transport.
-func NewServer(cfg *config.Config, database *db.DB, log *slog.Logger) *Server {
-	return &Server{cfg: cfg, db: database, log: log}
+func NewServer(deps *Deps) *Server {
+	return &Server{
+		deps:   deps,
+		apiLim: middleware.NewRateLimiter(600, time.Minute),
+	}
 }
 
 // Router builds and returns the fully wired chi router.
 func (s *Server) Router() http.Handler {
+	d := s.deps
 	r := chi.NewRouter()
-	r.Use(middleware.Logger(s.log))
-	r.Use(middleware.Recover(s.log))
-	r.Use(middleware.SecurityHeaders(isHTTPS(s.cfg.Server.ExternalURL)))
-	r.Use(middleware.CORS(s.cfg.Server.ExternalURL))
+	r.Use(middleware.Logger(d.Log))
+	r.Use(middleware.Recover(d.Log))
+	r.Use(middleware.SecurityHeaders(isHTTPS(d.Cfg.Server.ExternalURL)))
+	r.Use(middleware.CORS(d.Cfg.Server.ExternalURL))
 
 	r.Get("/healthz", s.handleHealth)
-	r.Get("/api/v1/version", s.handleVersion)
+	r.Get("/metrics", s.handleMetrics)
 
 	api := chi.NewRouter()
+	api.Use(middleware.MaxBody(middleware.BodyLimitLarge))
+	api.Use(d.Auth.AuthenticateMiddleware)
 	api.Use(middleware.CSRF())
+
 	api.Get("/version", s.handleVersion)
+
+	api.Route("/auth", func(ar chi.Router) {
+		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/register", s.handleRegister)
+		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/login", s.handleLogin)
+		ar.Post("/logout", s.handleLogout)
+	})
+
+	api.Route("/user", func(ur chi.Router) {
+		ur.Get("/me", s.handleMe)
+		ur.Get("/repos", s.handleMyRepos)
+		ur.Patch("/me", s.handleUpdateProfile)
+		ur.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/me/password", s.handleChangePassword)
+		ur.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/me/rename", s.handleRename)
+		ur.Post("/me/totp/begin", s.handleTOTPBegin)
+		ur.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/me/totp/enable", s.handleTOTPEnable)
+		ur.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/me/totp/disable", s.handleTOTPDisable)
+		ur.Get("/me/keys", s.handleListSSHKeys)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/me/keys", s.handleAddSSHKey)
+		ur.Delete("/me/keys/{id}", s.handleDeleteSSHKey)
+		ur.Get("/me/tokens", s.handleListTokens)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/me/tokens", s.handleCreateToken)
+		ur.Delete("/me/tokens/{id}", s.handleRevokeToken)
+	})
+
+	api.Route("/orgs", func(or chi.Router) {
+		or.Post("/", s.handleCreateOrg)
+	})
+
+	api.Route("/repos", func(rr chi.Router) {
+		rr.Post("/", s.handleCreateRepo)
+		rr.Get("/{owner}/{repo}", s.handleGetRepo)
+		rr.Get("/{owner}/{repo}/clone-info", s.handleCloneInfo)
+		rr.Get("/{owner}/{repo}/archive/{format}", s.handleArchive)
+		rr.Delete("/{owner}/{repo}", s.handleDeleteRepo)
+		rr.Post("/{owner}/{repo}/transfer", s.handleTransferRepo)
+		rr.Get("/{owner}/{repo}/branches", s.handleBranches)
+		rr.Get("/{owner}/{repo}/tree/{ref}", s.handleTree)
+		rr.Get("/{owner}/{repo}/tree/{ref}/*", s.handleTree)
+		rr.Get("/{owner}/{repo}/blob/{ref}/*", s.handleBlob)
+		rr.Get("/{owner}/{repo}/commits/{ref}", s.handleCommits)
+		rr.Get("/{owner}/{repo}/diff", s.handleDiff)
+		rr.Get("/{owner}/{repo}/blame/{ref}/*", s.handleBlame)
+		rr.Get("/{owner}/{repo}/protections", s.handleListProtections)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/protections/branches", s.handleAddBranchProtection)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/protections/tags", s.handleAddTagProtection)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/collaborators", s.handleAddCollaborator)
+		rr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{owner}/{repo}/webhooks", s.handleCreateWebhook)
+		rr.Get("/{owner}/{repo}/webhooks", s.handleListWebhooks)
+	})
+
+	api.Route("/issues", func(ir chi.Router) {
+		ir.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/", s.handleCreateIssue)
+		ir.Get("/", s.handleListIssues)
+		ir.Get("/{number}", s.handleGetIssue)
+		ir.Post("/{number}/state", s.handleSetIssueState)
+		ir.Get("/{number}/comments", s.handleListIssueComments)
+		ir.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/comments", s.handleCreateIssueComment)
+	})
+
+	api.Route("/pulls", func(pr chi.Router) {
+		pr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/", s.handleCreatePull)
+		pr.Get("/", s.handleListPulls)
+		pr.Get("/{number}", s.handleGetPull)
+		pr.Post("/{number}/merge", s.handleMergePull)
+		pr.Get("/{number}/reviews", s.handleListReviews)
+		pr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/reviews", s.handleCreateReview)
+	})
+
+	api.Get("/notifications", s.handleListNotifications)
+	api.Post("/notifications/{id}/read", s.handleMarkNotificationRead)
+	api.Get("/events", s.handleSSE)
+	api.Get("/activities", s.handleActivities)
+
 	r.Mount("/api/v1", api)
 
-	web.Mount(r, s.log)
+	web.Mount(r, d.Log)
 	return r
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	if err := s.db.PingContext(r.Context()); err != nil {
+	if err := s.deps.DB.PingContext(r.Context()); err != nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"status": "degraded", "error": err.Error()})
 		return
 	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
 

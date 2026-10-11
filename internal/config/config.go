@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 package config
 
+import "time"
+
 // Config is the root configuration decoded from TOML.
 type Config struct {
 	Server   ServerConfig   `toml:"server"`
@@ -11,6 +13,27 @@ type Config struct {
 	Limits   LimitsConfig   `toml:"limits"`
 	Log      LogConfig      `toml:"log"`
 	Mail     MailConfig     `toml:"mail"`
+	Git      GitConfig      `toml:"git"`
+	SSH      SSHConfig      `toml:"ssh"`
+}
+
+// SSHConfig configures the SSH git transport.
+type SSHConfig struct {
+	Enabled                 bool   `toml:"enabled"`
+	Mode                    string `toml:"mode"` // builtin | system
+	Address                 string `toml:"address"`
+	HostKeyPath             string `toml:"host_key_path"`
+	HandshakeTimeoutSeconds int    `toml:"handshake_timeout_seconds"`
+	IdleTimeoutSeconds      int    `toml:"idle_timeout_seconds"`
+	MaxConnections          int    `toml:"max_connections"`
+}
+
+// GitConfig configures the system git binary.
+type GitConfig struct {
+	Bin            string `toml:"bin"`
+	TimeoutSeconds int    `toml:"timeout_seconds"`
+	CheckVersion   bool   `toml:"check_version"`
+	MinVersion     string `toml:"min_version"`
 }
 
 // ServerConfig holds HTTP/SSH listener settings.
@@ -18,6 +41,7 @@ type ServerConfig struct {
 	HTTP        string `toml:"http"`
 	SSH         string `toml:"ssh"`
 	ExternalURL string `toml:"external_url"`
+	AllowRoot   bool   `toml:"allow_root"`
 }
 
 // DatabaseConfig selects the SQL driver and connection pool.
@@ -42,9 +66,10 @@ type SecurityConfig struct {
 	Password PasswordConfig `toml:"password"`
 	Crypto   CryptoConfig   `toml:"crypto"`
 	Login    LoginConfig    `toml:"login"`
+	Session  SessionConfig  `toml:"session"`
 }
 
-// PasswordConfig holds Argon2id parameters.
+// PasswordConfig holds Argon2id parameters and password policy.
 type PasswordConfig struct {
 	Algorithm   string `toml:"algorithm"`
 	MemoryMB    uint32 `toml:"memory_mb"`
@@ -53,6 +78,8 @@ type PasswordConfig struct {
 	SaltLength  int    `toml:"salt_length"`
 	KeyLength   uint32 `toml:"key_length"`
 	Pepper      string `toml:"pepper"`
+	MinLength   int    `toml:"min_length"`
+	HIBP        bool   `toml:"hibp"`
 }
 
 // CryptoConfig holds the symmetric key used for secret at-rest encryption.
@@ -65,6 +92,18 @@ type LoginConfig struct {
 	MaxAttempts    int `toml:"max_attempts"`
 	LockoutMinutes int `toml:"lockout_minutes"`
 	WindowMinutes  int `toml:"window_minutes"`
+}
+
+// LockoutDuration returns the lockout window as a duration.
+func (l LoginConfig) LockoutDuration() time.Duration {
+	return time.Duration(l.LockoutMinutes) * time.Minute
+}
+
+// SessionConfig controls session binding and lifetime.
+type SessionConfig struct {
+	BindIP    bool `toml:"bind_ip"`
+	BindAgent bool `toml:"bind_agent"`
+	TTLHours  int  `toml:"ttl_hours"`
 }
 
 // ModulesConfig toggles feature modules.

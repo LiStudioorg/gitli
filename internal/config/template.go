@@ -9,6 +9,7 @@ const defaultTemplate = `# gitli 配置文件（首次运行自动生成）
 http = ":8080"
 ssh = ":2222"
 external_url = "http://localhost:8080"
+allow_root = false
 
 [database]
 driver = "sqlite"
@@ -30,6 +31,8 @@ iterations = 3
 parallelism = 2
 salt_length = 16
 key_length = 32
+min_length = 12
+hibp = false
 pepper = ""
 
 [security.crypto]
@@ -39,6 +42,11 @@ key_hex = ""
 max_attempts = 5
 lockout_minutes = 15
 window_minutes = 15
+
+[security.session]
+bind_ip = false
+bind_agent = false
+ttl_hours = 720
 
 [modules]
 core = true
@@ -82,4 +90,19 @@ username = ""
 password = ""
 from = "noreply@example.com"
 tls = true
+
+[git]
+bin = ""
+timeout_seconds = 300
+check_version = true
+min_version = "2.30"
+
+[ssh]
+enabled = true
+mode = "builtin"
+address = ":2222"
+host_key_path = "./data/ssh_host_ed25519_key"
+handshake_timeout_seconds = 10
+idle_timeout_seconds = 300
+max_connections = 32
 `

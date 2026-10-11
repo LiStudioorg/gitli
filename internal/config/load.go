@@ -38,6 +38,7 @@ func applyEnvOverrides(cfg *Config) {
 	setStr(&cfg.Server.HTTP, "GITLI_SERVER_HTTP")
 	setStr(&cfg.Server.SSH, "GITLI_SERVER_SSH")
 	setStr(&cfg.Server.ExternalURL, "GITLI_SERVER_EXTERNAL_URL")
+	setBool(&cfg.Server.AllowRoot, "GITLI_SERVER_ALLOW_ROOT")
 
 	setStr(&cfg.Database.Driver, "GITLI_DATABASE_DRIVER")
 	setStr(&cfg.Database.DSN, "GITLI_DATABASE_DSN")
@@ -54,8 +55,12 @@ func applyEnvOverrides(cfg *Config) {
 	setStr(&cfg.Security.Password.Pepper, "GITLI_PEPPER")
 	setStr(&cfg.Security.Crypto.KeyHex, "GITLI_SECURITY_CRYPTO_KEY")
 	setStr(&cfg.Security.Crypto.KeyHex, "GITLI_CRYPTO_KEY")
+	setInt(&cfg.Security.Password.MinLength, "GITLI_SECURITY_PASSWORD_MIN_LENGTH")
+	setBool(&cfg.Security.Password.HIBP, "GITLI_SECURITY_PASSWORD_HIBP")
 	setInt(&cfg.Security.Login.MaxAttempts, "GITLI_SECURITY_LOGIN_MAX_ATTEMPTS")
 	setInt(&cfg.Security.Login.LockoutMinutes, "GITLI_SECURITY_LOGIN_LOCKOUT_MINUTES")
+	setBool(&cfg.Security.Session.BindIP, "GITLI_SECURITY_SESSION_BIND_IP")
+	setBool(&cfg.Security.Session.BindAgent, "GITLI_SECURITY_SESSION_BIND_AGENT")
 
 	setStr(&cfg.Modules.Search, "GITLI_MODULES_SEARCH")
 
@@ -69,6 +74,19 @@ func applyEnvOverrides(cfg *Config) {
 	setStr(&cfg.Mail.Password, "GITLI_MAIL_PASSWORD")
 	setStr(&cfg.Mail.From, "GITLI_MAIL_FROM")
 	setBool(&cfg.Mail.TLS, "GITLI_MAIL_TLS")
+
+	setStr(&cfg.Git.Bin, "GITLI_GIT_BIN")
+	setInt(&cfg.Git.TimeoutSeconds, "GITLI_GIT_TIMEOUT_SECONDS")
+	setBool(&cfg.Git.CheckVersion, "GITLI_GIT_CHECK_VERSION")
+	setStr(&cfg.Git.MinVersion, "GITLI_GIT_MIN_VERSION")
+
+	setBool(&cfg.SSH.Enabled, "GITLI_SSH_ENABLED")
+	setStr(&cfg.SSH.Mode, "GITLI_SSH_MODE")
+	setStr(&cfg.SSH.Address, "GITLI_SSH_ADDRESS")
+	setStr(&cfg.SSH.HostKeyPath, "GITLI_SSH_HOST_KEY_PATH")
+	setInt(&cfg.SSH.HandshakeTimeoutSeconds, "GITLI_SSH_HANDSHAKE_TIMEOUT_SECONDS")
+	setInt(&cfg.SSH.IdleTimeoutSeconds, "GITLI_SSH_IDLE_TIMEOUT_SECONDS")
+	setInt(&cfg.SSH.MaxConnections, "GITLI_SSH_MAX_CONNECTIONS")
 }
 
 func setStr(dst *string, key string) {

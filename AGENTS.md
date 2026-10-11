@@ -29,7 +29,7 @@ gitli 是一个**轻量级、自研的 Git 服务平台**，目标是在单台�
 3. **多数据库**：SQLite（`modernc.org/sqlite`，纯 Go 无 CGO）、MySQL、PostgreSQL 三选一，业务层只依赖标准库 `database/sql`。
 4. `main.go` 必须在项目根目录。
 5. **不使用 Redis**：进程内队列 + SQLite 持久化。
-6. Git 操作统一调用系统 `git` 子进程（`exec.Command`），不引入 libgit2。
+6. Git 操作统一调用系统 `git` 子进程（`exec.CommandContext`），不引入 libgit2。Git 二进制路径优先取配置 `[git] bin`，为空时从 `PATH` 查找；**严禁 shell 字符串拼接（禁止 `sh -c`）**；必须带超时（默认 300s）；必须白名单化环境变量（`PATH`/`HOME`/`LANG=C.UTF-8`/`GIT_TERMINAL_PROMPT=0`），禁止传递 `GIT_SSH_COMMAND`、`GIT_EXTERNAL_DIFF` 等危险变量；所有仓库路径必须经 `ValidateRepoPath` 校验并限制在 data/repos 前缀内。
 7. SSH 使用系统 OpenSSH + `git-shell`。
 8. **无 AI、无 Pages、无安全扫描引擎**。
 9. 包管理只做：Generic、NPM、Docker/OCI、Go modules、Maven。
@@ -146,6 +146,15 @@ internal/domain    →  仅标准库（禁止 import 其它 internal 包）
 - **Git**：`exec.Command` 分开传参（禁止 shell 拼接），防路径穿越，pre-receive 钩子，并发限制。
 - **Webhook**：HMAC-SHA256 签名、SSRF 防护（禁止内网/元数据地址）、重试 + 死信。
 - **用户名可改**：旧名写入 `user_redirects`，HTTP 301 重定向，SSH 同样支持别名。
+- **禁止以 root 运行**：Linux/Unix 下检测到 `os.Getuid() == 0` 时默认拒绝启动并退出（退出码 1），除非显式配置 `[server] allow_root = true`（强烈不建议）。Windows 跳过该检查。
+
+### 跨平台约束
+
+- **禁止硬编码路径分隔符**：一律使用 `filepath.Join`，禁止直接拼接 `/` 或 `\`。
+- **禁止直接引用平台特定 syscall**：不直接引用 `syscall.SIGTERM` 等；信号由 `internal/platform` 的 `SignalSet()` 提供，Unix 监听 `SIGINT`/`SIGTERM`，Windows 仅监听 `os.Interrupt`。
+- **所有平台相关代码必须用 build tag 隔离**：例如 `//go:build !windows` 与 `//go:build windows`，集中放在 `internal/platform`。
+- **文件权限检查仅在 Unix 生效**；Windows 跳过权限位校验，仅校验目录存在。
+- **所有可选模块必须支持通过配置完全关闭**：关闭时不初始化、不分配资源、不启动 goroutine。
 
 ---
 

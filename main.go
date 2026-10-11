@@ -50,6 +50,10 @@ func run(args []string) error {
 		return err
 	}
 
+	if err := refuseRoot(cfg); err != nil {
+		return err
+	}
+
 	ctx := context.Background()
 
 	switch cmd {
