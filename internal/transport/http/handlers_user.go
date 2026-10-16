@@ -4,6 +4,7 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
@@ -394,11 +395,35 @@ func (s *Server) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) auditAction(r *http.Request, userID int64, action, result string) {
+	if s.deps.Audit == nil {
+		return
+	}
 	uid := userID
-	_ = s.deps.Audit.Record(r.Context(), audit.Entry{
-		ActorID: &uid, Action: action, TargetType: "user",
-		IP: clientIP(r), Detail: result + " agent=" + r.UserAgent(),
+	resource := action
+	if i := strings.IndexByte(action, '.'); i > 0 {
+		resource = action[:i]
+	}
+	actorType := "user"
+	if u := userFrom(r.Context()); u != nil && u.IsAdmin {
+		actorType = "admin"
+	}
+	s.deps.Audit.Log(audit.Entry{
+		ActorID:    &uid,
+		ActorType:  actorType,
+		Action:     action,
+		Event:      action,
+		Resource:   resource,
+		TargetType: resource,
+		Result:     result,
+		IP:         clientIP(r),
+		UserAgent:  r.UserAgent(),
+		RequestID:  requestIDFrom(r),
 	})
+}
+
+// requestIDFrom extracts (or is empty for) the request correlation id.
+func requestIDFrom(r *http.Request) string {
+	return r.Header.Get("X-Request-ID")
 }
 
 func publicUser(u *domain.User) map[string]any {

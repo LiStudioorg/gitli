@@ -91,13 +91,27 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) auditLogin(r *http.Request, userID *int64, action string, ok bool) {
-	result := "failure"
-	if ok {
-		result = "success"
+	if s.deps.Audit == nil {
+		return
 	}
-	_ = s.deps.Audit.Record(r.Context(), audit.Entry{
-		ActorID: userID, Action: "auth." + action, TargetType: "user",
-		IP: clientIP(r), Detail: result + " agent=" + r.UserAgent(),
+	result := audit.ResultFailure
+	if ok {
+		result = audit.ResultSuccess
+	}
+	event := "auth." + action
+	if action == "login" {
+		event = "auth.login." + result
+	}
+	s.deps.Audit.Log(audit.Entry{
+		ActorID:   userID,
+		ActorType: "user",
+		Event:     event,
+		Resource:  "auth",
+		Action:    event,
+		Result:    result,
+		IP:        clientIP(r),
+		UserAgent: r.UserAgent(),
+		RequestID: requestIDFrom(r),
 	})
 }
 
