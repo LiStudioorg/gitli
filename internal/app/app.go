@@ -55,6 +55,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/subscription"
 	"github.com/LiStudioorg/gitli/internal/service/topic"
 	"github.com/LiStudioorg/gitli/internal/service/user"
+	"github.com/LiStudioorg/gitli/internal/service/userwebhook"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	"github.com/LiStudioorg/gitli/internal/service/wiki"
 	httptransport "github.com/LiStudioorg/gitli/internal/transport/http"
@@ -158,6 +159,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Reactions:     reaction.New(st),
 		Subscriptions: subscription.New(st),
 		Webhooks:      webhook.New(st),
+		UserWebhooks:  userwebhook.New(st),
 		Notifications: notification.New(st),
 		Activities:    activity.New(st),
 		Audit:         audit.New(st),

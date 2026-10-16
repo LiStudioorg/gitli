@@ -91,6 +91,10 @@ func (s *Server) Router() http.Handler {
 		ar.Delete("/runners/{id}", s.handleDeleteRunner)
 		ar.Post("/runners/{id}/reset-token", s.handleResetRunnerToken)
 		ar.Get("/runners/{id}/jobs", s.handleListRunnerJobsAdmin)
+		ar.Get("/ci/runners", s.handleListCIRunners)
+		ar.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/ci/runners", s.handleCreateCIRunner)
+		ar.Patch("/ci/runners/{id}", s.handleUpdateCIRunner)
+		ar.Delete("/ci/runners/{id}", s.handleDeleteCIRunner)
 	})
 
 	api.Route("/auth", func(ar chi.Router) {
@@ -121,6 +125,10 @@ func (s *Server) Router() http.Handler {
 		ur.Get("/blocks", s.handleListBlockedUsers)
 		ur.Get("/notification-prefs", s.handleListNotifPrefs)
 		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Put("/notification-prefs", s.handleSetNotifPref)
+		ur.Get("/webhooks", s.handleListUserWebhooks)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/webhooks", s.handleCreateUserWebhook)
+		ur.Delete("/webhooks/{id}", s.handleDeleteUserWebhook)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Patch("/webhooks/{id}", s.handleUpdateUserWebhook)
 	})
 
 	api.Route("/orgs", func(or chi.Router) {
@@ -180,6 +188,8 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/ci/secrets", s.handleListCISecrets)
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Put("/{owner}/{repo}/ci/secrets", s.handleSetCISecret)
 		rr.Delete("/{owner}/{repo}/ci/secrets/{name}", s.handleDeleteCISecret)
+		rr.Get("/{owner}/{repo}/ci/cache", s.handleListCache)
+		rr.Delete("/{owner}/{repo}/ci/cache/{key}", s.handleDeleteCache)
 		rr.Group(func(gr chi.Router) {
 			gr.Use(s.RequirePermission("settings", "write"))
 			gr.Post("/{owner}/{repo}/rbac/collaborators", s.handleSetCollaborator)
@@ -203,6 +213,9 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/lfs/objects/batch", s.handleLFSBatch)
 		rr.Put("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSUpload)
 		rr.Get("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSDownload)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/lfs/locks", s.handleCreateLFSLock)
+		rr.Post("/{owner}/{repo}/lfs/locks/{id}/unlock", s.handleUnlockLFSLock)
+		rr.Get("/{owner}/{repo}/lfs/locks", s.handleListLFSLocks)
 		rr.Get("/{owner}/{repo}/packages/{type}", s.handleListPackageVersions)
 		rr.Post("/{owner}/{repo}/packages/{type}/{name}/{version}", s.handlePublishPackageVersion)
 		rr.Get("/{owner}/{repo}/packages/{type}/{name}/{version}/files/{filename}", s.handleDownloadPackageFile)
@@ -247,6 +260,8 @@ func (s *Server) Router() http.Handler {
 		pr.Post("/{number}/merge", s.handleMergePull)
 		pr.Get("/{number}/reviews", s.handleListReviews)
 		pr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/reviews", s.handleCreateReview)
+		pr.Get("/{number}/reviews/{reviewID}/comments", s.handleListReviewComments)
+		pr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/reviews/{reviewID}/comments", s.handleCreateReviewComment)
 	})
 
 	api.Route("/reactions", func(rx chi.Router) {
@@ -264,6 +279,8 @@ func (s *Server) Router() http.Handler {
 	api.Get("/notifications", s.handleListNotifications)
 	api.Post("/notifications/read-all", s.handleMarkAllNotificationsRead)
 	api.Get("/pipelines/{id}/jobs", s.handleListPipelineJobs)
+	api.Get("/pipelines/{id}/artifacts", s.handleListPipelineArtifacts)
+	api.Delete("/artifacts/{id}", s.handleDeleteArtifact)
 	api.Post("/notifications/{id}/read", s.handleMarkNotificationRead)
 	api.Get("/events", s.handleSSE)
 	api.Get("/activities", s.handleActivities)

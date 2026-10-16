@@ -164,3 +164,53 @@ func (s *Server) handleCreateReview(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, rev)
 }
+
+type createReviewCommentReq struct {
+	Path string `json:"path"`
+	Line int    `json:"line"`
+	Body string `json:"body"`
+}
+
+func (s *Server) handleListReviewComments(w http.ResponseWriter, r *http.Request) {
+	_, _, ok := s.resolveRepo(w, r, r.URL.Query().Get("owner"), r.URL.Query().Get("repo"), domain.PermRead)
+	if !ok {
+		return
+	}
+	reviewID, err := pathInt(r, "reviewID")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid review id")
+		return
+	}
+	comments, err := s.deps.Pulls.ListReviewComments(r.Context(), reviewID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, comments)
+}
+
+func (s *Server) handleCreateReviewComment(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	_, _, ok := s.resolveRepo(w, r, r.URL.Query().Get("owner"), r.URL.Query().Get("repo"), domain.PermRead)
+	if !ok {
+		return
+	}
+	reviewID, err := pathInt(r, "reviewID")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid review id")
+		return
+	}
+	var req createReviewCommentReq
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	c, err := s.deps.Pulls.AddReviewComment(r.Context(), reviewID, req.Path, req.Line, req.Body)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, c)
+}

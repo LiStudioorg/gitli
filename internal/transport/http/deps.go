@@ -46,6 +46,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/subscription"
 	"github.com/LiStudioorg/gitli/internal/service/topic"
 	"github.com/LiStudioorg/gitli/internal/service/user"
+	"github.com/LiStudioorg/gitli/internal/service/userwebhook"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	"github.com/LiStudioorg/gitli/internal/service/wiki"
 )
@@ -74,6 +75,7 @@ type Deps struct {
 	Reactions     *reaction.Service
 	Subscriptions *subscription.Service
 	Webhooks      *webhook.Service
+	UserWebhooks  *userwebhook.Service
 	Notifications *notification.Service
 	Activities    *activity.Service
 	Audit         *audit.Service
