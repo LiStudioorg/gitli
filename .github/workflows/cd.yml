@@ -27,10 +27,10 @@ jobs:
     name: Build frontend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -40,7 +40,7 @@ jobs:
           cd web
           npm ci
           npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: web-dist
           path: web/dist
@@ -65,21 +65,21 @@ jobs:
           - shard: 5
             targets: 'android/386,android/amd64,android/arm,android/arm64,aix/ppc64,dragonfly/amd64,illumos/amd64,solaris/amd64,plan9/386,plan9/amd64,plan9/arm,js/wasm,wasip1/wasm'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: Cache go build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/go-build
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go', 'go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-build-
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: web-dist
           path: web/dist
@@ -90,7 +90,7 @@ jobs:
         run: |
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           DATE="$DATE" bash scripts/build-targets.sh "${{ matrix.targets }}" dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: binaries-${{ matrix.shard }}
           path: dist/*
@@ -101,21 +101,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: Cache go build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/go-build
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/*.go', 'go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-build-
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: dist
           pattern: binaries-*

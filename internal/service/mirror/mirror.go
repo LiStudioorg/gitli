@@ -97,6 +97,42 @@ func (s *Service) ListByRepo(ctx context.Context, repoID int64) ([]*Mirror, erro
 	return out, rows.Err()
 }
 
+// ListAll returns every configured mirror across all repositories.
+func (s *Service) ListAll(ctx context.Context) ([]*Mirror, error) {
+	q := s.st.Rebind(`SELECT id, repo_id, remote_url, direction, interval_minutes, last_synced_at FROM repo_mirrors ORDER BY id`)
+	rows, err := s.st.DB.QueryContext(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list mirrors: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []*Mirror
+	for rows.Next() {
+		var m Mirror
+		var last sql.NullTime
+		if err := rows.Scan(&m.ID, &m.RepoID, &m.RemoteURL, &m.Direction, &m.IntervalMinutes, &last); err != nil {
+			return nil, fmt.Errorf("scan mirror: %w", err)
+		}
+		if last.Valid {
+			t := last.Time
+			m.LastSyncedAt = &t
+		}
+		out = append(out, &m)
+	}
+	return out, rows.Err()
+}
+
+// Due reports whether the mirror is due for a sync based on its interval.
+func (m *Mirror) Due(now time.Time) bool {
+	if m.LastSyncedAt == nil {
+		return true
+	}
+	interval := time.Duration(m.IntervalMinutes) * time.Minute
+	if interval <= 0 {
+		interval = time.Hour
+	}
+	return now.Sub(*m.LastSyncedAt) >= interval
+}
+
 // Sync performs a mirror sync against localPath using the configured direction.
 func (s *Service) Sync(ctx context.Context, mirrorID int64, localPath string) error {
 	q := s.st.Rebind(`SELECT id, repo_id, remote_url, direction, interval_minutes, last_synced_at FROM repo_mirrors WHERE id = ?`)

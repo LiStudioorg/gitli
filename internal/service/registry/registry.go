@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"time"
 
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
@@ -149,8 +150,9 @@ func (s *Service) commitStaged(ctx context.Context, path, digest string) error {
 	if err != nil {
 		return fmt.Errorf("registry: commit blob: %w", err)
 	}
-	if got != digest {
-		return fmt.Errorf("registry: digest mismatch: got sha256:%s", got)
+	want := strings.TrimPrefix(digest, "sha256:")
+	if got != want {
+		return fmt.Errorf("registry: digest mismatch: got sha256:%s want %s", got, digest)
 	}
 	return nil
 }
@@ -291,7 +293,7 @@ func (s *Service) GetBlob(digest string) (io.ReadCloser, error) {
 	if s.blobs == nil {
 		return nil, errors.New("registry: nil blob store")
 	}
-	return s.blobs.Open(digest)
+	return s.blobs.Open(strings.TrimPrefix(digest, "sha256:"))
 }
 
 // newUUID returns a random RFC 4122 version 4 UUID string.
