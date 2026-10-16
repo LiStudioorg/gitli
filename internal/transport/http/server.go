@@ -69,6 +69,7 @@ func (s *Server) Router() http.Handler {
 	r.Group(func(rn chi.Router) {
 		rn.Use(middleware.MaxBody(middleware.BodyLimitHuge))
 		rn.Post("/api/v1/runner/heartbeat", s.handleRunnerHeartbeat)
+		rn.Post("/api/v1/runner/register", s.handleRunnerRegister)
 		rn.Get("/api/v1/runner/jobs/next", s.handleRunnerNextJob)
 		rn.Post("/api/v1/runner/jobs/{id}/logs", s.handleRunnerJobLogs)
 		rn.Post("/api/v1/runner/jobs/{id}/result", s.handleRunnerJobResult)

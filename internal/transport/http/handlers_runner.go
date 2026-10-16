@@ -263,3 +263,40 @@ func (s *Server) handleCancelWorkflowJob(w http.ResponseWriter, r *http.Request)
 	s.auditAction(r, u.ID, "runner.job_cancel", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
+
+type runnerRegisterReq struct {
+	ID      string   `json:"id"`
+	OS      string   `json:"os"`
+	Arch    string   `json:"arch"`
+	Labels  []string `json:"labels"`
+	Version string   `json:"version"`
+}
+
+// handleRunnerRegister validates credentials and records capability info.
+// Unlike a token-exchange flow, the configured id+token remain valid; this is
+// only a connectivity/registration report.
+func (s *Server) handleRunnerRegister(w http.ResponseWriter, r *http.Request) {
+	rr, ok := s.runnerAuth(w, r)
+	if !ok {
+		return
+	}
+	var req runnerRegisterReq
+	if r.ContentLength > 0 {
+		_ = decodeJSON(w, r, &req)
+	}
+	labels := ""
+	if len(req.Labels) > 0 {
+		if b, err := jsonMarshalStrings(req.Labels); err == nil {
+			labels = b
+		}
+	}
+	if err := s.deps.Runners.Heartbeat(r.Context(), rr.RunnerID, "active", req.Version, req.OS, req.Arch, labels); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"runner_id": rr.RunnerID,
+		"name":      rr.Name,
+		"status":    "ok",
+	})
+}

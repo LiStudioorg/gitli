@@ -124,6 +124,10 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 		s.gitAuthChallenge(w)
 		return nil, nil, false
 	}
+	// Anonymous read access is allowed for public repositories.
+	if need <= domain.PermRead && !rp.IsPrivate {
+		return rp, u, true
+	}
 	if perm < need {
 		if u == nil {
 			s.gitAuthChallenge(w)
