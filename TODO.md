@@ -1,7 +1,19 @@
 # gitli 开发任务清单
 
 ## 正在进行
-- [ ] 触发 v0.1.0 正式 Release，验证 CD 流水线（用户指示后执行）
+- [ ] 后续迭代（用户指示）
+
+## 已完成
+
+### 发布流水线（CD 验证通过）
+- [x] v0.1.1 / v0.1.2 GitHub Release（各 29 附件：16 平台 tar.gz/zip + deb/rpm/apk + SHA256SUMS）
+- [x] ghcr.io 多架构镜像（linux/amd64、arm64、arm/v7）
+- [x] 修复 CD：去掉 sboms（syft 缺失）、Dockerfile 基础镜像升 1.27/22
+
+### Block 4 收尾
+- [x] Explore 页（公开仓库列表 + 搜索 + 分页）
+- [x] 仓库 OpenGraph meta 端点
+- [x] 公开活动时间线 API + ActivityFeed 组件
 
 ## 已完成
 
