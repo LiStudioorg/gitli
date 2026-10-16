@@ -14,7 +14,9 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/activity"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/auth"
+	"github.com/LiStudioorg/gitli/internal/service/block"
 	"github.com/LiStudioorg/gitli/internal/service/ci"
+	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
@@ -25,7 +27,9 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/metrics"
 	"github.com/LiStudioorg/gitli/internal/service/mirror"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
+	"github.com/LiStudioorg/gitli/internal/service/notifpref"
 	"github.com/LiStudioorg/gitli/internal/service/org"
+	"github.com/LiStudioorg/gitli/internal/service/org2fa"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pathperm"
@@ -40,6 +44,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/search"
 	"github.com/LiStudioorg/gitli/internal/service/signature"
 	"github.com/LiStudioorg/gitli/internal/service/subscription"
+	"github.com/LiStudioorg/gitli/internal/service/topic"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	"github.com/LiStudioorg/gitli/internal/service/wiki"
@@ -92,6 +97,12 @@ type Deps struct {
 
 	PathPerms  *pathperm.Service
 	Signatures *signature.Service
+	Topics     *topic.Service
+	CISecrets  *cisecret.Service
+
+	Blocks     *block.Service
+	NotifPrefs *notifpref.Service
+	Org2FA     *org2fa.Service
 
 	Runners *runner.Service
 

@@ -116,10 +116,17 @@ func (s *Server) Router() http.Handler {
 		ur.Get("/me/tokens", s.handleListTokens)
 		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/me/tokens", s.handleCreateToken)
 		ur.Delete("/me/tokens/{id}", s.handleRevokeToken)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/blocks", s.handleBlockUser)
+		ur.Delete("/blocks/{username}", s.handleUnblockUser)
+		ur.Get("/blocks", s.handleListBlockedUsers)
+		ur.Get("/notification-prefs", s.handleListNotifPrefs)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Put("/notification-prefs", s.handleSetNotifPref)
 	})
 
 	api.Route("/orgs", func(or chi.Router) {
 		or.Post("/", s.handleCreateOrg)
+		or.Get("/{org}/2fa-policy", s.handleGetOrg2FAPolicy)
+		or.With(middleware.MaxBody(middleware.BodyLimitSmall)).Put("/{org}/2fa-policy", s.handleSetOrg2FAPolicy)
 		or.Group(func(gr chi.Router) {
 			gr.Use(s.RequireOrgPermission("org", "admin"))
 			gr.Post("/{org}/members", s.handleAddOrgMember)
@@ -168,6 +175,11 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/collaborators", s.handleAddCollaborator)
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/webhooks", s.handleCreateWebhook)
 		rr.Get("/{owner}/{repo}/webhooks", s.handleListWebhooks)
+		rr.Get("/{owner}/{repo}/topics", s.handleListTopics)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Put("/{owner}/{repo}/topics", s.handleSetTopics)
+		rr.Get("/{owner}/{repo}/ci/secrets", s.handleListCISecrets)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Put("/{owner}/{repo}/ci/secrets", s.handleSetCISecret)
+		rr.Delete("/{owner}/{repo}/ci/secrets/{name}", s.handleDeleteCISecret)
 		rr.Group(func(gr chi.Router) {
 			gr.Use(s.RequirePermission("settings", "write"))
 			gr.Post("/{owner}/{repo}/rbac/collaborators", s.handleSetCollaborator)

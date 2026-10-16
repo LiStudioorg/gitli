@@ -22,7 +22,9 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/activity"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/auth"
+	"github.com/LiStudioorg/gitli/internal/service/block"
 	"github.com/LiStudioorg/gitli/internal/service/ci"
+	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
@@ -33,7 +35,9 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/metrics"
 	"github.com/LiStudioorg/gitli/internal/service/mirror"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
+	"github.com/LiStudioorg/gitli/internal/service/notifpref"
 	"github.com/LiStudioorg/gitli/internal/service/org"
+	"github.com/LiStudioorg/gitli/internal/service/org2fa"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pathperm"
@@ -49,6 +53,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/signature"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 	"github.com/LiStudioorg/gitli/internal/service/subscription"
+	"github.com/LiStudioorg/gitli/internal/service/topic"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	"github.com/LiStudioorg/gitli/internal/service/wiki"
@@ -173,7 +178,12 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Imports:       importer.New(st, runner),
 		PathPerms:     pathperm.New(st),
 		Signatures:    signature.New(st, runner),
+		Topics:        topic.New(st),
+		CISecrets:     cisecret.New(st, cipher),
 		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),
+		Blocks:        block.New(st),
+		NotifPrefs:    notifpref.New(st),
+		Org2FA:        org2fa.New(st),
 	}
 	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps}
 	deps.Dispatch = func(ctx context.Context, action string, repoID, actorID int64, payload map[string]any) {
