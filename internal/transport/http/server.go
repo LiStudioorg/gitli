@@ -152,6 +152,7 @@ func (s *Server) Router() http.Handler {
 	api.Route("/repos", func(rr chi.Router) {
 		rr.Post("/", s.handleCreateRepo)
 		rr.Get("/{owner}/{repo}", s.handleGetRepo)
+		rr.Get("/{owner}/{repo}/meta", s.handleRepoMeta)
 		rr.Get("/{owner}/{repo}/clone-info", s.handleCloneInfo)
 		rr.Get("/{owner}/{repo}/archive/{format}", s.handleArchive)
 		rr.Delete("/{owner}/{repo}", s.handleDeleteRepo)
@@ -291,6 +292,8 @@ func (s *Server) Router() http.Handler {
 	r.Get("/badges/{owner}/{repo}/status.svg", s.handleBadge)
 	r.Get("/feed/{owner}/{repo}.xml", s.handleRSS)
 	r.Get("/feed/{owner}/{repo}.atom", s.handleAtom)
+	r.Get("/api/v1/explore/repos", s.handleExploreRepos)
+	r.Get("/api/v1/explore/activity", s.handleExploreActivity)
 
 	web.Mount(r, d.Log)
 	return r

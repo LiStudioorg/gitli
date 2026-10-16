@@ -55,6 +55,20 @@ func (s *Service) ListByRepo(ctx context.Context, repoID int64, limit int) ([]*d
 	return scan(rows)
 }
 
+// ListPublic returns recent public activities across all repositories.
+func (s *Service) ListPublic(ctx context.Context, limit int) ([]*domain.Activity, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 30
+	}
+	q := s.st.Rebind(`SELECT id, actor_id, verb, object_type, object_id, repo_id, created_at FROM activities WHERE repo_id IS NOT NULL ORDER BY id DESC LIMIT ?`)
+	rows, err := s.st.DB.QueryContext(ctx, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return scan(rows)
+}
+
 func scan(rows *sql.Rows) ([]*domain.Activity, error) {
 	var out []*domain.Activity
 	for rows.Next() {

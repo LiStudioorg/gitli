@@ -126,6 +126,41 @@ func (s *Service) ListByOwner(ctx context.Context, ownerID int64, limit, offset 
 	return s.scanMany(rows)
 }
 
+// ListPublic lists non-private, non-archived repos ordered by recency.
+func (s *Service) ListPublic(ctx context.Context, limit, offset int) ([]*domain.Repo, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 30
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	q := s.st.Rebind(`SELECT ` + repoColumns + ` FROM repos WHERE is_private = 0 AND archived = 0 ORDER BY updated_at DESC LIMIT ? OFFSET ?`)
+	rows, err := s.st.DB.QueryContext(ctx, q, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return s.scanMany(rows)
+}
+
+// Search lists public repos whose name matches the query, ordered by recency.
+func (s *Service) Search(ctx context.Context, q string, limit, offset int) ([]*domain.Repo, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 30
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	pattern := "%" + q + "%"
+	query := s.st.Rebind(`SELECT ` + repoColumns + ` FROM repos WHERE is_private = 0 AND archived = 0 AND name LIKE ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`)
+	rows, err := s.st.DB.QueryContext(ctx, query, pattern, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return s.scanMany(rows)
+}
+
 // Delete removes a repo and its on-disk data.
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	r, err := s.ByID(ctx, id)

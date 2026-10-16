@@ -42,3 +42,22 @@ func (s *Server) handleActivities(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, items)
 }
+
+// handleExploreActivity serves the public cross-repo activity timeline.
+func (s *Server) handleExploreActivity(w http.ResponseWriter, r *http.Request) {
+	limit := 30
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	items, err := s.deps.Activities.ListPublic(r.Context(), limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if items == nil {
+		items = []*domain.Activity{}
+	}
+	writeJSON(w, http.StatusOK, items)
+}
