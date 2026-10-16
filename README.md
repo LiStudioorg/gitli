@@ -11,6 +11,24 @@
 
 ---
 
+## 发布状态
+
+**最新发布：[`v0.1.2`](https://github.com/LiStudioorg/gitli/releases)**（早期 Alpha）
+
+> ⚠️ v0.1.x 为**早期 Alpha 版本**：后端核心功能已就绪，前端页面仍在完善中，请勿用于生产环境。
+
+- 二进制：Linux（amd64/arm64/armv7/386）、macOS（amd64/arm64）、Windows（amd64/arm64/386）、FreeBSD（amd64/arm64/386/arm）、OpenBSD（amd64/arm64）、NetBSD（amd64）的 `tar.gz`/`zip`。
+- 系统包：Linux `deb` / `rpm` / `apk`（amd64/arm64/armv7/386）。
+- 校验：每个 Release 附带 `SHA256SUMS`。
+- 容器镜像：`ghcr.io/listudioorg/gitli`（多架构 `linux/amd64`、`linux/arm64`、`linux/arm/v7`）。
+
+```bash
+docker pull ghcr.io/listudioorg/gitli:latest
+docker run --rm ghcr.io/listudioorg/gitli:latest version
+```
+
+---
+
 ## CI/CD 状态
 
 仓库包含两个**触发条件互斥**的 GitHub Actions 工作流（在仓库 Actions 页面按名称查看运行状态）：
@@ -18,7 +36,7 @@
 | 工作流 | 文件 | 触发 | 职责 |
 | --- | --- | --- | --- |
 | **CI** | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | 分支 push（`main`）/ PR / 手动，显式排除 tag | gofmt、go vet、go test(-race)、前端构建、静态编译与交叉编译验证、golangci-lint |
-| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | 3 分片并行构建 22 个平台目标 + GoReleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 推送多架构镜像 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
+| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | GoReleaser 原生编译 16 个平台目标 + 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS）+ 推送多架构镜像 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
 
 > 在 GitHub 页面点击 **Actions** 标签页可查看两者的实时状态徽章；本文档不内联易失效的徽章 URL。
 > 工作流细节见 [`docs/CI.md`](./docs/CI.md)，发布步骤见 [`docs/RELEASE.md`](./docs/RELEASE.md)。
@@ -522,7 +540,7 @@ cd web && npm run build    # 前端构建成功
 | 工作流 | 触发 | 用途 |
 | --- | --- | --- |
 | `ci.yml`（CI） | 分支 push（`main`）/ PR，显式排除 tag | gofmt、go vet、go test、前端构建、静态编译验证、交叉编译验证、golangci-lint |
-| `cd.yml`（Release） | 仅 `v*` tag | 前端构建 + 3 个分片并行全量构建 22 个平台目标 + goreleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
+| `cd.yml`（Release） | 仅 `v*` tag | 前端构建 + GoReleaser 全量编译 16 个平台目标 + 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
 
 **提交代码或开 PR** 时 CI 自动跑测试与验证（约 2 分钟内）；**打 tag（如 `v1.0.0`）** 时 Release 自动全量构建并发布。
 

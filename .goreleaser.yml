@@ -86,6 +86,9 @@ release:
   draft: false
   prerelease: auto
   name_template: "gitli {{ .Version }}"
+  header: |
+    > ⚠️ **v0.1.x 为早期 Alpha 版本**：后端核心功能已就绪，
+    > 前端页面仍在完善中。请勿用于生产环境。
 
 changelog:
   use: github
