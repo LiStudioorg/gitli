@@ -5,7 +5,7 @@
 ## 当前进度
 
 **阶段**：Block 4 完成 90%，全部核心功能已实现并通过本地测试。
-**最近更新**：修复 config/DB 相对路径 → 绝对路径（git 钩子跨 CWD 可用）；完成 README 功能清单与集成测试。
+**最近更新**：新增后台任务刷新仓库语言统计（queue "refresh-languages"，建仓/Fork 后入队，App.Close 关闭队列）；未提交。
 
 ## 关键 commit（最新）
 

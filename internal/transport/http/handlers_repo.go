@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
@@ -61,6 +62,7 @@ func (s *Server) handleCreateRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auditAction(r, u.ID, "repo.create", "success")
+	s.enqueueLanguageRefresh(rp.ID)
 	writeJSON(w, http.StatusCreated, rp)
 }
 
@@ -237,6 +239,14 @@ func (s *Server) handleTransferRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	s.auditAction(r, u.ID, "repo.transfer", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// enqueueLanguageRefresh schedules a background language recomputation.
+func (s *Server) enqueueLanguageRefresh(repoID int64) {
+	if s.deps.Queue == nil {
+		return
+	}
+	s.deps.Queue.Enqueue("refresh-languages", strconv.FormatInt(repoID, 10))
 }
 
 func (s *Server) repoPath(r *http.Request, rp *domain.Repo) (string, error) {

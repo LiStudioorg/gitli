@@ -16,6 +16,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/infra/crypto"
 	"github.com/LiStudioorg/gitli/internal/infra/fsrepo"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/queue"
 	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 	"github.com/LiStudioorg/gitli/internal/infra/weakpass"
 	"github.com/LiStudioorg/gitli/internal/service/activity"
@@ -163,7 +164,17 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Mirrors:       mirror.New(st, runner),
 		Imports:       importer.New(st, runner),
 	}
-	return &App{Cfg: cfg, DB: database, Log: log, Deps: deps}, nil
+	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps}
+	q := queue.New(2, 256, log)
+	q.Register(LanguageRefreshKind, func(ctx context.Context, payload string) error {
+		repoID, err := ParseLanguageRefreshPayload(payload)
+		if err != nil {
+			return err
+		}
+		return a.RefreshLanguages(ctx, repoID)
+	})
+	deps.Queue = q
+	return a, nil
 }
 
 func enforcePerms(cfg *config.Config) error {

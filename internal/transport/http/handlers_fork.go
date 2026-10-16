@@ -50,5 +50,6 @@ func (s *Server) handleForkRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auditAction(r, u.ID, "repo.fork", "success")
+	s.enqueueLanguageRefresh(fork.ID)
 	writeJSON(w, http.StatusCreated, fork)
 }

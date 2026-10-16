@@ -49,7 +49,7 @@ gitli 是一个**轻量级、自研的 Git 服务平台**，目标是在单台�
 ## 3. 技术栈
 
 ### 后端
-- Go 1.22+（当前开发环境 go1.27）
+- Go 1.26+（依赖 modernc.org/sqlite 要求；当前开发环境 go1.27）
 - HTTP 路由：`github.com/go-chi/chi/v5`
 - 数据库驱动：`modernc.org/sqlite`、`github.com/go-sql-driver/mysql`、`github.com/jackc/pgx/v5/stdlib`
 - 迁移：`github.com/golang-migrate/migrate/v4`

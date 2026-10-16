@@ -399,7 +399,7 @@ sudo systemctl status gitli
 
 ### 环境要求
 
-- Go 1.22+（开发使用 go1.27）
+- Go 1.26+（依赖 modernc.org/sqlite 要求；CI 使用 go 1.27.x）
 - Node.js 18+ 与 npm
 
 ### 常用命令

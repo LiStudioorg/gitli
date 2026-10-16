@@ -8,6 +8,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/db"
 	"github.com/LiStudioorg/gitli/internal/infra/fsrepo"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/queue"
 	"github.com/LiStudioorg/gitli/internal/service/activity"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/auth"
@@ -44,6 +45,7 @@ type Deps struct {
 	Log    *slog.Logger
 	FS     *fsrepo.Layout
 	GitCmd *gitcmd.Runner
+	Queue  *queue.Queue
 
 	External config.ExternalURLs
 

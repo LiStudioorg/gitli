@@ -124,8 +124,13 @@ func (a *App) startHTTP(ctx context.Context, handler http.Handler) ([]*http.Serv
 	return servers, nil
 }
 
-// Close releases the database handle.
+// Close releases the queue and database handle.
 func (a *App) Close() error {
+	if a.Deps != nil && a.Deps.Queue != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		a.Deps.Queue.Shutdown(ctx)
+		cancel()
+	}
 	if a.DB != nil {
 		return a.DB.Close()
 	}
