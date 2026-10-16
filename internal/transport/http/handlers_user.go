@@ -440,3 +440,55 @@ func publicUser(u *domain.User) map[string]any {
 		"totp_enabled": u.TOTPEnabled,
 	}
 }
+
+func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	raw := ""
+	if c, err := r.Cookie("gitli_session"); err == nil {
+		raw = c.Value
+	}
+	sessions, err := s.deps.Auth.ListSessions(r.Context(), u.ID, raw)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, sessions)
+}
+
+func (s *Server) handleRevokeSession(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	id, err := pathInt(r, "id")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := s.deps.Auth.RevokeSession(r.Context(), u.ID, id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "auth.session.revoke", "success")
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+func (s *Server) handleRevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	raw := ""
+	if c, err := r.Cookie("gitli_session"); err == nil {
+		raw = c.Value
+	}
+	if err := s.deps.Auth.RevokeOtherSessions(r.Context(), u.ID, raw); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "auth.session.revoke", "success")
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}

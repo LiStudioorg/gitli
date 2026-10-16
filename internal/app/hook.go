@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 )
 
@@ -45,9 +47,36 @@ func (a *App) runPreReceive(ctx context.Context, owner, repoName string) error {
 	repoPath := a.Deps.FS.Path(owner, repoName)
 	if err := git.EnforceProtections(ctx, checker, rp.ID, updates, isAdmin, repoPath, a.Deps.Signatures); err != nil {
 		fmt.Fprintf(os.Stderr, "gitli: 推送被拒绝：%v\n", err)
+		a.auditPushEvent(ctx, rp.ID, "git.protected_branch.push.failure", owner, repoName, updates, audit.ResultDenied, err.Error())
 		return err
 	}
+	a.auditPushEvent(ctx, rp.ID, "git.push", owner, repoName, updates, audit.ResultSuccess, "")
 	return nil
+}
+
+// auditPushEvent records git push activity for the repository's owner.
+func (a *App) auditPushEvent(ctx context.Context, repoID int64, event, owner, repoName string, updates []git.RefUpdate, result, errMsg string) {
+	if a.Deps.Audit == nil {
+		return
+	}
+	refs := make([]string, 0, len(updates))
+	for _, u := range updates {
+		refs = append(refs, u.Ref)
+	}
+	actorName := os.Getenv("GITLI_HOOK_ACTOR")
+	tid := repoID
+	a.Deps.Audit.Log(audit.Entry{
+		ActorType:    "user",
+		Event:        event,
+		Resource:     "git",
+		Action:       event,
+		TargetType:   "repo",
+		TargetID:     &tid,
+		TargetName:   owner + "/" + repoName,
+		Result:       result,
+		ErrorMessage: errMsg,
+		Metadata:     `{"refs":"` + strings.Join(refs, ",") + `","actor":"` + actorName + `"}`,
+	})
 }
 
 // protectionChecker adapts the repo service to git.ProtectionChecker.

@@ -406,3 +406,57 @@ func hashString(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
 }
+
+// SessionInfo describes a device session for the settings UI (no token value).
+type SessionInfo struct {
+	ID        int64      `json:"id"`
+	IP        string     `json:"ip"`
+	UserAgent string     `json:"user_agent"`
+	CreatedAt time.Time  `json:"created_at"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	Current   bool       `json:"current"`
+}
+
+// ListSessions returns a user's active sessions. rawCurrent is the raw session
+// token of the caller, used to mark the current session.
+func (s *Service) ListSessions(ctx context.Context, userID int64, rawCurrent string) ([]SessionInfo, error) {
+	currentHash := ""
+	if rawCurrent != "" {
+		currentHash = token.Hash(rawCurrent)
+	}
+	q := s.st.Rebind(`SELECT id, token_hash, ip, user_agent, expires_at, created_at FROM sessions WHERE user_id = ? ORDER BY id DESC`)
+	rows, err := s.st.DB.QueryContext(ctx, q, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []SessionInfo
+	for rows.Next() {
+		var si SessionInfo
+		var hash string
+		var exp sql.NullTime
+		if err := rows.Scan(&si.ID, &hash, &si.IP, &si.UserAgent, &exp, &si.CreatedAt); err != nil {
+			return nil, err
+		}
+		if exp.Valid {
+			t := exp.Time
+			si.ExpiresAt = &t
+		}
+		si.Current = currentHash != "" && hash == currentHash
+		out = append(out, si)
+	}
+	return out, rows.Err()
+}
+
+// RevokeSession deletes one session owned by the user.
+func (s *Service) RevokeSession(ctx context.Context, userID, sessionID int64) error {
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM sessions WHERE id = ? AND user_id = ?`), sessionID, userID)
+	return err
+}
+
+// RevokeOtherSessions deletes all sessions for a user except the current one.
+func (s *Service) RevokeOtherSessions(ctx context.Context, userID int64, rawCurrent string) error {
+	hash := token.Hash(rawCurrent)
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM sessions WHERE user_id = ? AND token_hash != ?`), userID, hash)
+	return err
+}

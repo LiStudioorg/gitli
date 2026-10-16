@@ -191,3 +191,20 @@ func (s *Server) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
+
+// handleMyActivity implements GET /api/v1/user/activity — the caller's own
+// audit trail.
+func (s *Server) handleMyActivity(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	q := parseAuditQuery(r)
+	q.ActorID = &u.ID
+	logs, err := s.deps.Audit.Query(r.Context(), q)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"logs": logs})
+}
