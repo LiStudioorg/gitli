@@ -3,7 +3,19 @@
 > 外部记忆文件。每次完成小模块就更新。上下文被压缩后先读本文件 + `ROADMAP.md` + `STATUS.md`。
 
 ## 正在进行
-- [ ] SSH key 双用途（认证 + 签名）+ GPG 签名密钥
+- [x] SSH key 双用途（认证 + 签名）+ GPG 签名密钥
+
+## 企业级审计系统（用户单独要求，已完成）
+- [x] audit_logs 表扩展（actor/event/resource/target/old/new/result/request_id/metadata + 索引）
+- [x] audit_logs_archive 归档表 + audit_alert_rules 告警表
+- [x] 事件标准化（resource.action）+ 异步写入
+- [x] 查询/详情/流式导出(CSV/JSON)/统计 API
+- [x] 保留策略（retention_days）+ 每日归档任务
+- [x] 告警规则（邮件/Webhook）
+- [x] 前端管理面板审计 Tab（筛选/图表/导出/告警规则）
+- [x] 用户「安全活动」页（我的活动 + 会话管理）
+- [x] 文档 docs/AUDIT.md + README + AGENTS 约束
+- [x] git push 事件审计
 
 ## 功能批次
 
