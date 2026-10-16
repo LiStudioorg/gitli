@@ -79,3 +79,17 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push multi-arch image
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: |
+            ghcr.io/listudioorg/gitli:${{ github.ref_name }}
+            ghcr.io/listudioorg/gitli:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

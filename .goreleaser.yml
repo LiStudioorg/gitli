@@ -81,49 +81,6 @@ nfpms:
       - src: deploy/systemd/gitli.service
         dst: /lib/systemd/system/gitli.service
 
-dockers:
-  - id: gitli-amd64
-    image_templates:
-      - "ghcr.io/listudioorg/gitli:{{ .Version }}-amd64"
-      - "ghcr.io/listudioorg/gitli:latest-amd64"
-    dockerfile: deploy/docker/Dockerfile.release
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.title=gitli"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-      - "--label=org.opencontainers.image.licenses=AGPL-3.0"
-  - id: gitli-arm64
-    image_templates:
-      - "ghcr.io/listudioorg/gitli:{{ .Version }}-arm64"
-      - "ghcr.io/listudioorg/gitli:latest-arm64"
-    dockerfile: deploy/docker/Dockerfile.release
-    use: buildx
-    goarch: arm64
-    build_flag_templates:
-      - "--platform=linux/arm64"
-  - id: gitli-armv7
-    image_templates:
-      - "ghcr.io/listudioorg/gitli:{{ .Version }}-armv7"
-      - "ghcr.io/listudioorg/gitli:latest-armv7"
-    dockerfile: deploy/docker/Dockerfile.release
-    use: buildx
-    goarch: arm
-    goarm: '7'
-    build_flag_templates:
-      - "--platform=linux/arm/v7"
-
-docker_manifests:
-  - name_template: "ghcr.io/listudioorg/gitli:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/listudioorg/gitli:{{ .Version }}-amd64"
-      - "ghcr.io/listudioorg/gitli:{{ .Version }}-arm64"
-      - "ghcr.io/listudioorg/gitli:{{ .Version }}-armv7"
-  - name_template: "ghcr.io/listudioorg/gitli:latest"
-    image_templates:
-      - "ghcr.io/listudioorg/gitli:latest-amd64"
-      - "ghcr.io/listudioorg/gitli:latest-arm64"
-      - "ghcr.io/listudioorg/gitli:latest-armv7"
 
 release:
   github:
