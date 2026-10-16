@@ -192,6 +192,17 @@ func (s *Server) Router() http.Handler {
 		ir.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/comments", s.handleCreateIssueComment)
 	})
 
+	api.Route("/labels", func(lr chi.Router) {
+		lr.Get("/", s.handleListLabels)
+		lr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/", s.handleCreateLabel)
+		lr.Delete("/{id}", s.handleDeleteLabel)
+	})
+
+	api.Route("/milestones", func(mr chi.Router) {
+		mr.Get("/", s.handleListMilestones)
+		mr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/", s.handleCreateMilestone)
+	})
+
 	api.Route("/pulls", func(pr chi.Router) {
 		pr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/", s.handleCreatePull)
 		pr.Get("/", s.handleListPulls)

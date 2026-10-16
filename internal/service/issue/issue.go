@@ -137,3 +137,82 @@ func (s *Service) nextNumber(ctx context.Context, repoID int64) (int, error) {
 	}
 	return int(max.Int64) + 1, nil
 }
+
+// CreateLabel creates a repository label.
+func (s *Service) CreateLabel(ctx context.Context, repoID int64, name, color, description string) (*domain.Label, error) {
+	if color == "" {
+		color = "#cccccc"
+	}
+	q := s.st.Rebind(`INSERT INTO labels (repo_id, name, color, description) VALUES (?, ?, ?, ?)`)
+	res, err := s.st.DB.ExecContext(ctx, q, repoID, name, color, description)
+	if err != nil {
+		return nil, fmt.Errorf("issue: insert label: %w", err)
+	}
+	id, _ := res.LastInsertId()
+	return &domain.Label{ID: id, RepoID: repoID, Name: name, Color: color, Description: description}, nil
+}
+
+// ListLabels returns the labels defined for a repo.
+func (s *Service) ListLabels(ctx context.Context, repoID int64) ([]*domain.Label, error) {
+	q := s.st.Rebind(`SELECT id, repo_id, name, color, description, created_at FROM labels WHERE repo_id = ? ORDER BY name`)
+	rows, err := s.st.DB.QueryContext(ctx, q, repoID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []*domain.Label
+	for rows.Next() {
+		var l domain.Label
+		if err := rows.Scan(&l.ID, &l.RepoID, &l.Name, &l.Color, &l.Description, &l.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, &l)
+	}
+	return out, rows.Err()
+}
+
+// DeleteLabel removes a repository label.
+func (s *Service) DeleteLabel(ctx context.Context, repoID, labelID int64) error {
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM labels WHERE id = ? AND repo_id = ?`), labelID, repoID)
+	return err
+}
+
+// CreateMilestone creates a repository milestone.
+func (s *Service) CreateMilestone(ctx context.Context, repoID int64, title, description string, dueAt *time.Time) (*domain.Milestone, error) {
+	q := s.st.Rebind(`INSERT INTO milestones (repo_id, title, description, due_at) VALUES (?, ?, ?, ?)`)
+	res, err := s.st.DB.ExecContext(ctx, q, repoID, title, description, dueAt)
+	if err != nil {
+		return nil, fmt.Errorf("issue: insert milestone: %w", err)
+	}
+	id, _ := res.LastInsertId()
+	return &domain.Milestone{ID: id, RepoID: repoID, Title: title, Description: description, DueAt: dueAt, State: "open"}, nil
+}
+
+// ListMilestones returns the milestones for a repo.
+func (s *Service) ListMilestones(ctx context.Context, repoID int64) ([]*domain.Milestone, error) {
+	q := s.st.Rebind(`SELECT id, repo_id, title, description, due_at, state, created_at FROM milestones WHERE repo_id = ? ORDER BY id DESC`)
+	rows, err := s.st.DB.QueryContext(ctx, q, repoID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []*domain.Milestone
+	for rows.Next() {
+		var m domain.Milestone
+		if err := rows.Scan(&m.ID, &m.RepoID, &m.Title, &m.Description, &m.DueAt, &m.State, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, &m)
+	}
+	return out, rows.Err()
+}
+
+// SetMilestone assigns a milestone to an issue (0 clears it).
+func (s *Service) SetMilestone(ctx context.Context, issueID, milestoneID int64) error {
+	var val any
+	if milestoneID > 0 {
+		val = milestoneID
+	}
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE issues SET milestone_id = ?, updated_at = ? WHERE id = ?`), val, time.Now().UTC(), issueID)
+	return err
+}
