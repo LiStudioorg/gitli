@@ -12,7 +12,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/LiStudioorg/gitli/internal/service/package"
+	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 )
 

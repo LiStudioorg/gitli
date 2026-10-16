@@ -107,7 +107,7 @@ func Create(ctx context.Context, opts Options) error {
 // tar -> gzip -> (optional GCM encryptor) -> w.
 func writeArchive(ctx context.Context, w io.Writer, opts Options) error {
 	var (
-		sink   io.Writer = w
+		sink   = io.Writer(w)
 		framer *encryptWriter
 	)
 	if opts.Encrypt {
@@ -215,7 +215,7 @@ func Restore(ctx context.Context, archiveFile, destDir string, key []byte) error
 	if err != nil {
 		return fmt.Errorf("backup: open archive: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	magic := make([]byte, len(Magic))
 	n, err := io.ReadFull(f, magic)
@@ -251,7 +251,7 @@ func Restore(ctx context.Context, archiveFile, destDir string, key []byte) error
 	if err != nil {
 		return fmt.Errorf("backup: gzip reader: %w", err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	return readTar(ctx, gz, destDir)
 }
 

@@ -149,7 +149,7 @@ func (s *Server) authenticateGitBasic(r *http.Request) (*domain.User, bool) {
 	}
 	ctx := r.Context()
 	// Password may be a PAT (not tied to a username) or the account password.
-	if strings.HasPrefix(password, "glpat_") {
+	if strings.HasPrefix(password, "gitli_") {
 		tok, err := s.deps.Tokens.Resolve(ctx, password)
 		if err != nil {
 			return nil, false

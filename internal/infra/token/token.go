@@ -17,7 +17,7 @@ type Token struct {
 	Prefix string
 }
 
-// New generates a random token with the given prefix (e.g. "glpat").
+// New generates a random token with the given prefix (e.g. "gitli" for PATs).
 // 32 random bytes produce a URL-safe base64 string.
 func New(prefix string) (Token, error) {
 	raw := make([]byte, 32)

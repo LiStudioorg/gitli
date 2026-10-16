@@ -76,7 +76,6 @@ func (s *Service) CreatePipeline(ctx context.Context, repoID int64, commitSHA, r
 	return p, nil
 }
 
-// AddJob inserts a pending job attached to a pipeline.
 // PipelineRepoID returns the repository id a pipeline belongs to.
 func (s *Service) PipelineRepoID(ctx context.Context, pipelineID int64) (int64, error) {
 	q := s.st.Rebind(`SELECT repo_id FROM ci_pipelines WHERE id = ?`)
@@ -87,6 +86,7 @@ func (s *Service) PipelineRepoID(ctx context.Context, pipelineID int64) (int64, 
 	return repoID, nil
 }
 
+// AddJob inserts a pending job attached to a pipeline.
 func (s *Service) AddJob(ctx context.Context, pipelineID int64, name, stage, script string) (*Job, error) {
 	j := &Job{PipelineID: pipelineID, Name: name, Stage: stage, Script: script, Status: "pending"}
 	q := s.st.Rebind(`INSERT INTO ci_jobs (pipeline_id, name, stage, status, script) VALUES (?, ?, ?, ?, ?)`)

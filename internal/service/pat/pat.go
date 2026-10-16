@@ -48,7 +48,7 @@ func (s *Service) Create(ctx context.Context, p CreateParams) (*Created, error) 
 	if p.Kind == "" {
 		p.Kind = domain.TokenClassic
 	}
-	tok, err := infratoken.New("glpat")
+	tok, err := infratoken.New("gitli")
 	if err != nil {
 		return nil, err
 	}
