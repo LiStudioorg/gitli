@@ -63,7 +63,27 @@ interface AccessToken {
   created_at?: string
 }
 
-type TabKey = 'profile' | 'password' | 'keys' | 'tokens' | 'totp'
+interface ActivityLog {
+  id: number
+  event: string
+  resource?: string
+  result: string
+  target_type?: string
+  target_name?: string
+  actor_ip?: string
+  created_at?: string
+}
+
+interface Session {
+  id: number
+  ip?: string
+  user_agent?: string
+  created_at?: string
+  expires_at?: string
+  current?: boolean
+}
+
+type TabKey = 'profile' | 'password' | 'keys' | 'tokens' | 'totp' | 'security'
 
 interface Tab {
   key: TabKey
@@ -76,6 +96,7 @@ const tabs: Tab[] = [
   { key: 'keys', label: 'SSH / GPG 密钥' },
   { key: 'tokens', label: '访问令牌' },
   { key: 'totp', label: '两步验证' },
+  { key: 'security', label: '安全活动' },
 ]
 
 const auth = useAuthStore()
@@ -498,6 +519,129 @@ async function totpDisable() {
   }
 }
 
+// --- security activity ---
+const ACTIVITY_LIMIT = 25
+const activityResultOptions: { value: string; label: string }[] = [
+  { value: '', label: '全部' },
+  { value: 'success', label: 'success' },
+  { value: 'failure', label: 'failure' },
+  { value: 'denied', label: 'denied' },
+]
+
+const logs = ref<ActivityLog[]>([])
+const logsLoading = ref(false)
+const logsError = ref('')
+const logsPage = ref(0)
+const logsHasNext = ref(false)
+const logsResult = ref('')
+
+interface ActivityResponse {
+  logs: ActivityLog[]
+  total?: number
+}
+
+async function loadLogs() {
+  logsLoading.value = true
+  logsError.value = ''
+  try {
+    const params: Record<string, string | number> = {
+      limit: ACTIVITY_LIMIT,
+      offset: logsPage.value * ACTIVITY_LIMIT,
+    }
+    if (logsResult.value) params.result = logsResult.value
+    const { data } = await api.get<ActivityResponse>('/user/activity', { params })
+    logs.value = data.logs ?? []
+    logsHasNext.value = (data.logs?.length ?? 0) === ACTIVITY_LIMIT
+  } catch (e) {
+    logsError.value = errMessage(e)
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+function activityPrev() {
+  if (logsPage.value === 0) return
+  logsPage.value -= 1
+  loadLogs()
+}
+
+function activityNext() {
+  if (!logsHasNext.value) return
+  logsPage.value += 1
+  loadLogs()
+}
+
+function applyResultFilter() {
+  logsPage.value = 0
+  loadLogs()
+}
+
+function resultClass(result: string): string {
+  if (result === 'success') return 'badge-success'
+  if (result === 'failure') return 'badge-failure'
+  if (result === 'denied') return 'badge-denied'
+  return 'badge-neutral'
+}
+
+// --- sessions ---
+const sessions = ref<Session[]>([])
+const sessionsLoading = ref(false)
+const sessionsError = ref('')
+const sessionsOk = ref('')
+const revoking = ref<number | null>(null)
+const revokingAll = ref(false)
+
+async function loadSessions() {
+  sessionsLoading.value = true
+  sessionsError.value = ''
+  try {
+    const { data } = await api.get<Session[]>('/user/me/sessions')
+    sessions.value = data ?? []
+  } catch (e) {
+    sessionsError.value = errMessage(e)
+  } finally {
+    sessionsLoading.value = false
+  }
+}
+
+async function revokeSession(s: Session) {
+  if (s.current) return
+  if (!window.confirm('确定要注销该设备吗？')) return
+  revoking.value = s.id
+  sessionsError.value = ''
+  sessionsOk.value = ''
+  try {
+    await api.delete(`/user/me/sessions/${s.id}`)
+    sessionsOk.value = '已注销该设备'
+    await loadSessions()
+  } catch (e) {
+    sessionsError.value = errMessage(e)
+  } finally {
+    revoking.value = null
+  }
+}
+
+async function revokeOthers() {
+  if (!window.confirm('确定要注销除当前设备外的所有设备吗？')) return
+  revokingAll.value = true
+  sessionsError.value = ''
+  sessionsOk.value = ''
+  try {
+    await api.delete('/user/me/sessions')
+    sessionsOk.value = '已注销其他所有设备'
+    await loadSessions()
+  } catch (e) {
+    sessionsError.value = errMessage(e)
+  } finally {
+    revokingAll.value = false
+  }
+}
+
+function truncateUA(ua: string | undefined): string {
+  if (!ua) return '-'
+  return ua.length > 60 ? `${ua.slice(0, 57)}…` : ua
+}
+
 function selectTab(key: TabKey) {
   active.value = key
   if (key === 'keys') {
@@ -505,6 +649,10 @@ function selectTab(key: TabKey) {
     if (gpgKeys.value.length === 0 && !gpgLoading.value) loadGpg()
   }
   if (key === 'tokens' && tokens.value.length === 0 && !tokensLoading.value) loadTokens()
+  if (key === 'security') {
+    if (logs.value.length === 0 && !logsLoading.value) loadLogs()
+    if (sessions.value.length === 0 && !sessionsLoading.value) loadSessions()
+  }
 }
 
 onMounted(async () => {
@@ -699,7 +847,7 @@ onMounted(async () => {
         </section>
 
         <!-- 两步验证 -->
-        <section v-else class="card">
+        <section v-else-if="active === 'totp'" class="card">
           <p v-if="totpError" class="error">{{ totpError }}</p>
           <p v-if="totpOk" class="ok">{{ totpOk }}</p>
           <p>
@@ -735,6 +883,111 @@ onMounted(async () => {
               <li v-for="c in totpRecoveryCodes" :key="c"><code>{{ c }}</code></li>
             </ul>
           </div>
+        </section>
+
+        <!-- 安全活动 -->
+        <section v-else class="card">
+          <h3>我的活动</h3>
+          <p v-if="logsError" class="error">{{ logsError }}</p>
+          <div class="activity-toolbar">
+            <label class="inline">
+              结果
+              <select v-model="logsResult" @change="applyResultFilter">
+                <option v-for="o in activityResultOptions" :key="o.value" :value="o.value">
+                  {{ o.label }}
+                </option>
+              </select>
+            </label>
+          </div>
+          <p v-if="logsLoading" class="muted">加载中…</p>
+          <template v-else-if="logs.length">
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>事件</th>
+                  <th class="center">结果</th>
+                  <th>目标</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="l in logs" :key="l.id">
+                  <td class="muted nowrap">{{ fmtTime(l.created_at) }}</td>
+                  <td>{{ l.event }}</td>
+                  <td class="center">
+                    <span class="badge" :class="resultClass(l.result)">{{ l.result }}</span>
+                  </td>
+                  <td>
+                    <span v-if="l.target_name || l.target_type">
+                      {{ l.target_type ? l.target_type + ' · ' : '' }}{{ l.target_name || '-' }}
+                    </span>
+                    <span v-else class="muted">-</span>
+                  </td>
+                  <td class="muted nowrap"><code>{{ l.actor_ip || '-' }}</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+          <p v-else class="muted">暂无活动记录</p>
+          <div class="pager">
+            <button class="ghost" type="button" :disabled="logsPage === 0 || logsLoading" @click="activityPrev">
+              上一页
+            </button>
+            <span class="muted">第 {{ logsPage + 1 }} 页</span>
+            <button class="ghost" type="button" :disabled="!logsHasNext || logsLoading" @click="activityNext">
+              下一页
+            </button>
+          </div>
+
+          <hr class="divider" />
+
+          <h3>登录设备</h3>
+          <p v-if="sessionsError" class="error">{{ sessionsError }}</p>
+          <p v-if="sessionsOk" class="ok">{{ sessionsOk }}</p>
+          <p v-if="sessionsLoading" class="muted">加载中…</p>
+          <template v-else-if="sessions.length">
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>IP</th>
+                  <th>User-Agent</th>
+                  <th>创建时间</th>
+                  <th>过期时间</th>
+                  <th class="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="s in sessions" :key="s.id">
+                  <td class="nowrap"><code>{{ s.ip || '-' }}</code></td>
+                  <td :title="s.user_agent || ''">{{ truncateUA(s.user_agent) }}</td>
+                  <td class="muted nowrap">{{ fmtTime(s.created_at) }}</td>
+                  <td class="muted nowrap">{{ fmtTime(s.expires_at) }}</td>
+                  <td class="center nowrap">
+                    <span v-if="s.current" class="badge badge-success">当前设备</span>
+                    <button
+                      v-else
+                      class="danger"
+                      type="button"
+                      :disabled="revoking === s.id"
+                      @click="revokeSession(s)"
+                    >
+                      {{ revoking === s.id ? '注销中…' : '注销' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <button
+              class="danger"
+              type="button"
+              :disabled="revokingAll"
+              @click="revokeOthers"
+            >
+              {{ revokingAll ? '注销中…' : '注销其他所有设备' }}
+            </button>
+          </template>
+          <p v-else class="muted">暂无会话</p>
         </section>
       </main>
     </div>
@@ -1061,6 +1314,41 @@ label.check input {
 }
 .modal-actions .ghost {
   margin-right: 0;
+}
+.activity-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.badge-success {
+  background: var(--success-soft);
+  border: 1px solid var(--success);
+  color: #1a7f37;
+}
+.badge-failure {
+  background: rgba(209, 36, 47, 0.12);
+  border: 1px solid #d1242f;
+  color: #d1242f;
+}
+.badge-denied {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: #7a4b00;
+}
+.badge-neutral {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
 }
 @media (max-width: 768px) {
   .body {

@@ -471,6 +471,27 @@ sudo systemctl status gitli
 
 ---
 
+## 审计日志
+
+gitli 内置企业级审计系统，记录所有敏感操作，用于安全合规与事后追溯。
+
+- **标准化事件**：事件命名遵循 `resource.action`（如 `repo.delete`、`auth.login.failure`、`git.push`、`ssh_key.create`）。
+- **完整上下文**：记录操作者、类型（user/admin/system/runner）、IP、User-Agent、目标、结果（success/failure/denied）、请求 ID、旧值/新值（JSON）。
+- **异步写入**：通过进程内队列异步落库，不阻塞业务主流程。
+- **不可篡改**：应用层禁止修改/删除审计记录，超期仅归档到 `audit_logs_archive`。
+- **查询与导出**：管理面板支持按事件、用户、结果、时间范围筛选；支持流式导出 CSV / JSON。
+- **统计**：按天、按事件类型、按用户聚合。
+- **保留策略**：`[audit] retention_days`（默认 365）天后每日自动归档；`archive_retention_days`（默认 1095）控制归档保留。
+- **告警规则**：当某事件在时间窗口内超过阈值时触发（邮件 / Webhook 渠道）。
+
+管理 API（需管理员）：`GET /api/v1/admin/audit`、`/audit/{id}`、`/audit/stats`、`/audit/export`、`POST /audit/archive`、`/audit/alert-rules`。
+
+用户可在「设置 → 安全活动」查看自己的操作记录与登录设备，并可远程注销会话。
+
+详见 [`docs/AUDIT.md`](./docs/AUDIT.md)。
+
+---
+
 ## 开发指南
 
 ### 环境要求
