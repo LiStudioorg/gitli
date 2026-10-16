@@ -17,10 +17,31 @@ interface SSHKey {
   fingerprint?: string
   PublicKey?: string
   public_key?: string
+  CanAuthenticate?: boolean
+  can_authenticate?: boolean
+  CanSign?: boolean
+  can_sign?: boolean
   Verified?: boolean
   verified?: boolean
   LastUsedAt?: string | null
   last_used_at?: string | null
+  CreatedAt?: string
+  created_at?: string
+}
+
+interface GPGKey {
+  ID?: number
+  id?: number
+  KeyType?: string
+  key_type?: string
+  Title?: string
+  title?: string
+  Fingerprint?: string
+  fingerprint?: string
+  PublicKey?: string
+  public_key?: string
+  Verified?: boolean
+  verified?: boolean
   CreatedAt?: string
   created_at?: string
 }
@@ -52,7 +73,7 @@ interface Tab {
 const tabs: Tab[] = [
   { key: 'profile', label: '个人资料' },
   { key: 'password', label: '密码' },
-  { key: 'keys', label: 'SSH 密钥' },
+  { key: 'keys', label: 'SSH / GPG 密钥' },
   { key: 'tokens', label: '访问令牌' },
   { key: 'totp', label: '两步验证' },
 ]
@@ -136,8 +157,19 @@ async function changePassword() {
 const keys = ref<SSHKey[]>([])
 const keysLoading = ref(false)
 const keysError = ref('')
-const newKey = reactive({ title: '', public_key: '' })
+const newKey = reactive({
+  title: '',
+  public_key: '',
+  can_authenticate: true,
+  can_sign: false,
+})
 const keyAdding = ref(false)
+
+const editOpen = ref(false)
+const editBusy = ref(false)
+const editError = ref('')
+const editTarget = ref<SSHKey | null>(null)
+const editForm = reactive({ can_authenticate: true, can_sign: false })
 
 function keyId(k: SSHKey): number | undefined {
   return k.ID ?? k.id
@@ -147,6 +179,17 @@ function keyTitle(k: SSHKey): string {
 }
 function keyFingerprint(k: SSHKey): string {
   return k.Fingerprint ?? k.fingerprint ?? ''
+}
+function keyCanAuth(k: SSHKey): boolean {
+  return k.CanAuthenticate ?? k.can_authenticate ?? false
+}
+function keyCanSign(k: SSHKey): boolean {
+  return k.CanSign ?? k.can_sign ?? false
+}
+function fmtTime(v: string | null | undefined): string {
+  if (!v) return '-'
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleString()
 }
 
 async function loadKeys() {
@@ -163,21 +206,70 @@ async function loadKeys() {
 }
 
 async function addKey() {
-  if (!newKey.title || !newKey.public_key) return
-  keyAdding.value = true
   keysError.value = ''
+  if (!newKey.title || !newKey.public_key) {
+    keysError.value = '请填写标题与公钥'
+    return
+  }
+  if (!newKey.can_authenticate && !newKey.can_sign) {
+    keysError.value = '至少选择一种用途（认证或签名）'
+    return
+  }
+  keyAdding.value = true
   try {
     await api.post('/user/me/keys', {
       title: newKey.title,
       public_key: newKey.public_key,
+      can_authenticate: newKey.can_authenticate,
+      can_sign: newKey.can_sign,
     })
     newKey.title = ''
     newKey.public_key = ''
+    newKey.can_authenticate = true
+    newKey.can_sign = false
     await loadKeys()
   } catch (e) {
     keysError.value = errMessage(e)
   } finally {
     keyAdding.value = false
+  }
+}
+
+function openEdit(k: SSHKey) {
+  editTarget.value = k
+  editForm.can_authenticate = keyCanAuth(k)
+  editForm.can_sign = keyCanSign(k)
+  editError.value = ''
+  editOpen.value = true
+}
+
+function closeEdit() {
+  editOpen.value = false
+  editTarget.value = null
+  editError.value = ''
+}
+
+async function saveEdit() {
+  if (!editTarget.value) return
+  if (!editForm.can_authenticate && !editForm.can_sign) {
+    editError.value = '至少选择一种用途（认证或签名）'
+    return
+  }
+  const id = keyId(editTarget.value)
+  if (id == null) return
+  editBusy.value = true
+  editError.value = ''
+  try {
+    await api.patch(`/user/me/keys/${id}`, {
+      can_authenticate: editForm.can_authenticate,
+      can_sign: editForm.can_sign,
+    })
+    closeEdit()
+    await loadKeys()
+  } catch (e) {
+    editError.value = errMessage(e)
+  } finally {
+    editBusy.value = false
   }
 }
 
@@ -189,6 +281,71 @@ async function deleteKey(id: number | undefined) {
     await loadKeys()
   } catch (e) {
     keysError.value = errMessage(e)
+  }
+}
+
+// --- gpg keys ---
+const gpgKeys = ref<GPGKey[]>([])
+const gpgLoading = ref(false)
+const gpgError = ref('')
+const newGpg = reactive({ title: '', public_key: '', key_type: 'gpg' })
+const gpgAdding = ref(false)
+
+function gpgId(k: GPGKey): number | undefined {
+  return k.ID ?? k.id
+}
+function gpgTitle(k: GPGKey): string {
+  return k.Title ?? k.title ?? ''
+}
+function gpgFingerprint(k: GPGKey): string {
+  return k.Fingerprint ?? k.fingerprint ?? ''
+}
+
+async function loadGpg() {
+  gpgLoading.value = true
+  gpgError.value = ''
+  try {
+    const { data } = await api.get<GPGKey[]>('/user/me/gpg-keys')
+    gpgKeys.value = data ?? []
+  } catch (e) {
+    gpgError.value = errMessage(e)
+  } finally {
+    gpgLoading.value = false
+  }
+}
+
+async function addGpg() {
+  gpgError.value = ''
+  if (!newGpg.title || !newGpg.public_key) {
+    gpgError.value = '请填写标题与公钥'
+    return
+  }
+  gpgAdding.value = true
+  try {
+    await api.post('/user/me/gpg-keys', {
+      title: newGpg.title,
+      public_key: newGpg.public_key,
+      key_type: newGpg.key_type,
+    })
+    newGpg.title = ''
+    newGpg.public_key = ''
+    newGpg.key_type = 'gpg'
+    await loadGpg()
+  } catch (e) {
+    gpgError.value = errMessage(e)
+  } finally {
+    gpgAdding.value = false
+  }
+}
+
+async function deleteGpg(id: number | undefined) {
+  if (id == null) return
+  gpgError.value = ''
+  try {
+    await api.delete(`/user/me/gpg-keys/${id}`)
+    await loadGpg()
+  } catch (e) {
+    gpgError.value = errMessage(e)
   }
 }
 
@@ -343,7 +500,10 @@ async function totpDisable() {
 
 function selectTab(key: TabKey) {
   active.value = key
-  if (key === 'keys' && keys.value.length === 0 && !keysLoading.value) loadKeys()
+  if (key === 'keys') {
+    if (keys.value.length === 0 && !keysLoading.value) loadKeys()
+    if (gpgKeys.value.length === 0 && !gpgLoading.value) loadGpg()
+  }
   if (key === 'tokens' && tokens.value.length === 0 && !tokensLoading.value) loadTokens()
 }
 
@@ -402,28 +562,101 @@ onMounted(async () => {
           </button>
         </section>
 
-        <!-- SSH 密钥 -->
+        <!-- SSH / GPG 密钥 -->
         <section v-else-if="active === 'keys'" class="card">
+          <h3>SSH 密钥</h3>
           <p v-if="keysError" class="error">{{ keysError }}</p>
-          <h3>已登记的密钥</h3>
           <p v-if="keysLoading" class="muted">加载中…</p>
           <template v-else-if="keys.length">
-            <ul class="list">
-              <li v-for="k in keys" :key="keyId(k)">
-                <div class="li-main">
-                  <strong>{{ keyTitle(k) }}</strong>
-                  <code class="fingerprint">{{ keyFingerprint(k) }}</code>
-                </div>
-                <button class="danger" @click="deleteKey(keyId(k))">删除</button>
-              </li>
-            </ul>
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>标题</th>
+                  <th>指纹</th>
+                  <th class="center">认证</th>
+                  <th class="center">签名</th>
+                  <th class="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="k in keys" :key="keyId(k)">
+                  <td>{{ keyTitle(k) }}</td>
+                  <td><code class="fingerprint">{{ keyFingerprint(k) }}</code></td>
+                  <td class="center">
+                    <span class="badge" :class="keyCanAuth(k) ? 'badge-on' : 'badge-off'">
+                      {{ keyCanAuth(k) ? '✅' : '❌' }}
+                    </span>
+                  </td>
+                  <td class="center">
+                    <span class="badge" :class="keyCanSign(k) ? 'badge-on' : 'badge-off'">
+                      {{ keyCanSign(k) ? '✅' : '❌' }}
+                    </span>
+                  </td>
+                  <td class="center nowrap">
+                    <button class="ghost" type="button" @click="openEdit(k)">编辑</button>
+                    <button class="danger" type="button" @click="deleteKey(keyId(k))">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </template>
-          <p v-else class="muted">暂无数据</p>
-          <h3>添加密钥</h3>
+          <p v-else class="muted">暂无 SSH 密钥</p>
+
+          <h3>添加 SSH 密钥</h3>
           <label>标题<input v-model="newKey.title" placeholder="例如：笔记本" /></label>
           <label>公钥<textarea v-model="newKey.public_key" rows="4" placeholder="ssh-ed25519 AAAA..." /></label>
+          <label class="check">
+            <input v-model="newKey.can_authenticate" type="checkbox" />
+            允许用于认证（Git clone/push/pull）
+          </label>
+          <label class="check">
+            <input v-model="newKey.can_sign" type="checkbox" />
+            允许用于提交签名
+          </label>
           <button class="primary" :disabled="keyAdding" @click="addKey">
             {{ keyAdding ? '添加中…' : '添加密钥' }}
+          </button>
+
+          <hr class="divider" />
+
+          <h3>GPG 密钥</h3>
+          <p v-if="gpgError" class="error">{{ gpgError }}</p>
+          <p v-if="gpgLoading" class="muted">加载中…</p>
+          <template v-else-if="gpgKeys.length">
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>标题</th>
+                  <th>指纹</th>
+                  <th>上传时间</th>
+                  <th class="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="g in gpgKeys" :key="gpgId(g)">
+                  <td>{{ gpgTitle(g) }}</td>
+                  <td><code class="fingerprint">{{ gpgFingerprint(g) }}</code></td>
+                  <td class="muted nowrap">{{ fmtTime(g.CreatedAt ?? g.created_at) }}</td>
+                  <td class="center">
+                    <button class="danger" type="button" @click="deleteGpg(gpgId(g))">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+          <p v-else class="muted">暂无 GPG 密钥</p>
+
+          <h3>添加 GPG 密钥</h3>
+          <label>标题<input v-model="newGpg.title" placeholder="例如：工作密钥" /></label>
+          <label>公钥
+            <textarea
+              v-model="newGpg.public_key"
+              rows="5"
+              placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
+            />
+          </label>
+          <button class="primary" :disabled="gpgAdding" @click="addGpg">
+            {{ gpgAdding ? '添加中…' : '添加 GPG 密钥' }}
           </button>
         </section>
 
@@ -504,6 +737,28 @@ onMounted(async () => {
           </div>
         </section>
       </main>
+    </div>
+
+    <div v-if="editOpen" class="modal-backdrop" @click.self="closeEdit">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="key-edit-title">
+        <h3 id="key-edit-title">编辑 SSH 密钥用途</h3>
+        <p class="muted">{{ editTarget ? keyTitle(editTarget) : '' }}</p>
+        <p v-if="editError" class="error">{{ editError }}</p>
+        <label class="check">
+          <input v-model="editForm.can_authenticate" type="checkbox" />
+          允许用于认证（Git clone/push/pull）
+        </label>
+        <label class="check">
+          <input v-model="editForm.can_sign" type="checkbox" />
+          允许用于提交签名
+        </label>
+        <div class="modal-actions">
+          <button class="ghost" type="button" :disabled="editBusy" @click="closeEdit">取消</button>
+          <button class="primary" type="button" :disabled="editBusy" @click="saveEdit">
+            {{ editBusy ? '保存中…' : '保存' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -707,6 +962,105 @@ button:disabled {
 .muted {
   color: var(--muted);
   font-size: 0.9rem;
+}
+.key-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.key-table th,
+.key-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: middle;
+}
+.key-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.key-table .center {
+  text-align: center;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.badge {
+  display: inline-block;
+  min-width: 1.4rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.badge-on {
+  background: var(--success-soft);
+  border: 1px solid var(--success);
+}
+.badge-off {
+  background: transparent;
+  border: 1px solid var(--border);
+  opacity: 0.7;
+}
+label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+label.check input {
+  width: auto;
+  margin: 0;
+}
+.ghost {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 0.85rem;
+  margin-right: 0.4rem;
+}
+.ghost:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.75rem 0 0.25rem;
+  width: 100%;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.modal h3 {
+  margin: 0;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.modal-actions .ghost {
+  margin-right: 0;
 }
 @media (max-width: 768px) {
   .body {
