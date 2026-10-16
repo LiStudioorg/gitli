@@ -161,6 +161,8 @@ func (s *Server) Router() http.Handler {
 		rr.Post("/{owner}/{repo}/releases", s.handleCreateRelease)
 		rr.Post("/{owner}/{repo}/releases/{tag}/publish", s.handlePublishRelease)
 		rr.Get("/{owner}/{repo}/releases/{tag}/assets", s.handleListReleaseAssets)
+		rr.With(middleware.MaxBody(middleware.BodyLimitHuge)).Post("/{owner}/{repo}/releases/{tag}/assets", s.handleUploadReleaseAsset)
+		rr.Get("/{owner}/{repo}/releases/{tag}/assets/{name}", s.handleDownloadReleaseAsset)
 		rr.Get("/{owner}/{repo}/search", s.handleSearch)
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/lfs/objects/batch", s.handleLFSBatch)
 		rr.Put("/{owner}/{repo}/lfs/objects/{oid}", s.handleLFSUpload)

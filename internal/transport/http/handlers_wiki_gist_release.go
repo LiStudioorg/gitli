@@ -2,9 +2,14 @@
 package http
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
+	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 )
 
 type wikiPageReq struct {
@@ -296,4 +301,92 @@ func (s *Server) handleListReleaseAssets(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, assets)
+}
+
+// handleUploadReleaseAsset streams an uploaded file to disk and records it.
+func (s *Server) handleUploadReleaseAsset(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	owner := urlParam(r, "owner")
+	repoName := urlParam(r, "repo")
+	rp, _, ok := s.resolveRepo(w, r, owner, repoName, domain.PermWrite)
+	if !ok {
+		return
+	}
+	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "release not found")
+		return
+	}
+	name := r.URL.Query().Get("name")
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "name query parameter required")
+		return
+	}
+	if err := secutil.ValidateName("asset", name); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid asset name")
+		return
+	}
+	dir := filepath.Join(s.deps.Cfg.Storage.Attachments, "releases", strconv.FormatInt(rel.ID, 10))
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	dst := filepath.Join(dir, name)
+	f, err := os.Create(dst)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer func() { _ = f.Close() }()
+	size, err := io.Copy(f, r.Body)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	asset, err := s.deps.Releases.AddAsset(r.Context(), rel.ID, name, size, dst)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "release.asset_upload", "success")
+	writeJSON(w, http.StatusCreated, asset)
+}
+
+// handleDownloadReleaseAsset streams a stored release asset.
+func (s *Server) handleDownloadReleaseAsset(w http.ResponseWriter, r *http.Request) {
+	owner := urlParam(r, "owner")
+	repoName := urlParam(r, "repo")
+	rp, _, ok := s.resolveRepo(w, r, owner, repoName, domain.PermRead)
+	if !ok {
+		return
+	}
+	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "release not found")
+		return
+	}
+	assets, err := s.deps.Releases.ListAssets(r.Context(), rel.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	name := urlParam(r, "name")
+	for _, a := range assets {
+		if a.Name == name {
+			f, err := os.Open(a.StoredPath)
+			if err != nil {
+				writeError(w, http.StatusNotFound, "asset file missing")
+				return
+			}
+			defer func() { _ = f.Close() }()
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.Header().Set("Content-Disposition", "attachment; filename=\""+a.Name+"\"")
+			_, _ = io.Copy(w, f)
+			return
+		}
+	}
+	writeError(w, http.StatusNotFound, "asset not found")
 }
