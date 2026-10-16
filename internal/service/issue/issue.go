@@ -216,3 +216,9 @@ func (s *Service) SetMilestone(ctx context.Context, issueID, milestoneID int64) 
 	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE issues SET milestone_id = ?, updated_at = ? WHERE id = ?`), val, time.Now().UTC(), issueID)
 	return err
 }
+
+// Update edits an issue's title and body.
+func (s *Service) Update(ctx context.Context, id int64, title, body string) error {
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE issues SET title = ?, body = ?, updated_at = ? WHERE id = ?`), title, body, time.Now().UTC(), id)
+	return err
+}

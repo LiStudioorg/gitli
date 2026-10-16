@@ -188,6 +188,7 @@ func (s *Server) Router() http.Handler {
 		ir.Get("/", s.handleListIssues)
 		ir.Get("/{number}", s.handleGetIssue)
 		ir.Post("/{number}/state", s.handleSetIssueState)
+		ir.With(middleware.MaxBody(middleware.BodyLimitMedium)).Patch("/{number}", s.handleUpdateIssue)
 		ir.Get("/{number}/comments", s.handleListIssueComments)
 		ir.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/comments", s.handleCreateIssueComment)
 	})
@@ -213,6 +214,7 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api.Get("/notifications", s.handleListNotifications)
+	api.Post("/notifications/read-all", s.handleMarkAllNotificationsRead)
 	api.Get("/pipelines/{id}/jobs", s.handleListPipelineJobs)
 	api.Post("/notifications/{id}/read", s.handleMarkNotificationRead)
 	api.Get("/events", s.handleSSE)

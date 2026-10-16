@@ -78,3 +78,15 @@ func (s *Server) handleMarkNotificationRead(w http.ResponseWriter, r *http.Reque
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
+
+func (s *Server) handleMarkAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	if err := s.deps.Notifications.MarkAllRead(r.Context(), u.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}

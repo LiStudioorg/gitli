@@ -286,3 +286,42 @@ func (s *Server) handleCreateMilestone(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, m)
 }
+
+type editIssueReq struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
+func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	rp, _, ok := s.resolveRepo(w, r, r.URL.Query().Get("owner"), r.URL.Query().Get("repo"), domain.PermWrite)
+	if !ok {
+		return
+	}
+	number, err := pathInt(r, "number")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid number")
+		return
+	}
+	is, err := s.deps.Issues.ByNumber(r.Context(), rp.ID, int(number))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "issue not found")
+		return
+	}
+	var req editIssueReq
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.Title == "" {
+		req.Title = is.Title
+	}
+	if err := s.deps.Issues.Update(r.Context(), is.ID, req.Title, req.Body); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.dispatch(r, "issues", rp.ID, u.ID, map[string]any{"action": "edited", "number": is.Number})
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}

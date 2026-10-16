@@ -73,3 +73,9 @@ func (s *Service) UnreadCount(ctx context.Context, userID int64) (int, error) {
 	err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = ?`), userID, false).Scan(&n)
 	return n, err
 }
+
+// MarkAllRead marks every notification for a user as read.
+func (s *Service) MarkAllRead(ctx context.Context, userID int64) error {
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE notifications SET is_read = ? WHERE user_id = ? AND is_read = ?`), true, userID, false)
+	return err
+}
