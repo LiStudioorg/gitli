@@ -5,11 +5,14 @@
 ## 当前进度
 
 **阶段**：Block 1–4 全部功能已实现并推送；Runner 独立二进制已完成联调；主/子仓库 CI 均全绿。
-**HEAD**：`9e2a9bf`（main）
+**HEAD**：`ea0a789`（main）
 **最近更新**：Runner 后端 + 前端 + 文档；公开仓库匿名 clone 修复；CD 流水线修复。
 
 ## 关键 commit
 
+- `ea0a789` feat: ci artifacts/cache/runners, lfs locks, review comments, user webhooks
+- `f40896c` feat: repo topics, CI secrets, user blocks, notification prefs, org 2FA policies
+- `61c8840` feat: reactions, subscriptions, path permissions, commit signature verification
 - `9e2a9bf` feat: runner admin frontend + workflow tab, docs, config
 - `0f37a57` fix: allow anonymous read of public repos over git http, add runner register endpoint
 - `7d627c6` feat: runner support backend (id+token auth, admin api, jobs, logs, sse, workflow trigger)

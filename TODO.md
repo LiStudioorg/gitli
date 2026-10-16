@@ -1,7 +1,24 @@
 # gitli 开发任务清单
 
 ## 正在进行
-- [ ] 补充边缘功能与测试（reactions / subscriptions / path_permissions API）
+- [ ] 触发 v0.1.0 正式 Release，验证 CD 流水线（用户指示后执行）
+
+## 已完成
+
+### 边缘 API 补全（全 72 张表均已接线）
+- [x] reactions（表情回应）
+- [x] subscriptions（订阅）
+- [x] path_permissions（路径级权限）
+- [x] commit_signatures（提交签名验证）
+- [x] repo_topics（仓库主题）
+- [x] ci_secrets（CI 密钥，AES-256-GCM 加密）
+- [x] user_blocks（用户屏蔽）
+- [x] notification_prefs（通知偏好）
+- [x] org_2fa_policies（组织 2FA 策略）
+- [x] ci_artifacts / ci_cache / ci_runners（CI 制品/缓存/Runner）
+- [x] lfs_locks（LFS 文件锁）
+- [x] review_comments（行级评论）
+- [x] user_webhooks（用户级 Webhook）
 
 ## 已完成
 
