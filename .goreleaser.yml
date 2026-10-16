@@ -58,9 +58,6 @@ checksum:
   name_template: 'SHA256SUMS'
   algorithm: sha256
 
-sboms:
-  - artifacts: archive
-
 nfpms:
   - id: gitli
     package_name: gitli
