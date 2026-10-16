@@ -1,16 +1,17 @@
 # SPDX-License-Identifier: AGPL-3.0
-# GoReleaser 配置：只做打包与发布。
-# 二进制由 release.yml 的 matrix 分片并�行构建后下载到 dist/，此处 --skip=build。
+# GoReleaser 配置：编译 + 打包 + 发布（免费版全能路径）。
 version: 2
 
 project_name: gitli
 
-# 分片已构建好二进制，这里跳过编译；flags/ldflags 仍保留以支持本地
-# `goreleaser build --snapshot` 校验。
+before:
+  hooks:
+    - go mod tidy
+
 builds:
   - id: gitli
     binary: gitli
-    skip: true
+    main: .
     env:
       - CGO_ENABLED=0
     flags:
@@ -21,6 +22,24 @@ builds:
       - -X github.com/LiStudioorg/gitli/internal/version.commit={{.Commit}}
       - -X github.com/LiStudioorg/gitli/internal/version.date={{.Date}}
       - -X github.com/LiStudioorg/gitli/internal/version.builtBy=goreleaser
+    # 显式列出 all supported targets（modernc.org/sqlite 不支持部分平台）。
+    targets:
+      - linux_amd64
+      - linux_arm64
+      - linux_arm_7
+      - linux_386
+      - darwin_amd64
+      - darwin_arm64
+      - windows_amd64
+      - windows_arm64
+      - windows_386
+      - freebsd_amd64
+      - freebsd_arm64
+      - freebsd_386
+      - freebsd_arm_7
+      - openbsd_amd64
+      - openbsd_arm64
+      - netbsd_amd64
 
 archives:
   - id: gitli
@@ -34,9 +53,6 @@ archives:
       - LICENSE
       - README.md
       - config.example.toml
-    # 直接使用预构建产物
-    builds:
-      - gitli
 
 checksum:
   name_template: 'SHA256SUMS'
@@ -65,6 +81,50 @@ nfpms:
       - src: deploy/systemd/gitli.service
         dst: /lib/systemd/system/gitli.service
 
+dockers:
+  - id: gitli-amd64
+    image_templates:
+      - "ghcr.io/listudioorg/gitli:{{ .Version }}-amd64"
+      - "ghcr.io/listudioorg/gitli:latest-amd64"
+    dockerfile: deploy/docker/Dockerfile.release
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title=gitli"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.licenses=AGPL-3.0"
+  - id: gitli-arm64
+    image_templates:
+      - "ghcr.io/listudioorg/gitli:{{ .Version }}-arm64"
+      - "ghcr.io/listudioorg/gitli:latest-arm64"
+    dockerfile: deploy/docker/Dockerfile.release
+    use: buildx
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64"
+  - id: gitli-armv7
+    image_templates:
+      - "ghcr.io/listudioorg/gitli:{{ .Version }}-armv7"
+      - "ghcr.io/listudioorg/gitli:latest-armv7"
+    dockerfile: deploy/docker/Dockerfile.release
+    use: buildx
+    goarch: arm
+    goarm: '7'
+    build_flag_templates:
+      - "--platform=linux/arm/v7"
+
+docker_manifests:
+  - name_template: "ghcr.io/listudioorg/gitli:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/listudioorg/gitli:{{ .Version }}-amd64"
+      - "ghcr.io/listudioorg/gitli:{{ .Version }}-arm64"
+      - "ghcr.io/listudioorg/gitli:{{ .Version }}-armv7"
+  - name_template: "ghcr.io/listudioorg/gitli:latest"
+    image_templates:
+      - "ghcr.io/listudioorg/gitli:latest-amd64"
+      - "ghcr.io/listudioorg/gitli:latest-arm64"
+      - "ghcr.io/listudioorg/gitli:latest-armv7"
+
 release:
   github:
     owner: LiStudioorg
@@ -72,54 +132,6 @@ release:
   draft: false
   prerelease: auto
   name_template: "gitli {{ .Version }}"
-
-# 多架构镜像推送到 ghcr.io/LiStudioorg/gitli。
-# 使用预构建二进制（--skip=build），不再在镜像内重新编译。
-dockers:
-  - id: gitli-amd64
-    ids: [gitli]
-    image_templates:
-      - "ghcr.io/LiStudioorg/gitli:{{ .Version }}-amd64"
-      - "ghcr.io/LiStudioorg/gitli:latest-amd64"
-    dockerfile: deploy/docker/Dockerfile.release
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.title=gitli"
-      - "--label=org.opencontainers.image.licenses=AGPL-3.0"
-  - id: gitli-arm64
-    ids: [gitli]
-    image_templates:
-      - "ghcr.io/LiStudioorg/gitli:{{ .Version }}-arm64"
-      - "ghcr.io/LiStudioorg/gitli:latest-arm64"
-    dockerfile: deploy/docker/Dockerfile.release
-    use: buildx
-    goarch: arm64
-    build_flag_templates:
-      - "--platform=linux/arm64"
-  - id: gitli-armv7
-    ids: [gitli]
-    image_templates:
-      - "ghcr.io/LiStudioorg/gitli:{{ .Version }}-armv7"
-      - "ghcr.io/LiStudioorg/gitli:latest-armv7"
-    dockerfile: deploy/docker/Dockerfile.release
-    use: buildx
-    goarch: arm
-    goarm: "7"
-    build_flag_templates:
-      - "--platform=linux/arm/v7"
-
-docker_manifests:
-  - name_template: "ghcr.io/LiStudioorg/gitli:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/LiStudioorg/gitli:{{ .Version }}-amd64"
-      - "ghcr.io/LiStudioorg/gitli:{{ .Version }}-arm64"
-      - "ghcr.io/LiStudioorg/gitli:{{ .Version }}-armv7"
-  - name_template: "ghcr.io/LiStudioorg/gitli:latest"
-    image_templates:
-      - "ghcr.io/LiStudioorg/gitli:latest-amd64"
-      - "ghcr.io/LiStudioorg/gitli:latest-arm64"
-      - "ghcr.io/LiStudioorg/gitli:latest-armv7"
 
 changelog:
   use: github
