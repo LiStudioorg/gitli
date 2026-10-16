@@ -36,15 +36,19 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
+	"github.com/LiStudioorg/gitli/internal/service/pathperm"
 	"github.com/LiStudioorg/gitli/internal/service/pkgsvc"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
+	"github.com/LiStudioorg/gitli/internal/service/reaction"
 	"github.com/LiStudioorg/gitli/internal/service/registry"
 	"github.com/LiStudioorg/gitli/internal/service/release"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 	runnersvc "github.com/LiStudioorg/gitli/internal/service/runner"
 	"github.com/LiStudioorg/gitli/internal/service/search"
+	"github.com/LiStudioorg/gitli/internal/service/signature"
 	"github.com/LiStudioorg/gitli/internal/service/store"
+	"github.com/LiStudioorg/gitli/internal/service/subscription"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	"github.com/LiStudioorg/gitli/internal/service/wiki"
@@ -146,6 +150,8 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Issues:        issue.New(st),
 		Pulls:         pull.New(st),
 		Comments:      comment.New(st),
+		Reactions:     reaction.New(st),
+		Subscriptions: subscription.New(st),
 		Webhooks:      webhook.New(st),
 		Notifications: notification.New(st),
 		Activities:    activity.New(st),
@@ -165,6 +171,8 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Registry:      registry.New(st, pkgstore.NewBlobStore(st, cfg.Storage.Packages), log),
 		Mirrors:       mirror.New(st, runner),
 		Imports:       importer.New(st, runner),
+		PathPerms:     pathperm.New(st),
+		Signatures:    signature.New(st, runner),
 		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),
 	}
 	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps}

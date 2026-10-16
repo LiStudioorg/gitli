@@ -147,6 +147,10 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/tree/{ref}/*", s.handleTree)
 		rr.Get("/{owner}/{repo}/blob/{ref}/*", s.handleBlob)
 		rr.Get("/{owner}/{repo}/commits/{ref}", s.handleCommits)
+		rr.Get("/{owner}/{repo}/commits/{sha}/signature", s.handleCommitSignature)
+		rr.Get("/{owner}/{repo}/path-permissions", s.handleListPathPermissions)
+		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/path-permissions", s.handleCreatePathPermission)
+		rr.Delete("/{owner}/{repo}/path-permissions/{id}", s.handleDeletePathPermission)
 		rr.Get("/{owner}/{repo}/graph", s.handleGraph)
 		rr.Get("/{owner}/{repo}/pipelines", s.handleListPipelines)
 		rr.Get("/{owner}/{repo}/workflows", s.handleListRepoWorkflowJobs)
@@ -231,6 +235,18 @@ func (s *Server) Router() http.Handler {
 		pr.Post("/{number}/merge", s.handleMergePull)
 		pr.Get("/{number}/reviews", s.handleListReviews)
 		pr.With(middleware.MaxBody(middleware.BodyLimitMedium)).Post("/{number}/reviews", s.handleCreateReview)
+	})
+
+	api.Route("/reactions", func(rx chi.Router) {
+		rx.Get("/", s.handleListReactions)
+		rx.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/", s.handleAddReaction)
+		rx.With(middleware.MaxBody(middleware.BodyLimitSmall)).Delete("/", s.handleRemoveReaction)
+	})
+
+	api.Route("/subscriptions", func(sr chi.Router) {
+		sr.Get("/", s.handleGetSubscription)
+		sr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/", s.handleSubscribe)
+		sr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Delete("/", s.handleUnsubscribe)
 	})
 
 	api.Get("/notifications", s.handleListNotifications)

@@ -28,14 +28,18 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
 	"github.com/LiStudioorg/gitli/internal/service/pat"
+	"github.com/LiStudioorg/gitli/internal/service/pathperm"
 	"github.com/LiStudioorg/gitli/internal/service/pkgsvc"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
+	"github.com/LiStudioorg/gitli/internal/service/reaction"
 	"github.com/LiStudioorg/gitli/internal/service/registry"
 	"github.com/LiStudioorg/gitli/internal/service/release"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 	"github.com/LiStudioorg/gitli/internal/service/runner"
 	"github.com/LiStudioorg/gitli/internal/service/search"
+	"github.com/LiStudioorg/gitli/internal/service/signature"
+	"github.com/LiStudioorg/gitli/internal/service/subscription"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
 	"github.com/LiStudioorg/gitli/internal/service/wiki"
@@ -62,6 +66,8 @@ type Deps struct {
 	Issues        *issue.Service
 	Pulls         *pull.Service
 	Comments      *comment.Service
+	Reactions     *reaction.Service
+	Subscriptions *subscription.Service
 	Webhooks      *webhook.Service
 	Notifications *notification.Service
 	Activities    *activity.Service
@@ -83,6 +89,9 @@ type Deps struct {
 	Registry *registry.Service
 	Mirrors  *mirror.Service
 	Imports  *importer.Service
+
+	PathPerms  *pathperm.Service
+	Signatures *signature.Service
 
 	Runners *runner.Service
 
