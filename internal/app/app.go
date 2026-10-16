@@ -207,6 +207,10 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		return a.RunWebhookDeliver(ctx, payload)
 	})
 	deps.Queue = q
+	if deps.Audit != nil {
+		deps.Audit.SetLogger(log)
+		deps.Audit.Start()
+	}
 	return a, nil
 }
 

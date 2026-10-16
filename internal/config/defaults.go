@@ -139,5 +139,9 @@ func Defaults() *Config {
 			HeartbeatTimeoutSeconds: 90,
 			OfflineSweepIntervalSec: 60,
 		},
+		Audit: AuditConfig{
+			RetentionDays:        365,
+			ArchiveRetentionDays: 1095,
+		},
 	}
 }

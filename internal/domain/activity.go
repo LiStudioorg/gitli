@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 // Webhook is an outbound webhook endpoint.
 type Webhook struct {
@@ -53,12 +56,27 @@ type Activity struct {
 
 // AuditLog records a security-relevant action.
 type AuditLog struct {
-	ID         int64
-	ActorID    *int64
-	Action     string
-	TargetType string
-	TargetID   *int64
-	IP         string
-	Detail     string
-	CreatedAt  time.Time
+	ID             int64     `json:"id"`
+	ActorID        *int64    `json:"actor_id"`
+	ActorType      string    `json:"actor_type"`
+	ActorIP        string    `json:"actor_ip"`
+	ActorUserAgent string    `json:"actor_user_agent"`
+	Event          string    `json:"event"`
+	Resource       string    `json:"resource"`
+	Action         string    `json:"action"`
+	TargetType     string    `json:"target_type"`
+	TargetID       *int64    `json:"target_id"`
+	TargetName     string    `json:"target_name"`
+	OldValue       string    `json:"old_value"`
+	NewValue       string    `json:"new_value"`
+	Result         string    `json:"result"`
+	ErrorMessage   string    `json:"error_message"`
+	RequestID      string    `json:"request_id"`
+	Metadata       string    `json:"metadata"`
+	IP             string    `json:"ip"`
+	Detail         string    `json:"detail"`
+	CreatedAt      time.Time `json:"created_at"`
 }
+
+// ErrAuditNotFound indicates a missing audit log.
+var ErrAuditNotFound = errors.New("audit: not found")

@@ -78,3 +78,28 @@ func (a *App) CreateWorkflowJobs(ctx context.Context, repoID int64, commitSHA, r
 	}
 	return count, nil
 }
+
+// runAuditRetention periodically archives audit logs past the retention window.
+func (a *App) runAuditRetention(ctx context.Context) {
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	archive := func() {
+		n, err := a.Deps.Audit.Archive(ctx, a.Cfg.Audit.RetentionDays)
+		if err != nil {
+			a.Log.Warn("audit archive failed", "error", err)
+			return
+		}
+		if n > 0 {
+			a.Log.Info("audit logs archived", "count", n)
+		}
+	}
+	archive()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			archive()
+		}
+	}
+}

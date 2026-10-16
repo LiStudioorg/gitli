@@ -3,7 +3,6 @@ package http
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 )
@@ -59,29 +58,4 @@ func (s *Server) handleAdminStats(w http.ResponseWriter, r *http.Request) {
 		"uptime_seconds": s.deps.Metrics.Uptime().Seconds(),
 	}
 	writeJSON(w, http.StatusOK, out)
-}
-
-// handleAdminAudit lists recent audit log entries for administrators.
-func (s *Server) handleAdminAudit(w http.ResponseWriter, r *http.Request) {
-	if requireAdmin(w, r) == nil {
-		return
-	}
-	limit := 50
-	offset := 0
-	if v := r.URL.Query().Get("limit"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			limit = n
-		}
-	}
-	if v := r.URL.Query().Get("offset"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			offset = n
-		}
-	}
-	logs, err := s.deps.Audit.List(r.Context(), limit, offset)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"logs": logs, "limit": limit, "offset": offset})
 }

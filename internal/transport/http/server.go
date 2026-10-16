@@ -94,7 +94,14 @@ func (s *Server) Router() http.Handler {
 
 	api.Route("/admin", func(ar chi.Router) {
 		ar.Get("/stats", s.handleAdminStats)
-		ar.Get("/audit", s.handleAdminAudit)
+		ar.Get("/audit", s.handleAuditQuery)
+		ar.Get("/audit/stats", s.handleAuditStats)
+		ar.Get("/audit/export", s.handleAuditExport)
+		ar.Post("/audit/archive", s.handleAuditArchive)
+		ar.Get("/audit/alert-rules", s.handleListAlertRules)
+		ar.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/audit/alert-rules", s.handleCreateAlertRule)
+		ar.Delete("/audit/alert-rules/{id}", s.handleDeleteAlertRule)
+		ar.Get("/audit/{id}", s.handleAuditGet)
 		ar.Get("/runners", s.handleListRunners)
 		ar.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/runners", s.handleCreateRunner)
 		ar.Patch("/runners/{id}", s.handleUpdateRunner)

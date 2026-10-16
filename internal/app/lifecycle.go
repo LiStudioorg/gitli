@@ -53,6 +53,9 @@ func (a *App) Serve(ctx context.Context) error {
 	if a.Cfg.Runner.Enabled && a.Deps.Runners != nil {
 		go a.runnerOfflineSweeper(ctx)
 	}
+	if a.Deps.Audit != nil && a.Cfg.Audit.RetentionDays > 0 {
+		go a.runAuditRetention(ctx)
+	}
 
 	httpServers, err := a.startHTTP(ctx, handler)
 	if err != nil {
@@ -134,6 +137,9 @@ func (a *App) Close() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		a.Deps.Queue.Shutdown(ctx)
 		cancel()
+	}
+	if a.Deps != nil && a.Deps.Audit != nil {
+		a.Deps.Audit.Stop()
 	}
 	if a.DB != nil {
 		return a.DB.Close()

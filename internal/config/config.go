@@ -24,6 +24,13 @@ type Config struct {
 	CI       CIConfig       `toml:"ci"`
 	Search   SearchConfig   `toml:"search"`
 	Runner   RunnerConfig   `toml:"runner"`
+	Audit    AuditConfig    `toml:"audit"`
+}
+
+// AuditConfig configures audit log retention.
+type AuditConfig struct {
+	RetentionDays        int `toml:"retention_days"`
+	ArchiveRetentionDays int `toml:"archive_retention_days"`
 }
 
 // RunnerConfig configures the standalone runner subsystem.
