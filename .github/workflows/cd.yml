@@ -54,16 +54,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # modernc.org/sqlite 仅支持主流平台；以下为实测可编译的目标集合。
           - shard: 1
-            targets: 'linux/amd64,linux/arm64,linux/armv6,linux/armv7'
+            targets: 'linux/amd64,linux/arm64,linux/armv6,linux/armv7,linux/386,linux/loong64,linux/riscv64,linux/s390x,linux/ppc64le'
           - shard: 2
-            targets: 'linux/386,linux/riscv64,linux/loong64,linux/ppc64le,linux/s390x,linux/mips,linux/mipsle,linux/mips64,linux/mips64le,linux/ppc64'
-          - shard: 3
             targets: 'darwin/amd64,darwin/arm64,windows/amd64,windows/arm64,windows/386'
-          - shard: 4
-            targets: 'freebsd/386,freebsd/amd64,freebsd/arm,freebsd/arm64,openbsd/386,openbsd/amd64,openbsd/arm,openbsd/arm64,openbsd/ppc64,openbsd/riscv64,netbsd/386,netbsd/amd64,netbsd/arm,netbsd/arm64'
-          - shard: 5
-            targets: 'android/386,android/amd64,android/arm,android/arm64,aix/ppc64,dragonfly/amd64,illumos/amd64,solaris/amd64,plan9/386,plan9/amd64,plan9/arm,js/wasm,wasip1/wasm'
+          - shard: 3
+            targets: 'freebsd/amd64,freebsd/arm64,freebsd/386,freebsd/arm,openbsd/amd64,openbsd/arm64,netbsd/amd64,android/arm64'
     steps:
       - uses: actions/checkout@v5
         with:

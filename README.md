@@ -18,7 +18,7 @@
 | 工作流 | 文件 | 触发 | 职责 |
 | --- | --- | --- | --- |
 | **CI** | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | 分支 push（`main`）/ PR / 手动，显式排除 tag | gofmt、go vet、go test(-race)、前端构建、静态编译与交叉编译验证、golangci-lint |
-| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | 5 分片并行构建 46 个平台目标 + GoReleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 推送多架构镜像 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
+| **Release** | [`.github/workflows/cd.yml`](./.github/workflows/cd.yml) | 仅 `v*` tag / 手动 | 3 分片并行构建 22 个平台目标 + GoReleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 推送多架构镜像 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
 
 > 在 GitHub 页面点击 **Actions** 标签页可查看两者的实时状态徽章；本文档不内联易失效的徽章 URL。
 > 工作流细节见 [`docs/CI.md`](./docs/CI.md)，发布步骤见 [`docs/RELEASE.md`](./docs/RELEASE.md)。
@@ -68,16 +68,19 @@
 
 ## 支持的平台与架构
 
-gitli 为纯 Go 实现（SQLite 使用 `modernc.org/sqlite`，无 CGO），支持广泛的平台与架构。
+gitli 为纯 Go 实现（SQLite 使用 `modernc.org/sqlite`，无 CGO），支持主流平台与架构。
 
-| 平台 | amd64 | arm64 | armv7 | 说明 |
-| --- | :---: | :---: | :---: | --- |
-| Linux | ✅ | ✅ | ✅ | 主推部署平台（另含 386 / riscv64 / loong64 / ppc64le / s390x / mips 等） |
-| macOS (darwin) | ✅ | ✅ | — | 开发与自托管 |
-| Windows | ✅ | ✅ | — | 可作为 Windows Service 运行（含 386） |
-| Android (Termux) | ✅ | ✅ | ✅ | 见 `deploy/termux/README.md` |
+| 平台 | 支持的架构 |
+| --- | --- |
+| Linux | amd64, arm64, armv6, armv7, 386, riscv64, loong64, ppc64le, s390x |
+| macOS (darwin) | amd64, arm64 |
+| Windows | amd64, arm64, 386 |
+| FreeBSD | amd64, arm64, 386, arm |
+| OpenBSD | amd64, arm64 |
+| NetBSD | amd64 |
+| Android (Termux) | arm64（见 `deploy/termux/README.md`） |
 
-> 完整目标矩阵另含 BSD 家族（FreeBSD / OpenBSD / NetBSD / DragonFly）、Solaris / illumos / AIX、plan9 与 `js/wasm`、`wasip1/wasm`，共 **46 个平台/架构目标**，由发布流水线分片构建。
+> 由于 `modernc.org/sqlite` 为纯 Go 移植实现，**不支持** `js/wasm`、`wasip1/wasm`、`plan9`、`aix`、`illumos`、`solaris`、`dragonfly`、`linux/mips*`、`linux/ppc64` 等平台（这些平台无法编译该依赖）。发布流水线按上述支持矩阵分片构建。
 
 交叉编译示例：
 
@@ -464,7 +467,7 @@ cd web && npm run build    # 前端构建成功
 | 工作流 | 触发 | 用途 |
 | --- | --- | --- |
 | `ci.yml`（CI） | 分支 push（`main`）/ PR，显式排除 tag | gofmt、go vet、go test、前端构建、静态编译验证、交叉编译验证、golangci-lint |
-| `cd.yml`（Release） | 仅 `v*` tag | 前端构建 + 5 个分片并行全量构建 46 个平台目标 + goreleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
+| `cd.yml`（Release） | 仅 `v*` tag | 前端构建 + 3 个分片并行全量构建 22 个平台目标 + goreleaser 打包（tar.gz/zip、deb/rpm/apk、SHA256SUMS、SBOM）+ 多架构 Docker 镜像推送 `ghcr.io/LiStudioorg/gitli` + 创建 GitHub Release |
 
 **提交代码或开 PR** 时 CI 自动跑测试与验证（约 2 分钟内）；**打 tag（如 `v1.0.0`）** 时 Release 自动全量构建并发布。
 
@@ -476,7 +479,7 @@ cd web && npm run build    # 前端构建成功
 
 - **分层触发**：只在 tag 时全量构建；分支/PR 仅构建 `linux/amd64`。
 - **缓存优先**：`~/.cache/go-build`、`~/go/pkg/mod`、`web/node_modules`、Docker layer（`type=gha`）。
-- **分片并行**：46 个目标拆到 5 个 matrix 分片，2 核 runner 并行编译。
+- **分片并行**：22 个目标拆到 3 个 matrix 分片，2 核 runner 并行编译。
 - **避免重复编译**：分片产出二进制上传 artifact，最终 job 用 `goreleaser release --skip=build` 只做打包与发布。
 
 ---
