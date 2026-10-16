@@ -23,6 +23,16 @@ type Config struct {
 	LFS      LFSConfig      `toml:"lfs"`
 	CI       CIConfig       `toml:"ci"`
 	Search   SearchConfig   `toml:"search"`
+	Runner   RunnerConfig   `toml:"runner"`
+}
+
+// RunnerConfig configures the standalone runner subsystem.
+type RunnerConfig struct {
+	Enabled                 bool `toml:"enabled"`
+	JobTimeoutMinutes       int  `toml:"job_timeout_minutes"`
+	LogMaxMB                int  `toml:"log_max_mb"`
+	HeartbeatTimeoutSeconds int  `toml:"heartbeat_timeout_seconds"`
+	OfflineSweepIntervalSec int  `toml:"offline_sweep_interval_seconds"`
 }
 
 // WebhookConfig configures outbound webhook delivery.

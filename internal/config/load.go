@@ -158,6 +158,12 @@ func applyEnvOverrides(cfg *Config) {
 
 	setStr(&cfg.Search.Engine, "GITLI_SEARCH_ENGINE")
 	setStr(&cfg.Modules.Search, "GITLI_MODULES_SEARCH")
+
+	setBool(&cfg.Runner.Enabled, "GITLI_RUNNER_ENABLED")
+	setInt(&cfg.Runner.JobTimeoutMinutes, "GITLI_RUNNER_JOB_TIMEOUT_MINUTES")
+	setInt(&cfg.Runner.LogMaxMB, "GITLI_RUNNER_LOG_MAX_MB")
+	setInt(&cfg.Runner.HeartbeatTimeoutSeconds, "GITLI_RUNNER_HEARTBEAT_TIMEOUT_SECONDS")
+	setInt(&cfg.Runner.OfflineSweepIntervalSec, "GITLI_RUNNER_OFFLINE_SWEEP_INTERVAL_SECONDS")
 }
 
 func setStr(dst *string, key string) {

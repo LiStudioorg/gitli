@@ -50,6 +50,10 @@ func (a *App) Serve(ctx context.Context) error {
 	}
 	handler := httptransport.NewServer(a.Deps).Router()
 
+	if a.Cfg.Runner.Enabled && a.Deps.Runners != nil {
+		go a.runnerOfflineSweeper(ctx)
+	}
+
 	httpServers, err := a.startHTTP(ctx, handler)
 	if err != nil {
 		return err

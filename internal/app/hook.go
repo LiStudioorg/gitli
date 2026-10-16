@@ -15,7 +15,9 @@ func (a *App) RunHook(ctx context.Context, name, owner, repoName string) error {
 	switch name {
 	case "pre-receive":
 		return a.runPreReceive(ctx, owner, repoName)
-	case "post-receive", "update":
+	case "post-receive":
+		return a.runPostReceive(ctx, owner, repoName)
+	case "update":
 		return nil
 	default:
 		return fmt.Errorf("unknown hook %q", name)
@@ -68,4 +70,27 @@ func (p *protectionChecker) BranchProtections(ctx context.Context, repoID int64)
 
 func (p *protectionChecker) TagProtections(ctx context.Context, repoID int64) ([]string, error) {
 	return p.a.Deps.Repos.ListTagProtectionPatterns(ctx, repoID)
+}
+
+// runPostReceive creates runner jobs for workflow files on push.
+func (a *App) runPostReceive(ctx context.Context, owner, repoName string) error {
+	updates, err := git.ParsePreReceive(os.Stdin)
+	if err != nil {
+		return nil // post-receive failures must not block the push
+	}
+	ownerUser, err := a.Deps.Users.ByUsername(ctx, owner)
+	if err != nil {
+		return nil
+	}
+	rp, err := a.Deps.Repos.ByOwnerName(ctx, ownerUser.ID, repoName)
+	if err != nil {
+		return nil
+	}
+	for _, u := range updates {
+		if u.IsDelete() {
+			continue
+		}
+		_, _ = a.CreateWorkflowJobs(ctx, rp.ID, u.New, u.Ref)
+	}
+	return nil
 }

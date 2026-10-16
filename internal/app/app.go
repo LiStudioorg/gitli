@@ -42,6 +42,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/registry"
 	"github.com/LiStudioorg/gitli/internal/service/release"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
+	runnersvc "github.com/LiStudioorg/gitli/internal/service/runner"
 	"github.com/LiStudioorg/gitli/internal/service/search"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 	"github.com/LiStudioorg/gitli/internal/service/user"
@@ -164,6 +165,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Registry:      registry.New(st, pkgstore.NewBlobStore(st, cfg.Storage.Packages), log),
 		Mirrors:       mirror.New(st, runner),
 		Imports:       importer.New(st, runner),
+		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),
 	}
 	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps}
 	deps.Dispatch = func(ctx context.Context, action string, repoID, actorID int64, payload map[string]any) {

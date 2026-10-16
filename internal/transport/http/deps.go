@@ -34,6 +34,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/registry"
 	"github.com/LiStudioorg/gitli/internal/service/release"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
+	"github.com/LiStudioorg/gitli/internal/service/runner"
 	"github.com/LiStudioorg/gitli/internal/service/search"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/webhook"
@@ -82,6 +83,8 @@ type Deps struct {
 	Registry *registry.Service
 	Mirrors  *mirror.Service
 	Imports  *importer.Service
+
+	Runners *runner.Service
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
 	// layer to avoid an import cycle.

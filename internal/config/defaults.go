@@ -132,5 +132,12 @@ func Defaults() *Config {
 		Search: SearchConfig{
 			Engine: "grep",
 		},
+		Runner: RunnerConfig{
+			Enabled:                 true,
+			JobTimeoutMinutes:       30,
+			LogMaxMB:                10,
+			HeartbeatTimeoutSeconds: 90,
+			OfflineSweepIntervalSec: 60,
+		},
 	}
 }

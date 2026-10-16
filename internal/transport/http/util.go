@@ -3,6 +3,7 @@ package http
 
 import (
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -68,4 +69,23 @@ func (s *Server) dispatch(r *http.Request, action string, repoID, actorID int64,
 		return
 	}
 	s.deps.Dispatch(r.Context(), action, repoID, actorID, payload)
+}
+
+// jsonMarshalStrings encodes a []string to JSON, returning an error string.
+func jsonMarshalStrings(v []string) (string, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+// writeSSE writes a single server-sent event with the given event name and data.
+func writeSSE(w io.Writer, event, data string) {
+	// Data may contain newlines; emit each line as a separate "data:" field.
+	_, _ = io.WriteString(w, "event: "+event+"\n")
+	for _, line := range strings.Split(data, "\n") {
+		_, _ = io.WriteString(w, "data: "+line+"\n")
+	}
+	_, _ = io.WriteString(w, "\n")
 }

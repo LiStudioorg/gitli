@@ -64,6 +64,16 @@ func (s *Server) Router() http.Handler {
 		})
 	})
 
+	// Runner protocol (/api/v1/runner/*). Auth via Bearer token + X-Runner-ID;
+	// no CSRF and no session. Large body for log streaming.
+	r.Group(func(rn chi.Router) {
+		rn.Use(middleware.MaxBody(middleware.BodyLimitHuge))
+		rn.Post("/api/v1/runner/heartbeat", s.handleRunnerHeartbeat)
+		rn.Get("/api/v1/runner/jobs/next", s.handleRunnerNextJob)
+		rn.Post("/api/v1/runner/jobs/{id}/logs", s.handleRunnerJobLogs)
+		rn.Post("/api/v1/runner/jobs/{id}/result", s.handleRunnerJobResult)
+	})
+
 	api := chi.NewRouter()
 	api.Use(middleware.MaxBody(middleware.BodyLimitLarge))
 	api.Use(d.Auth.AuthenticateMiddleware)
@@ -74,6 +84,12 @@ func (s *Server) Router() http.Handler {
 	api.Route("/admin", func(ar chi.Router) {
 		ar.Get("/stats", s.handleAdminStats)
 		ar.Get("/audit", s.handleAdminAudit)
+		ar.Get("/runners", s.handleListRunners)
+		ar.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/runners", s.handleCreateRunner)
+		ar.Patch("/runners/{id}", s.handleUpdateRunner)
+		ar.Delete("/runners/{id}", s.handleDeleteRunner)
+		ar.Post("/runners/{id}/reset-token", s.handleResetRunnerToken)
+		ar.Get("/runners/{id}/jobs", s.handleListRunnerJobsAdmin)
 	})
 
 	api.Route("/auth", func(ar chi.Router) {
@@ -132,6 +148,9 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/commits/{ref}", s.handleCommits)
 		rr.Get("/{owner}/{repo}/graph", s.handleGraph)
 		rr.Get("/{owner}/{repo}/pipelines", s.handleListPipelines)
+		rr.Get("/{owner}/{repo}/workflows", s.handleListRepoWorkflowJobs)
+		rr.Post("/{owner}/{repo}/workflows/{id}/cancel", s.handleCancelWorkflowJob)
+		rr.Get("/{owner}/{repo}/workflows/{id}/logs", s.handleRunnerJobLogStream)
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/pipelines", s.handleCreatePipeline)
 		rr.Get("/{owner}/{repo}/ide/tree", s.handleIDETree)
 		rr.Get("/{owner}/{repo}/ide/file", s.handleIDEFile)
