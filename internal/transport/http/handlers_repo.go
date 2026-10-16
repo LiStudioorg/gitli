@@ -89,6 +89,13 @@ func (s *Server) loadRepoAndPerm(w http.ResponseWriter, r *http.Request, need do
 		return nil, nil, false
 	}
 	u := userFrom(r.Context())
+	// Package/other non-browser clients authenticate with HTTP Basic instead of
+	// a session cookie; fall back to it when no session user is present.
+	if u == nil {
+		if gu, ok := s.authenticateGitBasic(r); ok {
+			u = gu
+		}
+	}
 	var userID int64
 	var isAdmin bool
 	if u != nil {

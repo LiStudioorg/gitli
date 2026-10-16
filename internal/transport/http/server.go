@@ -52,6 +52,16 @@ func (s *Server) Router() http.Handler {
 		vr.Get("/v2/{owner}/{repo}/tags/list", s.handleListTags)
 	})
 
+	// Package registry (npm/go/maven/generic). No CSRF; package clients
+	// authenticate with HTTP Basic (password or PAT).
+	r.Group(func(pg chi.Router) {
+		pg.Use(d.Auth.AuthenticateMiddleware)
+		pg.Use(middleware.MaxBody(middleware.BodyLimitHuge))
+		pg.Get("/api/v1/repos/{owner}/{repo}/packages/{type}", s.handleListPackageVersions)
+		pg.Post("/api/v1/repos/{owner}/{repo}/packages/{type}/{name}/{version}", s.handlePublishPackageVersion)
+		pg.Get("/api/v1/repos/{owner}/{repo}/packages/{type}/{name}/{version}/files/{filename}", s.handleDownloadPackageFile)
+	})
+
 	// Git smart HTTP protocol. No CSRF (git clients), Basic/PAT auth.
 	r.Group(func(gr chi.Router) {
 		gr.Use(d.Auth.AuthenticateMiddleware)
@@ -217,9 +227,6 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/{owner}/{repo}/lfs/locks", s.handleCreateLFSLock)
 		rr.Post("/{owner}/{repo}/lfs/locks/{id}/unlock", s.handleUnlockLFSLock)
 		rr.Get("/{owner}/{repo}/lfs/locks", s.handleListLFSLocks)
-		rr.Get("/{owner}/{repo}/packages/{type}", s.handleListPackageVersions)
-		rr.Post("/{owner}/{repo}/packages/{type}/{name}/{version}", s.handlePublishPackageVersion)
-		rr.Get("/{owner}/{repo}/packages/{type}/{name}/{version}/files/{filename}", s.handleDownloadPackageFile)
 		rr.Post("/{owner}/{repo}/mirrors", s.handleCreateMirror)
 		rr.Get("/{owner}/{repo}/mirrors", s.handleListMirrors)
 		rr.Post("/{owner}/{repo}/imports", s.handleCreateImport)
