@@ -8,6 +8,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/db"
 	"github.com/LiStudioorg/gitli/internal/infra/fsrepo"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/oidc"
 	"github.com/LiStudioorg/gitli/internal/infra/queue"
 	"github.com/LiStudioorg/gitli/internal/service/activity"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
@@ -73,6 +74,7 @@ type Deps struct {
 	PackagesRoot string
 
 	Metrics  *metrics.Registry
+	OIDC     *oidc.Provider
 	CI       *ci.Service
 	IDE      *ide.Service
 	PkgSvc   *pkgsvc.Service

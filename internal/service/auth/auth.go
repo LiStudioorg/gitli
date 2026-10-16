@@ -321,6 +321,13 @@ func (s *Service) checkAndMarkCode(ctx context.Context, userID int64, code strin
 	return err
 }
 
+// CreateSession creates a session for an already-authenticated user and returns
+// the raw session token (used by external login flows such as OIDC).
+func (s *Service) CreateSession(ctx context.Context, u *domain.User, ip, agent string) (string, error) {
+	_, raw, err := s.createSession(ctx, u.ID, ip, agent)
+	return raw, err
+}
+
 func (s *Service) createSession(ctx context.Context, userID int64, ip, agent string) (*domain.Session, string, error) {
 	tok, err := token.New("gls")
 	if err != nil {

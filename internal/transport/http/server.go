@@ -80,6 +80,8 @@ func (s *Server) Router() http.Handler {
 		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/register", s.handleRegister)
 		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/login", s.handleLogin)
 		ar.Post("/logout", s.handleLogout)
+		ar.Get("/oidc/login", s.handleOIDCLogin)
+		ar.Get("/oidc/callback", s.handleOIDCCallback)
 	})
 
 	api.Route("/user", func(ur chi.Router) {

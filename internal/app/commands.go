@@ -4,12 +4,15 @@ package app
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/LiStudioorg/gitli/internal/config"
 	"github.com/LiStudioorg/gitli/internal/domain"
+	"github.com/LiStudioorg/gitli/internal/infra/oidc"
 	"github.com/LiStudioorg/gitli/internal/service/ci"
 )
 
@@ -67,4 +70,27 @@ func (a *App) PromoteAdmin(ctx context.Context, userID int64) error {
 	q := a.Deps.DB.Rebind(`UPDATE users SET is_admin = ?, updated_at = ? WHERE id = ?`)
 	_, err := a.Deps.DB.ExecContext(ctx, q, true, time.Now().UTC(), userID)
 	return err
+}
+
+// oidcProvider builds the OIDC provider when enabled, returning nil on any
+// configuration problem so a misconfigured IdP never blocks startup.
+func oidcProvider(cfg *config.Config, log *slog.Logger) *oidc.Provider {
+	if !cfg.OIDC.Enabled {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	p, err := oidc.New(ctx, oidc.Config{
+		Enabled:      cfg.OIDC.Enabled,
+		Issuer:       cfg.OIDC.Issuer,
+		ClientID:     cfg.OIDC.ClientID,
+		ClientSecret: cfg.OIDC.ClientSecret,
+		RedirectURL:  cfg.OIDC.RedirectURL,
+		Scopes:       cfg.OIDC.Scopes,
+	})
+	if err != nil {
+		log.Warn("oidc init failed; login via OIDC disabled", "error", err)
+		return nil
+	}
+	return p
 }

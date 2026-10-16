@@ -48,6 +48,49 @@ export interface CloneInfo {
   clone_default_branch: string
 }
 
+export interface Notification {
+  ID: number
+  UserID: number
+  SubjectType: string
+  SubjectID: number
+  Title: string
+  URL: string
+  IsRead: boolean
+  CreatedAt: string
+}
+
+export interface NotificationList {
+  items: Notification[]
+  unread: number
+}
+
+export interface Issue {
+  ID: number
+  RepoID: number
+  Number: number
+  Title: string
+  Body: string
+  AuthorID: number
+  State: string
+  CreatedAt: string
+  UpdatedAt: string
+}
+
+export interface Pull {
+  ID: number
+  RepoID: number
+  Number: number
+  Title: string
+  Body: string
+  AuthorID: number
+  State: string
+  Merged: boolean
+  HeadBranch: string
+  BaseBranch: string
+  CreatedAt: string
+  UpdatedAt: string
+}
+
 export const useUiStore = defineStore('ui', {
   state: () => ({
     commandPaletteOpen: false,
@@ -99,6 +142,42 @@ export const useAuthStore = defineStore('auth', {
         await api.post('/auth/logout')
       } finally {
         this.user = null
+      }
+    },
+  },
+})
+
+export const useNotificationStore = defineStore('notifications', {
+  state: () => ({
+    items: [] as Notification[],
+    unread: 0,
+    loading: false,
+    error: '' as string,
+  }),
+  actions: {
+    async fetchAll() {
+      this.loading = true
+      this.error = ''
+      try {
+        const { data } = await api.get<NotificationList>('/notifications')
+        this.items = data.items ?? []
+        this.unread = data.unread ?? 0
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : '加载通知失败'
+      } finally {
+        this.loading = false
+      }
+    },
+    push(item: Notification) {
+      this.items.unshift(item)
+      if (!item.IsRead) this.unread += 1
+    },
+    async markRead(id: number) {
+      await api.post(`/notifications/${id}/read`)
+      const target = this.items.find((n) => n.ID === id)
+      if (target && !target.IsRead) {
+        target.IsRead = true
+        this.unread = Math.max(0, this.unread - 1)
       }
     },
   },

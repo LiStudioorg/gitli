@@ -5,7 +5,8 @@ import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import api from '../api/client'
-import type { CloneInfo, LanguageStat, Repo } from '../stores'
+import { useAuthStore } from '../stores'
+import type { CloneInfo, Issue, LanguageStat, Pull, Repo } from '../stores'
 
 interface RepoResponse {
   repo: Repo
@@ -13,6 +14,7 @@ interface RepoResponse {
 }
 
 const route = useRoute()
+const auth = useAuthStore()
 const owner = route.params.owner as string
 const name = route.params.repo as string
 
@@ -23,6 +25,77 @@ const branches = ref<string[]>([])
 const selectedBranch = ref('')
 
 const tabs = ['代码', '工单', '合并请求', '工作流', '项目', '发布', '百科', '活动', '更多']
+const activeTab = ref('代码')
+
+const issues = ref<Issue[]>([])
+const pulls = ref<Pull[]>([])
+const issuesError = ref('')
+const pullsError = ref('')
+const issuesLoading = ref(false)
+const pullsLoading = ref(false)
+
+const newTitle = ref('')
+const newBody = ref('')
+const createError = ref('')
+const creating = ref(false)
+
+async function loadIssues() {
+  issuesLoading.value = true
+  issuesError.value = ''
+  try {
+    const { data } = await api.get<Issue[]>('/issues', { params: { owner, repo: name } })
+    issues.value = data ?? []
+  } catch {
+    issuesError.value = '加载工单失败'
+    issues.value = []
+  } finally {
+    issuesLoading.value = false
+  }
+}
+
+async function loadPulls() {
+  pullsLoading.value = true
+  pullsError.value = ''
+  try {
+    const { data } = await api.get<Pull[]>('/pulls', { params: { owner, repo: name } })
+    pulls.value = data ?? []
+  } catch {
+    pullsError.value = '加载合并请求失败'
+    pulls.value = []
+  } finally {
+    pullsLoading.value = false
+  }
+}
+
+async function createIssue() {
+  createError.value = ''
+  if (!newTitle.value.trim()) {
+    createError.value = '标题不能为空'
+    return
+  }
+  creating.value = true
+  try {
+    await api.post('/issues', {
+      owner,
+      repo: name,
+      title: newTitle.value,
+      body: newBody.value,
+    })
+    newTitle.value = ''
+    newBody.value = ''
+    await loadIssues()
+  } catch {
+    createError.value = '创建工单失败'
+  } finally {
+    creating.value = false
+  }
+}
+
+function selectTab(tab: string) {
+  activeTab.value = tab
+  if (tab === '工单' && !issues.value.length && !issuesLoading.value) loadIssues()
+  if (tab === '合并请求' && !pulls.value.length && !pullsLoading.value) loadPulls()
+}
 
 onMounted(async () => {
   try {
@@ -64,7 +137,14 @@ onMounted(async () => {
         </div>
       </div>
       <nav class="repo-tabs">
-        <button v-for="(t, i) in tabs" :key="t" :class="{ active: i === 0 }">{{ t }}</button>
+        <button
+          v-for="t in tabs"
+          :key="t"
+          :class="{ active: t === activeTab }"
+          @click="selectTab(t)"
+        >
+          {{ t }}
+        </button>
       </nav>
     </header>
 
@@ -75,7 +155,7 @@ onMounted(async () => {
       <input class="code-search" type="search" placeholder="搜索代码..." />
     </div>
 
-    <div class="repo-body">
+    <div v-if="activeTab === '代码'" class="repo-body">
       <main class="main-col">
         <div class="toolbar">
           <select v-model="selectedBranch" class="branch-select">
@@ -148,6 +228,53 @@ onMounted(async () => {
           <LanguageStats :languages="languages" />
         </section>
       </aside>
+    </div>
+
+    <div v-else-if="activeTab === '工单'" class="tab-panel">
+      <div class="panel-head">
+        <h3>工单</h3>
+        <button class="chip" @click="loadIssues">刷新</button>
+      </div>
+
+      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createIssue">
+        <h4>新建工单</h4>
+        <input v-model="newTitle" type="text" placeholder="标题" class="form-input" />
+        <textarea v-model="newBody" rows="3" placeholder="描述（可选）" class="form-input" />
+        <p v-if="createError" class="error">{{ createError }}</p>
+        <button class="chip primary" type="submit" :disabled="creating">
+          {{ creating ? '提交中...' : '创建' }}
+        </button>
+      </form>
+
+      <p v-if="issuesError" class="error">{{ issuesError }}</p>
+      <ul v-if="issues.length" class="item-list">
+        <li v-for="i in issues" :key="i.ID" class="item-row">
+          <span class="num">#{{ i.Number }}</span>
+          <span class="item-title">{{ i.Title }}</span>
+          <span class="state" :class="i.State">{{ i.State }}</span>
+        </li>
+      </ul>
+      <p v-else-if="!issuesLoading && !issuesError" class="empty">暂无工单</p>
+    </div>
+
+    <div v-else-if="activeTab === '合并请求'" class="tab-panel">
+      <div class="panel-head">
+        <h3>合并请求</h3>
+        <button class="chip" @click="loadPulls">刷新</button>
+      </div>
+      <p v-if="pullsError" class="error">{{ pullsError }}</p>
+      <ul v-if="pulls.length" class="item-list">
+        <li v-for="p in pulls" :key="p.ID" class="item-row">
+          <span class="num">#{{ p.Number }}</span>
+          <span class="item-title">{{ p.Title }}</span>
+          <span class="state" :class="p.State">{{ p.State }}</span>
+        </li>
+      </ul>
+      <p v-else-if="!pullsLoading && !pullsError" class="empty">暂无合并请求</p>
+    </div>
+
+    <div v-else class="tab-panel">
+      <p class="placeholder">「{{ activeTab }}」即将推出</p>
     </div>
   </div>
 </template>
@@ -361,5 +488,98 @@ onMounted(async () => {
   .repo-body {
     grid-template-columns: 1fr;
   }
+}
+.tab-panel {
+  padding: 1.25rem 1.5rem;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.panel-head h3 {
+  margin: 0;
+}
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--card);
+}
+.create-form h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.form-input {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font: inherit;
+  resize: vertical;
+}
+.create-form .chip.primary {
+  align-self: flex-start;
+}
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  font-size: 0.9rem;
+}
+.item-row:last-child {
+  border-bottom: none;
+}
+.item-row:hover {
+  background: var(--hover-bg);
+}
+.item-row .num {
+  color: var(--muted);
+  font-weight: 600;
+}
+.item-title {
+  flex: 1;
+}
+.state {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.state.open {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-soft);
+}
+.placeholder {
+  color: var(--muted);
+  text-align: center;
+  padding: 3rem 0;
+}
+.error {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+.empty {
+  color: var(--muted);
 }
 </style>

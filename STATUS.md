@@ -4,8 +4,8 @@
 
 ## 当前进度
 
-**阶段**：全部 Block（1–4）功能已完成，本地全绿，**CI 已通过**。
-**最近更新**：修复 CI Go 版本（依赖 modernc.org/sqlite 需 Go ≥1.26，workflow 用 1.27.x）；补齐 CLI 子命令、SMTP、语言统计后台任务。
+**阶段**：全部 Block（1–4）功能已完成，本地全绿，**CI 已通过**。前端实时通知与仓库标签页（Block 5）已完成，`npm run build`（vue-tsc + vite）通过。
+**最近更新**：新增 `useSSE` composable（/api/v1/events 实时通知 + 退避重连 + 卸载清理）；Dashboard 未读徽标/通知列表/标记已读；RepoView 工单与合并请求标签页（列表 + 新建工单表单 + 即将推出占位）。未提交（无 commit/push）。
 
 ## 关键 commit（最新）
 

@@ -157,6 +157,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Blobs:         pkgstore.NewBlobStore(st, cfg.Storage.Packages),
 		PackagesRoot:  cfg.Storage.Packages,
 		Metrics:       metrics.New(),
+		OIDC:          oidcProvider(cfg, log),
 		CI:            ci.New(st, log, cfg.CI.MaxConcurrency),
 		IDE:           ide.New(runner),
 		PkgSvc:        pkgsvc.New(st, pkgstore.NewBlobStore(st, cfg.Storage.Packages)),

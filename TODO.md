@@ -47,6 +47,12 @@
 - [x] CI 全绿（gofmt/vet/test/lint/静态编译/交叉编译）
 - [x] 文档（README/docs: SECURITY/CI/RELEASE/ARCHITECTURE/SECURITY_AUDIT）
 
+### Block 5 前端实时与仓库标签页
+- [x] useSSE composable（/api/v1/events，自动重连退避，卸载清理，EventSource 守卫）
+- [x] Dashboard 未读通知徽标 + 通知列表 + 标记已读
+- [x] RepoView 工单/合并请求标签页（列表 + 新建工单表单 + 即将推出占位）
+- [x] 前端构建通过（vue-tsc + vite）
+
 ## 待办（等你指示）
 - [ ] 打 tag v1.0.0 触发 CD 发布（全平台 + Docker + deb/rpm/apk）
 - [ ] 清理 ROADMAP.md/STATUS.md/TODO.md 临时记忆文件
