@@ -156,6 +156,9 @@ internal/domain    →  仅标准库（禁止 import 其它 internal 包）
 - **Webhook**：HMAC-SHA256 签名、SSRF 防护（禁止内网/元数据地址）、重试 + 死信。
 - **用户名可改**：旧名写入 `user_redirects`，HTTP 301 重定向，SSH 同样支持别名。
 - **禁止以 root 运行**：Linux/Unix 下检测到 `os.Getuid() == 0` 时默认拒绝启动并退出（退出码 1），除非显式配置 `[server] allow_root = true`（强烈不建议）。Windows 跳过该检查。
+- **Runner 隔离执行**：gitli 主服务永不执行用户脚本；执行由独立 Runner 二进制（gitli-runner）在隔离环境中完成。
+- **Runner 认证**：Runner 通过 ID + Token 认证；Token 只在主服务存 SHA-256 哈希，明文仅生成时显示一次。
+- **Runner 数据最小化**：Runner 任务 payload 不含任何 secret；日志脱敏；主服务只做调度与日志存储。
 
 ### 跨平台约束
 

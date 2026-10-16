@@ -115,6 +115,61 @@ max_connections = 32
 
 ---
 
+## Runner（独立执行器）
+
+gitli 采用**主服务与执行器分离**的架构。**主服务永不执行用户脚本**，用户提交的 Pipeline / Job 脚本由**独立二进制 Runner** 在隔离环境中执行。
+
+- **独立二进制**：[`github.com/LiStudioorg/gitli-runner`](https://github.com/LiStudioorg/gitli-runner) 是独立仓库、独立发布的程序，不随主服务打包。
+- **职责分离**：主服务只负责调度、下发任务 payload 与存储日志；Runner 负责实际拉起隔离环境运行脚本。
+- **隔离执行**：Runner 可运行在另一台机器、另一个容器甚至另一片网络中，与主服务进程隔离。
+
+### 添加一个 Runner
+
+1. 以管理员身份登录，进入 Web 管理面板 → **Runner** 标签页。
+2. 点击 **新建 Runner**。
+3. 复制生成的 **runner_id** 与 **token**（token **仅显示这一次**，关闭后无法再次查看）。
+
+### 配置 Runner 侧
+
+Runner 侧通过其自身的 TOML 配置连接主服务并选择执行方式，完整示例见 [`runner.example.toml`](./runner.example.toml)：
+
+```toml
+[runner]
+server = "https://git.example.com"   # 主服务对外地址
+id     = "r_xxxxxxxxxxxxxxxx"        # 管理面板生成的 runner_id
+token  = "ghr_yyyyyyyyyyyyyyyy"      # 管理面板生成的 token（仅显示一次）
+labels = ["linux", "docker"]         # 标签，用于主服务按标签调度
+
+[executor]
+type = "docker"                      # docker | podman | shell
+                                     # shell 默认禁用，需显式开启（隔离性最弱）
+```
+
+### HTTP 协议
+
+Runner 与主服务之间通过 HTTP + Bearer token 通信，请求需携带两个头：
+
+```
+Authorization: Bearer <token>
+X-Runner-ID: <runner_id>
+```
+
+| 端点 | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/v1/runner/heartbeat` | POST | Runner 周期心跳，上报在线状态与标签 |
+| `/api/v1/runner/register` | POST | 注册 Runner 及其能力（标签 / executor 类型） |
+| `/api/v1/runner/jobs/next` | POST | 长轮询领取下一个待执行任务 |
+| `/api/v1/runner/jobs/{id}/logs` | POST | 流式上报任务日志（分块追加） |
+| `/api/v1/runner/jobs/{id}/result` | POST | 上报任务最终结果（成功 / 失败 / 退出码） |
+
+### 安全说明
+
+- **Token 只存哈希**：主服务仅以 **SHA-256 哈希**形式存储 Runner token，明文在生成时仅返回一次。
+- **认证凭据**：Runner 通过 **ID + Token** 认证，二者缺一不可；token 泄露可立即在管理面板吊销。
+- **Job payload 不含密钥**：下发给 Runner 的任务 payload **不包含任何 secret**；主服务只做调度与日志落库，日志在入库前做脱敏处理。
+
+---
+
 ## 监听与对外地址
 
 gitli 将**实际监听地址**（进程绑定的网卡/端口）与**对外展示地址**（用户和第三方看到的地址）严格分离。在反向代理、端口映射、NAT 环境下二者必然不同，混用会导致克隆 URL、Webhook 回调、OAuth 重定向指向错误地址。

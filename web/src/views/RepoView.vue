@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
@@ -38,6 +38,126 @@ const newTitle = ref('')
 const newBody = ref('')
 const createError = ref('')
 const creating = ref(false)
+
+interface WorkflowJob {
+  id: number
+  runner_id: string
+  repo_id: number
+  commit_sha: string
+  ref: string
+  workflow_path: string
+  status: string
+  started_at: string
+  finished_at: string
+  exit_code: number
+  created_at: string
+}
+
+const workflows = ref<WorkflowJob[]>([])
+const workflowsError = ref('')
+const workflowsLoading = ref(false)
+const workflowsLoaded = ref(false)
+
+const selectedJob = ref<WorkflowJob | null>(null)
+const logLines = ref<string[]>([])
+const logError = ref('')
+const logStreaming = ref(false)
+let logSource: EventSource | null = null
+
+function shortSha(sha: string): string {
+  return sha ? sha.slice(0, 7) : '-'
+}
+
+function statusLabel(status: string): string {
+  switch (status) {
+    case 'pending':
+      return '等待中'
+    case 'running':
+      return '运行中'
+    case 'success':
+      return '成功'
+    case 'failed':
+      return '失败'
+    case 'cancelled':
+      return '已取消'
+    default:
+      return status || '-'
+  }
+}
+
+function formatDuration(job: WorkflowJob): string {
+  if (!job.started_at || !job.finished_at) return '-'
+  const start = new Date(job.started_at).getTime()
+  const end = new Date(job.finished_at).getTime()
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return '-'
+  const total = Math.round((end - start) / 1000)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return m ? `${m}分${s}秒` : `${s}秒`
+}
+
+function canCancel(job: WorkflowJob): boolean {
+  return job.status === 'pending' || job.status === 'running'
+}
+
+async function loadWorkflows() {
+  workflowsLoading.value = true
+  workflowsError.value = ''
+  try {
+    const { data } = await api.get<WorkflowJob[]>(`/repos/${owner}/${name}/workflows`)
+    workflows.value = data ?? []
+    workflowsLoaded.value = true
+  } catch {
+    workflowsError.value = '加载工作流失败'
+    workflows.value = []
+  } finally {
+    workflowsLoading.value = false
+  }
+}
+
+function closeLog() {
+  if (logSource) {
+    logSource.close()
+    logSource = null
+  }
+  logStreaming.value = false
+}
+
+function openLog(job: WorkflowJob) {
+  closeLog()
+  selectedJob.value = job
+  logLines.value = []
+  logError.value = ''
+  logStreaming.value = true
+  const url = `/api/v1/repos/${owner}/${name}/workflows/${job.id}/logs`
+  const source = new EventSource(url)
+  logSource = source
+  source.addEventListener('log', (ev: MessageEvent) => {
+    logLines.value.push(String(ev.data))
+  })
+  source.onerror = () => {
+    logError.value = '日志流已断开'
+    closeLog()
+  }
+  source.onopen = () => {
+    logError.value = ''
+  }
+}
+
+async function cancelJob(job: WorkflowJob) {
+  if (!window.confirm(`确定要取消该工作流任务 #${job.id} 吗？`)) return
+  workflowsError.value = ''
+  try {
+    await api.post(`/repos/${owner}/${name}/workflows/${job.id}/cancel`)
+    await loadWorkflows()
+    if (selectedJob.value?.id === job.id) {
+      const updated = workflows.value.find((w) => w.id === job.id)
+      if (updated) selectedJob.value = updated
+    }
+  } catch {
+    workflowsError.value = '取消工作流失败'
+  }
+}
 
 async function loadIssues() {
   issuesLoading.value = true
@@ -95,6 +215,8 @@ function selectTab(tab: string) {
   activeTab.value = tab
   if (tab === '工单' && !issues.value.length && !issuesLoading.value) loadIssues()
   if (tab === '合并请求' && !pulls.value.length && !pullsLoading.value) loadPulls()
+  if (tab === '工作流' && !workflowsLoaded.value && !workflowsLoading.value) loadWorkflows()
+  if (tab !== '工作流') closeLog()
 }
 
 onMounted(async () => {
@@ -118,6 +240,10 @@ onMounted(async () => {
   } catch {
     branches.value = []
   }
+})
+
+onUnmounted(() => {
+  closeLog()
 })
 </script>
 
@@ -271,6 +397,51 @@ onMounted(async () => {
         </li>
       </ul>
       <p v-else-if="!pullsLoading && !pullsError" class="empty">暂无合并请求</p>
+    </div>
+
+    <div v-else-if="activeTab === '工作流'" class="tab-panel">
+      <div class="panel-head">
+        <h3>工作流</h3>
+        <button class="chip" @click="loadWorkflows">刷新</button>
+      </div>
+
+      <p v-if="workflowsError" class="error">{{ workflowsError }}</p>
+      <div v-if="workflowsLoading" class="empty">加载中…</div>
+      <ul v-else-if="workflows.length" class="item-list">
+        <li
+          v-for="j in workflows"
+          :key="j.id"
+          class="item-row wf-row"
+          :class="{ selected: selectedJob?.id === j.id }"
+          @click="openLog(j)"
+        >
+          <span class="state" :class="j.status">{{ statusLabel(j.status) }}</span>
+          <span class="mono">{{ shortSha(j.commit_sha) }}</span>
+          <span class="wf-ref">{{ j.ref || '-' }}</span>
+          <span class="wf-path">{{ j.workflow_path || '-' }}</span>
+          <span class="wf-duration">{{ formatDuration(j) }}</span>
+          <span class="wf-runner">{{ j.runner_id || '-' }}</span>
+          <button
+            v-if="canCancel(j)"
+            class="chip danger"
+            type="button"
+            @click.stop="cancelJob(j)"
+          >
+            取消
+          </button>
+        </li>
+      </ul>
+      <p v-else-if="!workflowsError" class="empty">暂无工作流任务</p>
+
+      <div v-if="selectedJob" class="log-panel">
+        <div class="log-head">
+          <strong>任务 #{{ selectedJob.id }} 日志</strong>
+          <span class="log-status">{{ statusLabel(selectedJob.status) }}</span>
+          <button class="chip" type="button" @click="closeLog">关闭</button>
+        </div>
+        <p v-if="logError" class="error">{{ logError }}</p>
+        <pre class="log-view">{{ logLines.join('\n') }}</pre>
+      </div>
     </div>
 
     <div v-else class="tab-panel">
@@ -581,5 +752,94 @@ onMounted(async () => {
 }
 .empty {
   color: var(--muted);
+}
+.wf-row {
+  cursor: pointer;
+}
+.wf-row.selected {
+  background: var(--hover-bg);
+}
+.wf-row .state {
+  min-width: 56px;
+  text-align: center;
+}
+.wf-row .state.success {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-soft);
+}
+.wf-row .state.failed,
+.wf-row .state.cancelled {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.wf-row .state.running,
+.wf-row .state.pending {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+.wf-ref,
+.wf-path {
+  flex: 1;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-duration {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.wf-runner {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.chip.danger {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.chip.danger:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.log-panel {
+  margin-top: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
+}
+.log-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.log-head .chip {
+  margin-left: auto;
+}
+.log-status {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.log-view {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  max-height: 380px;
+  overflow: auto;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>
