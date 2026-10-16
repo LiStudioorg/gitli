@@ -86,6 +86,6 @@ jobs:
 
       - name: golangci-lint
         if: hashFiles('.golangci.yml') != ''
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.14.0
