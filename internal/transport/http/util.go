@@ -61,3 +61,11 @@ func urlParam(r *http.Request, name string) string {
 func pathInt(r *http.Request, name string) (int64, error) {
 	return strconv.ParseInt(chi.URLParam(r, name), 10, 64)
 }
+
+// dispatch emits a repository event to webhooks if a dispatcher is wired.
+func (s *Server) dispatch(r *http.Request, action string, repoID, actorID int64, payload map[string]any) {
+	if s.deps.Dispatch == nil {
+		return
+	}
+	s.deps.Dispatch(r.Context(), action, repoID, actorID, payload)
+}

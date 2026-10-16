@@ -39,6 +39,9 @@ func (s *Server) handleCreatePull(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auditAction(r, u.ID, "pull.create", "success")
+	s.dispatch(r, "pull_request", rp.ID, u.ID, map[string]any{
+		"action": "opened", "number": p.Number, "title": p.Title, "pull_id": p.ID,
+	})
 	writeJSON(w, http.StatusCreated, p)
 }
 

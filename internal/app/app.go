@@ -166,6 +166,10 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Imports:       importer.New(st, runner),
 	}
 	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps}
+	deps.Dispatch = func(ctx context.Context, action string, repoID, actorID int64, payload map[string]any) {
+		a.DispatchRepoEvent(ctx, Event{Action: action, RepoID: repoID, ActorID: actorID, Payload: payload})
+	}
+	deps.Notify = a.Notify
 	q := queue.New(2, 256, log)
 	q.Register(LanguageRefreshKind, func(ctx context.Context, payload string) error {
 		repoID, err := ParseLanguageRefreshPayload(payload)
@@ -173,6 +177,9 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 			return err
 		}
 		return a.RefreshLanguages(ctx, repoID)
+	})
+	q.Register("webhook-deliver", func(ctx context.Context, payload string) error {
+		return a.RunWebhookDeliver(ctx, payload)
 	})
 	deps.Queue = q
 	return a, nil

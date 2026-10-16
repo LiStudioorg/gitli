@@ -34,6 +34,9 @@ func (s *Server) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auditAction(r, u.ID, "issue.create", "success")
+	s.dispatch(r, "issues", rp.ID, u.ID, map[string]any{
+		"action": "opened", "number": is.Number, "title": is.Title, "issue_id": is.ID,
+	})
 	writeJSON(w, http.StatusCreated, is)
 }
 
@@ -170,5 +173,8 @@ func (s *Server) handleCreateIssueComment(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	s.dispatch(r, "issue_comment", rp.ID, u.ID, map[string]any{
+		"action": "created", "issue_number": is.Number, "comment_id": c.ID,
+	})
 	writeJSON(w, http.StatusCreated, c)
 }

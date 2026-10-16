@@ -7,8 +7,10 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -75,6 +77,22 @@ func (s *Service) ListForRepo(ctx context.Context, repoID int64) ([]*domain.Webh
 		out = append(out, &w)
 	}
 	return out, rows.Err()
+}
+
+// ByID loads a webhook by id.
+func (s *Service) ByID(ctx context.Context, id int64) (*domain.Webhook, error) {
+	q := s.st.Rebind(`SELECT id, repo_id, org_id, url, secret, events, active, created_at FROM webhooks WHERE id = ?`)
+	var w domain.Webhook
+	var events string
+	err := s.st.DB.QueryRowContext(ctx, q, id).Scan(&w.ID, &w.RepoID, &w.OrgID, &w.URL, &w.Secret, &events, &w.Active, &w.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("webhook: not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	w.Events = splitCSV(events)
+	return &w, nil
 }
 
 // Deliver posts a JSON payload signed with HMAC-SHA256.

@@ -2,6 +2,7 @@
 package http
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/LiStudioorg/gitli/internal/config"
@@ -81,6 +82,11 @@ type Deps struct {
 	Registry *registry.Service
 	Mirrors  *mirror.Service
 	Imports  *importer.Service
+
+	// Dispatch delivers a repository event to webhooks. Injected by the app
+	// layer to avoid an import cycle.
+	Dispatch func(ctx context.Context, action string, repoID, actorID int64, payload map[string]any)
+	Notify   func(ctx context.Context, userID int64, subjectType string, subjectID int64, title, url string)
 }
 
 // ExternalBase returns the externally visible HTTP base URL.
