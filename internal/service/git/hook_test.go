@@ -31,14 +31,14 @@ func TestParsePreReceive(t *testing.T) {
 func TestEnforceProtections(t *testing.T) {
 	checker := fakeChecker{branches: []ProtectionRule{{Pattern: "main"}}, tags: []string{"v*"}}
 	updates := []RefUpdate{{Old: "a", New: "b", Ref: "refs/heads/main"}}
-	if err := EnforceProtections(context.Background(), checker, 1, updates, false); err == nil {
+	if err := EnforceProtections(context.Background(), checker, 1, updates, false, "", nil); err == nil {
 		t.Fatal("expected protected branch push to be rejected")
 	}
-	if err := EnforceProtections(context.Background(), checker, 1, updates, true); err != nil {
+	if err := EnforceProtections(context.Background(), checker, 1, updates, true, "", nil); err != nil {
 		t.Fatalf("admin should bypass: %v", err)
 	}
 	tagUpdates := []RefUpdate{{Old: "a", New: "b", Ref: "refs/tags/v1.0"}}
-	if err := EnforceProtections(context.Background(), checker, 1, tagUpdates, false); err == nil {
+	if err := EnforceProtections(context.Background(), checker, 1, tagUpdates, false, "", nil); err == nil {
 		t.Fatal("expected protected tag update to be rejected")
 	}
 }

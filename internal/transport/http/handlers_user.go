@@ -2,6 +2,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
@@ -162,8 +163,10 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 }
 
 type addKeyReq struct {
-	Title     string `json:"title"`
-	PublicKey string `json:"public_key"`
+	Title           string `json:"title"`
+	PublicKey       string `json:"public_key"`
+	CanAuthenticate *bool  `json:"can_authenticate"`
+	CanSign         *bool  `json:"can_sign"`
 }
 
 func (s *Server) handleListSSHKeys(w http.ResponseWriter, r *http.Request) {
@@ -188,13 +191,50 @@ func (s *Server) handleAddSSHKey(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	key, err := s.deps.Users.AddSSHKey(r.Context(), u.ID, req.Title, req.PublicKey)
+	canAuth := true // default: authentication enabled
+	if req.CanAuthenticate != nil {
+		canAuth = *req.CanAuthenticate
+	}
+	canSign := false // default: signing disabled
+	if req.CanSign != nil {
+		canSign = *req.CanSign
+	}
+	key, err := s.deps.Users.AddSSHKey(r.Context(), u.ID, req.Title, req.PublicKey, canAuth, canSign)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.auditAction(r, u.ID, "user.sshkey_add", "success")
+	s.auditAction(r, u.ID, "user.sshkey_add",
+		fmt.Sprintf("fingerprint=%s authenticate=%v sign=%v", key.Fingerprint, canAuth, canSign))
 	writeJSON(w, http.StatusCreated, key)
+}
+
+type updateKeyReq struct {
+	CanAuthenticate bool `json:"can_authenticate"`
+	CanSign         bool `json:"can_sign"`
+}
+
+func (s *Server) handleUpdateSSHKey(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	id, err := pathInt(r, "id")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	var req updateKeyReq
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if err := s.deps.Users.UpdateSSHKeyPurposes(r.Context(), u.ID, id, req.CanAuthenticate, req.CanSign); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "user.sshkey_update",
+		fmt.Sprintf("id=%d authenticate=%v sign=%v", id, req.CanAuthenticate, req.CanSign))
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
 
 func (s *Server) handleDeleteSSHKey(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +251,64 @@ func (s *Server) handleDeleteSSHKey(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.auditAction(r, u.ID, "user.sshkey_delete", "success")
+	s.auditAction(r, u.ID, "user.sshkey_delete", fmt.Sprintf("id=%d", id))
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// --- GPG / signing keys ---
+
+type addSigningKeyReq struct {
+	Title     string `json:"title"`
+	PublicKey string `json:"public_key"`
+	KeyType   string `json:"key_type"`
+}
+
+func (s *Server) handleListSigningKeys(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	keys, err := s.deps.Users.ListSigningKeys(r.Context(), u.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, keys)
+}
+
+func (s *Server) handleAddSigningKey(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	var req addSigningKeyReq
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	key, err := s.deps.Users.AddSigningKey(r.Context(), u.ID, req.KeyType, req.Title, req.PublicKey)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "user.gpgkey_add", fmt.Sprintf("fingerprint=%s", key.Fingerprint))
+	writeJSON(w, http.StatusCreated, key)
+}
+
+func (s *Server) handleDeleteSigningKey(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	id, err := pathInt(r, "id")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := s.deps.Users.DeleteSigningKey(r.Context(), u.ID, id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "user.gpgkey_delete", fmt.Sprintf("id=%d", id))
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
 

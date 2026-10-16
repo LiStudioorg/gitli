@@ -24,16 +24,26 @@ type Signature struct {
 	Verified  bool
 }
 
+// KeyResolver maps a signature key fingerprint to its owner and whether the key
+// is permitted to sign. It is satisfied by the user service.
+type KeyResolver interface {
+	SigningKeyOwner(ctx context.Context, fingerprint string) (userID int64, keyType string, err error)
+}
+
 // Service verifies commit signatures and caches the result.
 type Service struct {
-	st     *store.Store
-	runner *gitcmd.Runner
+	st       *store.Store
+	runner   *gitcmd.Runner
+	resolver KeyResolver
 }
 
 // New builds a signature Service.
 func New(st *store.Store, runner *gitcmd.Runner) *Service {
 	return &Service{st: st, runner: runner}
 }
+
+// SetKeyResolver wires the signing-key resolver used to attribute signatures.
+func (s *Service) SetKeyResolver(r KeyResolver) { s.resolver = r }
 
 // shaPattern matches a full-length hexadecimal object name.
 var shaPattern = regexp.MustCompile(`^[0-9a-fA-F]{40,64}$`)
@@ -75,15 +85,51 @@ func (s *Service) Verify(ctx context.Context, repoPath, commitSHA string) (*Sign
 		return nil, fmt.Errorf("signature: unknown commit %s: %w", commitSHA, err)
 	}
 
-	if _, err := s.runner.Run(ctx, repoPath, "verify-commit", "--raw", commitSHA); err == nil {
-		sig.Verified = true
-	}
+	raw, verifyErr := s.runner.Run(ctx, repoPath, "verify-commit", "--raw", commitSHA)
+	good := verifyErr == nil
 
 	out, err := s.runner.Run(ctx, repoPath, "log", "-1", "--format=%G?", commitSHA)
 	if err == nil {
 		sig.Type = classify(strings.TrimSpace(out))
 	}
+
+	if good {
+		// Only count a signature as verified if the signing key is registered
+		// with signing rights (GPG key, or SSH key with can_sign=true).
+		fp := extractFingerprint(raw)
+		keyType := "gpg"
+		if s.resolver != nil && fp != "" {
+			userID, kt, rerr := s.resolver.SigningKeyOwner(ctx, fp)
+			if rerr != nil {
+				// Signature is cryptographically valid but the key is not a
+				// registered signing key: remain unverified.
+				return sig, nil
+			}
+			sig.SignerID = &userID
+			keyType = kt
+		}
+		sig.Type = keyType
+		sig.Verified = true
+	}
 	return sig, nil
+}
+
+// fingerprintPatterns extract a signing key fingerprint from git verify output.
+var (
+	sshFpRe = regexp.MustCompile(`SHA256:[A-Za-z0-9+/=]+`)
+	gpgFpRe = regexp.MustCompile(`(?i)(?:GOODSIG|VALIDSIG)\s+([0-9A-F]{16,40})`)
+)
+
+// extractFingerprint pulls an SSH (SHA256:...) or GPG fingerprint from the raw
+// output of `git verify-commit --raw`.
+func extractFingerprint(raw string) string {
+	if m := gpgFpRe.FindStringSubmatch(raw); len(m) == 2 {
+		return strings.ToUpper(m[1])
+	}
+	if m := sshFpRe.FindString(raw); m != "" {
+		return m
+	}
+	return ""
 }
 
 // classify maps git's %G? indicator to a signature type label.
@@ -153,4 +199,14 @@ func (s *Service) Save(ctx context.Context, sig *Signature) error {
 		return fmt.Errorf("signature: save: %w", err)
 	}
 	return nil
+}
+
+// VerifyCommit reports whether a commit has a signature from a registered,
+// signing-capable key. It records the result in commit_signatures.
+func (s *Service) VerifyCommit(ctx context.Context, repoPath, commitSHA string) (bool, error) {
+	sig, err := s.Verify(ctx, repoPath, commitSHA)
+	if err != nil {
+		return false, err
+	}
+	return sig != nil && sig.Verified, nil
 }

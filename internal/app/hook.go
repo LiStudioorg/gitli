@@ -42,7 +42,8 @@ func (a *App) runPreReceive(ctx context.Context, owner, repoName string) error {
 	}
 	checker := &protectionChecker{a: a}
 	isAdmin := os.Getenv("GITLI_HOOK_IS_ADMIN") == "1"
-	if err := git.EnforceProtections(ctx, checker, rp.ID, updates, isAdmin); err != nil {
+	repoPath := a.Deps.FS.Path(owner, repoName)
+	if err := git.EnforceProtections(ctx, checker, rp.ID, updates, isAdmin, repoPath, a.Deps.Signatures); err != nil {
 		fmt.Fprintf(os.Stderr, "gitli: 推送被拒绝：%v\n", err)
 		return err
 	}

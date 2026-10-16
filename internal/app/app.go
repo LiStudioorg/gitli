@@ -139,6 +139,9 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		}
 	}
 
+	sigSvc := signature.New(st, runner)
+	sigSvc.SetKeyResolver(users)
+
 	deps := &httptransport.Deps{
 		Cfg:           cfg,
 		DB:            database,
@@ -179,7 +182,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Mirrors:       mirror.New(st, runner),
 		Imports:       importer.New(st, runner),
 		PathPerms:     pathperm.New(st),
-		Signatures:    signature.New(st, runner),
+		Signatures:    sigSvc,
 		Topics:        topic.New(st),
 		CISecrets:     cisecret.New(st, cipher),
 		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),

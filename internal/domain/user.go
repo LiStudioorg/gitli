@@ -25,13 +25,30 @@ type User struct {
 
 // SSHKey is a public key registered to a user.
 type SSHKey struct {
+	ID              int64
+	UserID          int64
+	Title           string
+	Fingerprint     string
+	PublicKey       string
+	CanAuthenticate bool
+	CanSign         bool
+	Verified        bool
+	LastUsedAt      *time.Time
+	CreatedAt       time.Time
+}
+
+// SigningKey is a GPG (or other) public key used for commit signature
+// verification. SSH keys used for signing live in the SSHKey table with
+// CanSign set; GPG keys are stored here.
+type SigningKey struct {
 	ID          int64
 	UserID      int64
+	KeyType     string
 	Title       string
 	Fingerprint string
 	PublicKey   string
+	SourceKeyID *int64
 	Verified    bool
-	LastUsedAt  *time.Time
 	CreatedAt   time.Time
 }
 

@@ -74,6 +74,12 @@ type ProtectionChecker interface {
 	TagProtections(ctx context.Context, repoID int64) ([]string, error)
 }
 
+// SignatureChecker reports whether a commit has a valid signature from a key
+// permitted for signing. Implemented by the signature service.
+type SignatureChecker interface {
+	VerifyCommit(ctx context.Context, repoPath, commitSHA string) (bool, error)
+}
+
 // MatchPattern performs simple glob matching supporting '*' and '?'.
 func MatchPattern(pattern, name string) bool {
 	return globMatch(pattern, name)
@@ -105,8 +111,10 @@ func globMatch(pattern, s string) bool {
 }
 
 // EnforceProtections checks ref updates against branch and tag protections.
-// isAdmin bypasses all rules; forceDeleteBlocks deletions of protected refs.
-func EnforceProtections(ctx context.Context, checker ProtectionChecker, repoID int64, updates []RefUpdate, isAdmin bool) error {
+// isAdmin bypasses all rules. When a branch rule requires signed commits,
+// sigChecker (if provided) validates the new commit; without a checker such
+// pushes are rejected.
+func EnforceProtections(ctx context.Context, checker ProtectionChecker, repoID int64, updates []RefUpdate, isAdmin bool, repoPath string, sigChecker SignatureChecker) error {
 	if isAdmin {
 		return nil
 	}
@@ -126,9 +134,16 @@ func EnforceProtections(ctx context.Context, checker ProtectionChecker, repoID i
 						return fmt.Errorf("分支 %q 受保护，禁止删除", name)
 					}
 					if rule.RequireSigned {
-						return fmt.Errorf("分支 %q 受保护，要求签名提交", name)
+						ok, err := checkSigned(ctx, sigChecker, repoPath, u.New)
+						if err != nil {
+							return err
+						}
+						if !ok {
+							return fmt.Errorf("分支 %q 要求签名提交（未签名或签名密钥未启用签名用途）", name)
+						}
+					} else {
+						return fmt.Errorf("分支 %q 受保护，禁止直接推送", name)
 					}
-					return fmt.Errorf("分支 %q 受保护，禁止直接推送", name)
 				}
 			}
 		}
@@ -144,4 +159,13 @@ func EnforceProtections(ctx context.Context, checker ProtectionChecker, repoID i
 		}
 	}
 	return nil
+}
+
+// checkSigned reports whether a commit has a valid signature from a key that is
+// permitted for signing. Without a checker, all commits are treated as unsigned.
+func checkSigned(ctx context.Context, checker SignatureChecker, repoPath, sha string) (bool, error) {
+	if checker == nil {
+		return false, nil
+	}
+	return checker.VerifyCommit(ctx, repoPath, sha)
 }
