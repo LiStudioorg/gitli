@@ -4,17 +4,16 @@
 
 ## 当前进度
 
-**阶段**：Block 4 完成 90%，全部核心功能已实现并通过本地测试。
-**最近更新**：新增后台任务刷新仓库语言统计（queue "refresh-languages"，建仓/Fork 后入队，App.Close 关闭队列）；未提交。
+**阶段**：全部 Block（1–4）功能已完成，本地全绿，**CI 已通过**。
+**最近更新**：修复 CI Go 版本（依赖 modernc.org/sqlite 需 Go ≥1.26，workflow 用 1.27.x）；补齐 CLI 子命令、SMTP、语言统计后台任务。
 
 ## 关键 commit（最新）
 
-- `fc6e75e` docs: finalize README feature list, add integration test
-- `acf0ed8` fix: resolve config/db paths to absolute so git hooks work from any cwd
-- `2bc31da` feat: admin/settings frontend, unit tests, package docs
-- `3cb5e0e` feat: wire ci/ide/registry/package/mirror/import http routes
-- `49d50f2` feat: session ip/ua binding, commit graph
-- `7cad62a` feat: rbac core (nested teams, custom roles, permission cache)
+- `3ba0bab` feat: smtp mail sender, background language stats refresh queue, go 1.26 docs
+- `47be587` fix(ci): require go 1.26+ (modernc sqlite), use go 1.27.x in workflows
+- `b487036` feat: CLI subcommands (mirror/import/runner/admin/search-index), fix registry digest prefix bug, upgrade CI actions to node24
+- `f05b802` ci: upgrade golangci-lint action to v7 with pinned v2.14.0
+- `fce81a8` fix(security): prevent git argument injection, validate remote URLs, gate pipeline jobs
 
 ## 已验证
 
@@ -27,9 +26,8 @@
 
 ## 待办
 
-- 推送 14 个本地提交到 origin main（等待 GH_TOKEN）。
-- 触发 CI 确认全绿；打 tag v1.0.0 触发 CD 发布。
-- 全部完成后清理 ROADMAP.md/STATUS.md/TODO.md。
+- 待用户指示后打 tag（如 v1.0.0）触发 CD 发布。
+- 待用户确认后清理 ROADMAP.md/STATUS.md/TODO.md 临时记忆文件。
 
 ## 已完成
 
