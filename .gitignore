@@ -12,6 +12,9 @@
 *.pepper
 *.key
 
+# goreleaser 输出
+/dist/
+
 # 前端
 /web/node_modules/
 /web/.vite/
