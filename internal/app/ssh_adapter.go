@@ -59,12 +59,18 @@ func (s *sshDispatcher) Dispatch(ctx context.Context, username, command string, 
 	if err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, s.a.Deps.GitCmd.Path(), verb, validated)
+	cmd := exec.CommandContext(ctx, s.a.Deps.GitCmd.Path(), gitSubcommand(verb), validated)
 	cmd.Env = s.a.Deps.GitCmd.Env()
 	cmd.Stdin = in
 	cmd.Stdout = out
 	cmd.Stderr = errOut
 	return cmd.Run()
+}
+
+// gitSubcommand converts a git-* server verb (e.g. "git-upload-pack") into the
+// equivalent `git <subcommand>` form ("upload-pack").
+func gitSubcommand(verb string) string {
+	return strings.TrimPrefix(verb, "git-")
 }
 
 func splitGitCommand(command string) (verb, repo string, ok bool) {
