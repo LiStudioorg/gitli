@@ -52,7 +52,29 @@ Landing/Dashboard/Repo/Admin/Settings、Clone 下拉、语言统计、依赖 Tab
 
 ## E2E 结果
 
-（待填写）
+`bash test/e2e.sh` — **PASS=34 FAIL=0 SKIP=2**
+
+覆盖并通过：
+
+- 用户：注册 / 登录 / 会话 / 改名 301 / TOTP / PAT / SSH / GPG
+- 仓库：创建 / HTTP push / HTTP clone / SSH clone
+- 协作：Issue / 评论 / 关闭 / PR / Review / 合并
+- 归档：归档 / 拒绝 push / 解除归档
+- 包管理：Generic 发布 / 下载
+- 镜像：Registry `/v2/` / 上传会话 202
+- Runner：创建工作流仓库并 push 触发 / 执行任务 / 结果成功 / 日志回传
+
+跳过：
+
+- NPM publish：后端 NPM 端点为预留占位。
+- docker push/pull：本地无 docker。
+
+修复项：
+
+- `admin stats` 表名 `pull_requests` → `pulls`
+- `domain.Repo.DeletedAt` 扫描
+- `syscall.Statfs` 迁移至 `internal/platform`（跨平台）
+- `test/e2e.sh` Runner 段：push 工作流仓库触发任务后再启动 Runner，等待时间放宽至 40s，失败时输出 `runner.log`
 
 ## 关键 commit 历史
 
