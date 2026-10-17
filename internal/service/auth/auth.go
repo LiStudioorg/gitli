@@ -32,8 +32,9 @@ var (
 	ErrTOTPRequired       = errors.New("auth: totp required")
 	ErrInvalidTOTP        = errors.New("auth: invalid totp code")
 	ErrUserExists         = errors.New("auth: user already exists")
-	ErrWeakPassword       = errors.New("auth: password too short")
+	ErrWeakPassword       = errors.New("密码强度不足")
 	ErrAlreadySetUp       = errors.New("auth: instance already initialized")
+	ErrAccountInactive    = errors.New("auth: account is disabled")
 )
 
 // Service coordinates authentication.
@@ -111,8 +112,12 @@ type RegisterParams struct {
 }
 
 // Register creates a new account.
+// minRegisterPasswordLength is stricter than the global minimum because
+// self-service registration is the easiest account to create and brute force.
+const minRegisterPasswordLength = 12
+
 func (s *Service) Register(ctx context.Context, p RegisterParams) (*domain.User, error) {
-	if len(p.Password) < 8 {
+	if len(p.Password) < minRegisterPasswordLength {
 		return nil, ErrWeakPassword
 	}
 	exists, err := s.users.Exists(ctx, p.Username)
@@ -175,6 +180,11 @@ func (s *Service) Login(ctx context.Context, p LoginParams) (*LoginResult, error
 		u = lu
 		viaLDAP = true
 	}
+	// H-04: a deactivated account must not be able to log in.
+	if !u.IsActive {
+		s.limiter.fail(key)
+		return nil, ErrAccountInactive
+	}
 	if !viaLDAP {
 		if verr := s.hasher.Verify(p.Password, u.PasswordHash); verr != nil {
 			// Local password failed: fall back to LDAP when configured.
@@ -207,13 +217,27 @@ func (s *Service) Login(ctx context.Context, p LoginParams) (*LoginResult, error
 // VerifyPassword checks a username/password pair without creating a session.
 // Used by the git HTTP Basic auth flow.
 func (s *Service) VerifyPassword(ctx context.Context, username, password string) (*domain.User, error) {
+	// H-05: Git HTTP Basic auth hits this on every request, so it needs the same
+	// brute-force protection as the web login form.
+	key := strings.ToLower(username) + "|git"
+	if !s.limiter.allow(key) {
+		return nil, ErrLockedOut
+	}
 	u, err := s.users.ByUsername(ctx, username)
 	if err != nil {
+		s.limiter.fail(key)
 		return nil, ErrInvalidCredentials
+	}
+	// H-04: deactivated accounts cannot authenticate over Git either.
+	if !u.IsActive {
+		s.limiter.fail(key)
+		return nil, ErrAccountInactive
 	}
 	if err := s.hasher.Verify(password, u.PasswordHash); err != nil {
+		s.limiter.fail(key)
 		return nil, ErrInvalidCredentials
 	}
+	s.limiter.success(key)
 	return u, nil
 }
 
@@ -249,6 +273,10 @@ func (s *Service) AuthenticateRequest(ctx context.Context, rawToken, ip, agent s
 	u, err := s.users.ByID(ctx, sess.UserID)
 	if err != nil {
 		return nil, nil, err
+	}
+	if !u.IsActive {
+		_ = s.Logout(ctx, rawToken)
+		return nil, nil, ErrAccountInactive
 	}
 	return u, &sess, nil
 }
@@ -596,4 +624,11 @@ func (s *Service) Setup(ctx context.Context, p SetupParams) (*domain.User, error
 		PasswordHash: hash,
 		IsAdmin:      true,
 	})
+}
+
+// RevokeAllSessions deletes every session for a user. Used after a password
+// change, 2FA reset or deactivation so stolen cookies stop working (M-02).
+func (s *Service) RevokeAllSessions(ctx context.Context, userID int64) error {
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM sessions WHERE user_id = ?`), userID)
+	return err
 }

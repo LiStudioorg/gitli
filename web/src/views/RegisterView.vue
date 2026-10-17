@@ -34,7 +34,7 @@ const emailError = computed(() => {
 
 const passwordError = computed(() => {
   if (!password.value) return ''
-  if (password.value.length < 8) return '密码至少 8 位'
+  if (password.value.length < 12) return '密码至少 12 位'
   return ''
 })
 
@@ -48,7 +48,7 @@ const canSubmit = computed(
   () =>
     username.value.trim() !== '' &&
     email.value.trim() !== '' &&
-    password.value.length >= 8 &&
+    password.value.length >= 12 &&
     confirmPassword.value === password.value &&
     !usernameError.value &&
     !emailError.value,
@@ -126,7 +126,7 @@ async function submit() {
               :class="{ invalid: passwordError }"
               type="password"
               autocomplete="new-password"
-              placeholder="至少 8 位"
+              placeholder="至少 12 位"
               required
             />
             <span v-if="passwordError" class="ui-error">{{ passwordError }}</span>

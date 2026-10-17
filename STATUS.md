@@ -8,6 +8,30 @@
 - 新功能 / 安全大重构：次版本号 +1（`v0.11.0`）。
 - 禁止跨版本乱发 tag；`v0.10.0` 含严重 UI 错误，已在 Release 标记废弃。
 
+## 安全审计修复（v0.10.1）
+
+### P0 高危
+- **H-01** `internal/service/git/archive.go`：`ArchiveStream` 未校验 ref → 增加 `validateRef` + `--` 分隔；`language.go:49` 同类问题一并修复。
+- **H-02** `handlers_runner.go`：CI 日志 SSE 无鉴权 → `loadRepoAndPerm(PermRead)` + `job.RepoID == rp.ID`。
+- **H-06** `deploy/systemd/gitli.service`：硬编码 pepper/key → 改用 `EnvironmentFile`；新增 `secretguard.go` 拒绝公开示例值/低熵/过短密钥。
+- **H-07** `service/oauth/oauth.go`：redirect_uri 未校验协议 → `ValidateRedirectURIFormat`（仅 http/https、须有 host、禁止 fragment）；前端加 `isSafeRedirect`。
+- **H-08** `handlers_ci.go`：删除产物仅 requireUser → 经 artifact→job→pipeline 解析仓库并校验 `PermWrite`。
+
+### P1 逻辑
+- **H-03** `util.go`：XFF 无条件信任 → `[server] trusted_proxies`，仅可信代理生效且取最右非可信跳；默认忽略 XFF。
+- **H-04** `service/auth`：停用账号仍可登录 → `Login`/`VerifyPassword`/`AuthenticateRequest` 校验 `IsActive`；停用时撤销全部会话。
+- **H-05** `VerifyPassword`：未限流 → 接入 `limiter`（allow/fail/success）。
+
+### 专项清单
+- 团队 re-parent 跨组织越权 → 校验父团队同组织（`ErrCrossOrg`）。
+- 协作者接口仅 requireUser → 改为 `PermAdmin`；`SetCollaborator` 校验 role 所属组织与权限上限（`ErrPrivilegeEscalation`）。
+- 细粒度 PAT scope → `loadRepoAndPerm` 统一强制 `tokenAllowsRepo`。
+- Webhook SSRF → `secutil.NewSafeHTTPClient` 在 `DialContext` 拦截内网 IP（防 DNS Rebinding），禁止跟随重定向。
+- Runner 横向越权 → logs/result 校验 `job.RunnerID == runner`。
+- 路径穿越 → `fsrepo.Path/OwnerDir` 增加 `containedIn` 兜底校验。
+- M-02 改密/重置 2FA 撤销其他会话；M-07 注册限流 + 12 位；M-08 挂载 `apiLim`；M-09 `loginLimiter` 定期 GC；M-15 LIKE 增加 `ESCAPE`。
+- 安全 PoC 测试：`test/security_poc_test.go`。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**

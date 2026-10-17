@@ -66,6 +66,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			writeErrorCode(w, http.StatusUnauthorized, "需要两步验证码", "totp_required")
 			return
 		}
+		if errors.Is(err, auth.ErrAccountInactive) {
+			writeErrorCode(w, http.StatusForbidden, "账号已被停用", "account_disabled")
+			return
+		}
 		writeError(w, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}

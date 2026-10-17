@@ -20,14 +20,17 @@ import (
 type Server struct {
 	deps    *Deps
 	apiLim  *middleware.RateLimiter
+	regLim  *middleware.RateLimiter
 	gitAuth *gitAuthCache
 }
 
 // NewServer constructs the HTTP transport.
 func NewServer(deps *Deps) *Server {
 	return &Server{
-		deps:    deps,
-		apiLim:  middleware.NewRateLimiter(600, time.Minute),
+		deps:   deps,
+		apiLim: middleware.NewRateLimiter(600, time.Minute),
+		// M-07: registration is a common abuse target; cap it far lower.
+		regLim:  middleware.NewRateLimiter(5, 10*time.Minute),
 		gitAuth: newGitAuthCache(),
 	}
 }
@@ -99,6 +102,10 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api := chi.NewRouter()
+	// M-08: per-IP request throttling for the whole API surface. The limiter
+	// was previously constructed but never mounted, leaving API endpoints
+	// unprotected against high-rate abuse.
+	api.Use(s.apiLim.Middleware(clientIP))
 	api.Use(middleware.SetupGuard(
 		func(ctx context.Context) (bool, error) { return d.Auth.IsInitialized(ctx) },
 		[]string{"/api/v1/version", "/api/v1/setup/status", "/api/v1/setup"},
@@ -147,7 +154,7 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api.Route("/auth", func(ar chi.Router) {
-		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/register", s.handleRegister)
+		ar.With(middleware.MaxBody(middleware.BodyLimitTiny), s.regLim.Middleware(clientIP)).Post("/register", s.handleRegister)
 		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/login", s.handleLogin)
 		ar.Post("/logout", s.handleLogout)
 		ar.Get("/oidc/login", s.handleOIDCLogin)

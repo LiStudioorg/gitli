@@ -111,7 +111,7 @@ func (s *Service) Search(ctx context.Context, raw string, limit int) (*Results, 
 	repoWhere := []string{"is_private = ?", "deleted_at IS NULL"}
 	repoArgs := []any{false}
 	if like != "" {
-		repoWhere = append(repoWhere, "(name LIKE ? OR description LIKE ?)")
+		repoWhere = append(repoWhere, `(name LIKE ? ESCAPE '\' OR description LIKE ? ESCAPE '\')`)
 		repoArgs = append(repoArgs, like, like)
 	}
 	if q.Language != "" {
@@ -156,7 +156,7 @@ func (s *Service) Search(ctx context.Context, raw string, limit int) (*Results, 
 func (s *Service) searchIssues(ctx context.Context, like string, q Query, limit int) []IssueResult {
 	var out []IssueResult
 	// Issues.
-	iw := []string{"i.title LIKE ?", "r.is_private = ?", "r.deleted_at IS NULL"}
+	iw := []string{`i.title LIKE ? ESCAPE '\'`, "r.is_private = ?", "r.deleted_at IS NULL"}
 	iargs := []any{like, false}
 	if q.State == "open" || q.State == "closed" {
 		iw = append(iw, "i.state = ?")
@@ -175,7 +175,7 @@ func (s *Service) searchIssues(ctx context.Context, like string, q Query, limit 
 		_ = rows.Close()
 	}
 	// Pulls.
-	pw := []string{"p.title LIKE ?", "r.is_private = ?", "r.deleted_at IS NULL"}
+	pw := []string{`p.title LIKE ? ESCAPE '\'`, "r.is_private = ?", "r.deleted_at IS NULL"}
 	pargs := []any{like, false}
 	if q.State == "open" || q.State == "closed" {
 		pw = append(pw, "p.state = ?")
@@ -198,7 +198,7 @@ func (s *Service) searchIssues(ctx context.Context, like string, q Query, limit 
 
 func (s *Service) searchUsers(ctx context.Context, like string, q Query, limit int) []UserResult {
 	var out []UserResult
-	rows, err := s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT id, username, full_name FROM users WHERE username LIKE ? OR full_name LIKE ? ORDER BY id LIMIT ?`), like, like, limit)
+	rows, err := s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT id, username, full_name FROM users WHERE username LIKE ? ESCAPE '\' OR full_name LIKE ? ESCAPE '\' ORDER BY id LIMIT ?`), like, like, limit)
 	if err == nil {
 		for rows.Next() {
 			var u UserResult
@@ -209,7 +209,7 @@ func (s *Service) searchUsers(ctx context.Context, like string, q Query, limit i
 		}
 		_ = rows.Close()
 	}
-	orows, err := s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT id, name, display_name FROM orgs WHERE name LIKE ? OR display_name LIKE ? ORDER BY id LIMIT ?`), like, like, limit)
+	orows, err := s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT id, name, display_name FROM orgs WHERE name LIKE ? ESCAPE '\' OR display_name LIKE ? ESCAPE '\' ORDER BY id LIMIT ?`), like, like, limit)
 	if err == nil {
 		for orows.Next() {
 			var o UserResult

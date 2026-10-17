@@ -2,8 +2,10 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
 )
 
@@ -280,13 +282,10 @@ type rbacCollaboratorReq struct {
 }
 
 func (s *Server) handleSetCollaborator(w http.ResponseWriter, r *http.Request) {
-	u := requireUser(w, r)
-	if u == nil {
-		return
-	}
-	rp, ok := s.repoFromURL(r.Context(), urlParam(r, "owner"), trimGitSuffix(urlParam(r, "repo")))
+	// Only repo admins may manage collaborators; the previous version only
+	// required a session, letting any user grant themselves access.
+	rp, u, ok := s.loadRepoAndPerm(w, r, domain.PermAdmin)
 	if !ok {
-		writeError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
 	var req rbacCollaboratorReq
@@ -299,7 +298,14 @@ func (s *Server) handleSetCollaborator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.RBAC.SetCollaborator(r.Context(), u.ID, rp.ID, target.ID, req.RoleID, req.Permission); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		switch {
+		case errors.Is(err, rbac.ErrPrivilegeEscalation), errors.Is(err, rbac.ErrRoleScope):
+			writeError(w, http.StatusForbidden, err.Error())
+		case errors.Is(err, rbac.ErrRoleNotFound):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"status": "ok"})

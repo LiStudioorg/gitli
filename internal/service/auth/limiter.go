@@ -13,11 +13,16 @@ import (
 )
 
 type loginLimiter struct {
-	mu       sync.Mutex
-	attempts map[string]*attemptRecord
-	max      int
-	lockout  time.Duration
+	mu        sync.Mutex
+	attempts  map[string]*attemptRecord
+	max       int
+	lockout   time.Duration
+	lastSweep time.Time
 }
+
+// sweepInterval bounds how often expired records are purged. Without this the
+// map grows unbounded with attacker-chosen usernames (M-09 memory leak).
+const sweepInterval = 5 * time.Minute
 
 type attemptRecord struct {
 	count  int
@@ -31,6 +36,7 @@ func newLoginLimiter(max int, lockout time.Duration) *loginLimiter {
 func (l *loginLimiter) allow(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	l.sweepLocked()
 	rec, ok := l.attempts[key]
 	if !ok {
 		return true
@@ -45,6 +51,7 @@ func (l *loginLimiter) allow(key string) bool {
 func (l *loginLimiter) fail(key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	l.sweepLocked()
 	rec, ok := l.attempts[key]
 	if !ok || time.Since(rec.lastAt) >= l.lockout {
 		l.attempts[key] = &attemptRecord{count: 1, lastAt: time.Now()}
@@ -52,6 +59,28 @@ func (l *loginLimiter) fail(key string) {
 	}
 	rec.count++
 	rec.lastAt = time.Now()
+}
+
+// sweepLocked drops records whose lockout window has elapsed. Called with mu held.
+func (l *loginLimiter) sweepLocked() {
+	now := time.Now()
+	if now.Sub(l.lastSweep) < sweepInterval {
+		return
+	}
+	l.lastSweep = now
+	for k, rec := range l.attempts {
+		if now.Sub(rec.lastAt) >= l.lockout {
+			delete(l.attempts, k)
+		}
+	}
+}
+
+// success clears the failure counter after a valid credential, so a user who
+// eventually types the right password is not punished for earlier typos.
+func (l *loginLimiter) success(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.attempts, key)
 }
 
 func (l *loginLimiter) reset(key string) {

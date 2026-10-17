@@ -152,7 +152,7 @@ func (s *Service) Search(ctx context.Context, q string, limit, offset int) ([]*d
 		offset = 0
 	}
 	pattern := store.ContainsPattern(q)
-	query := s.st.Rebind(`SELECT ` + repoColumns + ` FROM repos WHERE is_private = 0 AND archived = 0 AND name LIKE ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`)
+	query := s.st.Rebind(`SELECT ` + repoColumns + ` FROM repos WHERE is_private = 0 AND archived = 0 AND name LIKE ? ESCAPE '\' ORDER BY updated_at DESC LIMIT ? OFFSET ?`)
 	rows, err := s.st.DB.QueryContext(ctx, query, pattern, limit, offset)
 	if err != nil {
 		return nil, err

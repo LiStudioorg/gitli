@@ -106,12 +106,18 @@ func (s *Server) handleRunnerNextJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRunnerJobLogs(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.runnerAuth(w, r); !ok {
+	rr, ok := s.runnerAuth(w, r)
+	if !ok {
 		return
 	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的任务 ID")
+		return
+	}
+	// Runner isolation: only the runner a job was assigned to may append logs.
+	if job, jerr := s.deps.Runners.JobByID(r.Context(), jobID); jerr != nil || job.RunnerID != rr.RunnerID {
+		writeError(w, http.StatusForbidden, "该任务不属于当前 Runner")
 		return
 	}
 	// Stream the request body in bounded chunks to avoid unbounded memory.
@@ -153,12 +159,19 @@ type runnerResultReq struct {
 }
 
 func (s *Server) handleRunnerJobResult(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.runnerAuth(w, r); !ok {
+	rr, ok := s.runnerAuth(w, r)
+	if !ok {
 		return
 	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的任务 ID")
+		return
+	}
+	// Runner isolation: a runner may only report results for its own jobs,
+	// otherwise one compromised runner could forge another's outcome.
+	if job, jerr := s.deps.Runners.JobByID(r.Context(), jobID); jerr != nil || job.RunnerID != rr.RunnerID {
+		writeError(w, http.StatusForbidden, "该任务不属于当前 Runner")
 		return
 	}
 	var req runnerResultReq

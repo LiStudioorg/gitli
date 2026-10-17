@@ -226,6 +226,13 @@ func (s *Service) SetCollaborator(ctx context.Context, actorID, repoID, userID i
 	if permission == "" {
 		permission = "read"
 	}
+	// A role id is never trusted verbatim: it must belong to the repository's
+	// organization and may not grant more than the actor already holds.
+	if roleID != nil {
+		if err := s.validateRoleForRepo(ctx, actorID, repoID, *roleID); err != nil {
+			return err
+		}
+	}
 	q := s.st.Rebind(`INSERT INTO repo_collaborators (repo_id, user_id, role_id, permission) VALUES (?, ?, ?, ?)`)
 	if _, err := s.st.DB.ExecContext(ctx, q, repoID, userID, roleID, permission); err != nil {
 		uq := s.st.Rebind(`UPDATE repo_collaborators SET role_id = ?, permission = ?, updated_at = ? WHERE repo_id = ? AND user_id = ?`)
@@ -236,6 +243,72 @@ func (s *Service) SetCollaborator(ctx context.Context, actorID, repoID, userID i
 	_ = s.recordAudit(ctx, AuditEntry{ActorID: &actorID, TargetType: "repo_collaborator", TargetID: &userID, Action: "set", NewValue: permission})
 	s.cache.invalidateUser(userID)
 	return nil
+}
+
+// validateRoleForRepo ensures a role is scoped to the repo's organization and
+// that the actor can grant it (no privilege escalation via a custom role).
+func (s *Service) validateRoleForRepo(ctx context.Context, actorID, repoID, roleID int64) error {
+	var roleOrg sql.NullInt64
+	q := s.st.Rebind(`SELECT org_id FROM roles WHERE id = ?`)
+	if err := s.st.DB.QueryRowContext(ctx, q, roleID).Scan(&roleOrg); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrRoleNotFound
+		}
+		return err
+	}
+	var repoOrg sql.NullInt64
+	if err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT org_id FROM repos WHERE id = ?`), repoID).Scan(&repoOrg); err != nil {
+		return err
+	}
+	if !roleOrg.Valid || !repoOrg.Valid {
+		return ErrRoleScope
+	}
+	if roleOrg.Int64 != repoOrg.Int64 {
+		return ErrRoleScope
+	}
+	// The actor must hold every permission the role grants.
+	rolePerms, err := s.rolePermissions(ctx, roleID)
+	if err != nil {
+		return err
+	}
+	actorPerms, err := s.rolePermissionsForUser(ctx, actorID, repoOrg.Int64)
+	if err != nil {
+		return err
+	}
+	granted := make(map[string]struct{}, len(actorPerms))
+	for _, p := range actorPerms {
+		granted[p.Resource+":"+p.Action] = struct{}{}
+	}
+	for _, p := range rolePerms {
+		if _, ok := granted[p.Resource+":"+p.Action]; !ok {
+			return ErrPrivilegeEscalation
+		}
+	}
+	return nil
+}
+
+// rolePermissionsForUser unions all permissions granted to a user through org
+// roles in the given organization.
+func (s *Service) rolePermissionsForUser(ctx context.Context, userID, orgID int64) ([]Permission, error) {
+	q := s.st.Rebind(`SELECT DISTINCT p.resource, p.action
+		FROM org_members m
+		JOIN role_permissions rp ON rp.role_id = m.role_id
+		JOIN permissions p ON p.id = rp.permission_id
+		WHERE m.user_id = ? AND m.org_id = ?`)
+	rows, err := s.st.DB.QueryContext(ctx, q, userID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []Permission
+	for rows.Next() {
+		var p Permission
+		if err := rows.Scan(&p.Resource, &p.Action); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 
 // RemoveCollaborator removes a direct repo grant.

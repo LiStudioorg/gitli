@@ -3,6 +3,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -49,18 +50,80 @@ func isHTTPS(externalURL string) bool {
 	return strings.HasPrefix(strings.ToLower(externalURL), "https://")
 }
 
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.IndexByte(xff, ','); i >= 0 {
-			return strings.TrimSpace(xff[:i])
+// trustedProxies holds the parsed CIDRs whose X-Forwarded-For is believed.
+// Empty by default: XFF is then ignored entirely, which prevents attackers
+// from spoofing their IP to bypass rate limits and IP allowlists (H-03).
+var trustedProxies []*net.IPNet
+
+// SetTrustedProxies configures which upstream proxies may set XFF.
+func SetTrustedProxies(cidrs []string) error {
+	parsed := make([]*net.IPNet, 0, len(cidrs))
+	for _, raw := range cidrs {
+		c := strings.TrimSpace(raw)
+		if c == "" {
+			continue
 		}
-		return strings.TrimSpace(xff)
+		if !strings.Contains(c, "/") {
+			ip := net.ParseIP(c)
+			if ip == nil {
+				return fmt.Errorf("trusted_proxies: 无效的 IP %q", c)
+			}
+			bits := 32
+			if ip.To4() == nil {
+				bits = 128
+			}
+			c = fmt.Sprintf("%s/%d", ip.String(), bits)
+		}
+		_, network, err := net.ParseCIDR(c)
+		if err != nil {
+			return fmt.Errorf("trusted_proxies: 无效的 CIDR %q", raw)
+		}
+		parsed = append(parsed, network)
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	trustedProxies = parsed
+	return nil
+}
+
+func isTrustedProxy(addr string) bool {
+	ip := net.ParseIP(strings.TrimSpace(addr))
+	if ip == nil {
+		return false
+	}
+	for _, n := range trustedProxies {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// clientIP returns the effective client address. X-Forwarded-For is only
+// consulted when the immediate peer is a configured trusted proxy, and then the
+// right-most non-trusted hop is used (the value appended by our own proxy).
+func clientIP(r *http.Request) string {
+	remoteHost, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		remoteHost = r.RemoteAddr
 	}
-	return host
+	if len(trustedProxies) == 0 || !isTrustedProxy(remoteHost) {
+		return remoteHost
+	}
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff == "" {
+		return remoteHost
+	}
+	parts := strings.Split(xff, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		hop := strings.TrimSpace(parts[i])
+		if hop == "" {
+			continue
+		}
+		if isTrustedProxy(hop) {
+			continue
+		}
+		return hop
+	}
+	return remoteHost
 }
 
 func urlParam(r *http.Request, name string) string {

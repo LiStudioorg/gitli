@@ -66,10 +66,10 @@ func ValidateRedirectURIFormat(raw string) error {
 // CreateApp registers an application and returns the one-time plaintext secret.
 func (s *Service) CreateApp(ctx context.Context, ownerID int64, name string, redirectURIs, scopes []string) (*App, string, error) {
 	if name == "" {
-		return nil, "", fmt.Errorf("oauth: name required")
+		return nil, "", fmt.Errorf("oauth: 必须填写应用名称")
 	}
 	if len(redirectURIs) == 0 {
-		return nil, "", fmt.Errorf("oauth: at least one redirect uri required")
+		return nil, "", fmt.Errorf("oauth: 至少需要一个回调地址")
 	}
 	// H-07: an unvalidated scheme allows "javascript:..." which executes in the
 	// authorize page origin, and arbitrary hosts enable open redirects.

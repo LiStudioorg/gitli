@@ -77,9 +77,16 @@ func (s *Server) handleAdminSetActive(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	// A deactivated account must not keep working through the credential cache.
-	if !*req.Active && s.gitAuth != nil {
-		s.gitAuth.invalidateUser(id)
+	// A deactivated account must not keep working through cached credentials
+	// or existing sessions.
+	if !*req.Active {
+		if s.gitAuth != nil {
+			s.gitAuth.invalidateUser(id)
+		}
+		if err := s.deps.Auth.RevokeAllSessions(r.Context(), id); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 	if *req.Active {
 		s.auditAction(r, u.ID, "admin.user.enable", "success")
@@ -137,6 +144,11 @@ func (s *Server) handleAdminReset2FA(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.gitAuth != nil {
 		s.gitAuth.invalidateUser(id)
+	}
+	// Force re-login: an attacker holding a session should not survive a 2FA reset.
+	if err := s.deps.Auth.RevokeAllSessions(r.Context(), id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	s.auditAction(r, u.ID, "admin.user.reset_2fa", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})

@@ -44,8 +44,10 @@ func weakSecretProblem(name, value string) (string, error) {
 	if isLowEntropy(value) {
 		return "低熵值（全部字符相同或为连续序列）", nil
 	}
-	if len(value) < 16 {
-		return "长度不足 16 个字符", nil
+	// Only the crypto key must be long enough to be a real key. A pepper is a
+	// salt-like value, so length alone is not a reliable signal there.
+	if name == "GITLI_CRYPTO_KEY" && len(value) < 32 {
+		return "长度不足 32 个字符", nil
 	}
 	return "", nil
 }

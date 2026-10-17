@@ -53,6 +53,9 @@ func (a *App) Serve(ctx context.Context) error {
 		a.Log.Error("database migration failed, refusing to start", "error", err)
 		return fmt.Errorf("migrate: %w", err)
 	}
+	if err := httptransport.SetTrustedProxies(a.Cfg.Server.TrustedProxies); err != nil {
+		return err
+	}
 	handler := httptransport.NewServer(a.Deps).Router()
 
 	if a.Cfg.Runner.Enabled && a.Deps.Runners != nil {

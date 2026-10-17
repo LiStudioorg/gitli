@@ -46,7 +46,11 @@ func (s *Service) DetectLanguages(ctx context.Context, path, ref string) ([]Lang
 	if ref == "" {
 		ref = "HEAD"
 	}
-	out, err := s.runner.Run(ctx, path, "ls-tree", "-r", "--long", "-z", ref)
+	// ref reaches the git argv, so it must be validated and separated by "--".
+	if err := validateRef(ref); err != nil {
+		return nil, err
+	}
+	out, err := s.runner.Run(ctx, path, "ls-tree", "-r", "--long", "-z", ref, "--")
 	if err != nil {
 		return nil, err
 	}

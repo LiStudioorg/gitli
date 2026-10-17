@@ -10,6 +10,7 @@ import (
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	authsvc "github.com/LiStudioorg/gitli/internal/service/auth"
 	"github.com/LiStudioorg/gitli/internal/service/license"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 )
@@ -120,7 +121,43 @@ func (s *Server) loadRepoAndPerm(w http.ResponseWriter, r *http.Request, need do
 		writeError(w, http.StatusForbidden, "权限不足")
 		return nil, nil, false
 	}
+	// M-01: a PAT must actually be allowed to touch this repo, even when its
+	// owner has access. Without this a fine-grained token limited to repo A
+	// could read private repo B.
+	if tok := authsvc.TokenFrom(r.Context()); tok != nil && !tokenAllowsRepo(tok, rp, need) {
+		writeError(w, http.StatusForbidden, "令牌没有该仓库的访问权限")
+		return nil, nil, false
+	}
 	return rp, u, true
+}
+
+// tokenAllowsRepo reports whether a PAT's scopes/grants cover the repo and the
+// required permission.
+func tokenAllowsRepo(tok *domain.AccessToken, rp *domain.Repo, need domain.Perm) bool {
+	needWrite := need >= domain.PermWrite
+	if tok.Kind == domain.TokenFineGrained {
+		for _, g := range tok.RepoGrants {
+			if g.RepoID != rp.ID {
+				continue
+			}
+			if !needWrite {
+				return true
+			}
+			if g.Permission == "write" || g.Permission == "admin" {
+				return true
+			}
+		}
+		return false
+	}
+	for _, sc := range tok.Scopes {
+		switch sc {
+		case "repo", "write:repo", "admin:repo":
+			return true
+		case "read:repo":
+			return !needWrite
+		}
+	}
+	return false
 }
 
 func (s *Server) handleGetRepo(w http.ResponseWriter, r *http.Request) {
