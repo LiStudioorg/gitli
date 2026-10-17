@@ -108,3 +108,22 @@ func (s *Service) IsMember(ctx context.Context, orgID, userID int64) (bool, erro
 	}
 	return perm > domain.PermNone, nil
 }
+
+// ListAll returns every organization.
+func (s *Service) ListAll(ctx context.Context) ([]*domain.Org, error) {
+	q := s.st.Rebind(`SELECT id, name, display_name, description, avatar_url, owner_id, created_at, updated_at FROM orgs ORDER BY id`)
+	rows, err := s.st.DB.QueryContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []*domain.Org
+	for rows.Next() {
+		var o domain.Org
+		if err := rows.Scan(&o.ID, &o.Name, &o.DisplayName, &o.Description, &o.AvatarURL, &o.OwnerID, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, &o)
+	}
+	return out, rows.Err()
+}

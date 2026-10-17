@@ -68,7 +68,18 @@ docker run --rm ghcr.io/listudioorg/gitli:latest version
 
 ## 命令
 
-`gitli` 为单二进制，子命令通过 `gitli <command> [--config path/to/config.toml]` 调用：
+### 默认启动
+
+**直接运行 `gitli` 即可启动主服务**（等价于 `serve`），无需子命令：
+
+```bash
+./gitli                          # 使用当前目录 config.toml 启动
+./gitli --config /etc/gitli/config.toml   # 指定配置并启动
+```
+
+### 子命令
+
+`gitli` 为单二进制，管理命令通过 `gitli <command> [--config path/to/config.toml]` 调用：
 
 | 子命令 | 说明 |
 | --- | --- |
@@ -78,6 +89,59 @@ docker run --rm ghcr.io/listudioorg/gitli:latest version
 | `backup` | 流式备份（`--out <file> [--source <dir>] [--encrypt]`，加密密钥取自 `GITLI_BACKUP_KEY`） |
 | `restore` | 从备份归档恢复（`--in <file> [--dest <dir>]`） |
 | `version` | 打印版本、commit 与构建时间 |
+
+> **CLI 是最高管理权限，Web 后台仅为便捷视图（其子集）。**
+> 毁灭性操作（彻底删除用户/仓库、垃圾回收、恢复备份）只能通过 CLI 执行。
+
+## 管理命令（`gitli admin`）
+
+```bash
+# 用户管理
+gitli admin user create <username> <email> [--password <pwd>] [--admin]
+gitli admin user list [--format table|json]
+gitli admin user info <username>
+gitli admin user set-admin <username> [--revoke]
+gitli admin user disable <username>
+gitli admin user enable <username>
+gitli admin user change-password <username>      # 交互式输入，不回显
+gitli admin user change-email <username> <new_email>
+gitli admin user reset-2fa <username>
+gitli admin user ssh-keys <username>
+gitli admin user revoke-ssh-key <username> <key_id>
+gitli admin user delete <username> --purge       # 二次确认，物理删除及其名下仓库
+
+# 仓库管理
+gitli admin repo list [--owner <username>]
+gitli admin repo info <owner>/<repo>
+gitli admin repo delete <owner>/<repo> --purge   # 二次确认，物理删除
+gitli admin repo transfer <owner>/<repo> <new_owner>
+gitli admin repo archive <owner>/<repo>
+gitli admin repo unarchive <owner>/<repo>
+gitli admin repo recalc-size <owner>/<repo>
+
+# 组织管理
+gitli admin org list
+gitli admin org create <org_name> <admin_username>
+gitli admin org delete <org_name>
+gitli admin org add-member <org_name> <username> [--role <role_name>]
+gitli admin org remove-member <org_name> <username>
+
+# Runner 管理
+gitli admin runner list
+gitli admin runner create <name> --labels "linux,amd64"
+gitli admin runner delete <runner_id>
+gitli admin runner reset-token <runner_id>
+
+# 系统维护
+gitli admin doctor            # 数据库/目录权限/git 版本/管理员数量自检
+gitli admin generate-secret   # 生成随机密钥
+gitli admin gc                # 清理过期 session 与上传临时文件
+gitli admin reindex           # 搜索索引（当前按需 grep）
+gitli admin audit list        # 终端查看审计日志
+gitli admin backup            # 提示使用 `gitli backup`
+```
+
+> 安全：交互式密码使用 `term.ReadPassword`；删除/降级管理员前会校验至少保留一个活跃管理员；毁灭性命令需二次输入名称确认；所有 CLI 操作写入 `audit_logs`（`actor_type=system`，IP `127.0.0.1`）。
 | `help` | 显示帮助 |
 
 > **保留子命令（尚未实现）**：`runner`、`mirror`、`import`、`search-index`、`admin`。当前调用会返回 `subcommand "..." is not implemented yet`；对应能力已通过 `serve` 进程或 HTTP API 提供（如镜像 / 导入 / 搜索 / 管理端）。

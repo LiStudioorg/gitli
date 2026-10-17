@@ -99,6 +99,14 @@ func (s *Server) Router() http.Handler {
 
 	api.Route("/admin", func(ar chi.Router) {
 		ar.Get("/stats", s.handleAdminStats)
+		ar.Get("/users", s.handleAdminListUsers)
+		ar.Patch("/users/{id}", s.handleAdminSetActive)
+		ar.Post("/users/{id}/reset-password", s.handleAdminResetPassword)
+		ar.Post("/users/{id}/reset-2fa", s.handleAdminReset2FA)
+		ar.Get("/repos", s.handleAdminListRepos)
+		ar.Post("/repos/{id}/archive", s.handleAdminArchiveRepo)
+		ar.Get("/orgs", s.handleAdminListOrgs)
+		ar.Get("/system", s.handleAdminSystem)
 		ar.Get("/audit", s.handleAuditQuery)
 		ar.Get("/audit/stats", s.handleAuditStats)
 		ar.Get("/audit/export", s.handleAuditExport)

@@ -27,9 +27,21 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) == 0 {
-		usage()
-		return nil
+	// Bare execution (no args, or only --config) starts the server.
+	if len(args) == 0 || args[0] == "--config" || args[0] == "-config" || strings.HasPrefix(args[0], "--config=") {
+		fs := flag.NewFlagSet("gitli", flag.ContinueOnError)
+		configPath := fs.String("config", "config.toml", "path to config.toml")
+		if err := fs.Parse(args); err != nil {
+			return err
+		}
+		cfg, err := config.Load(*configPath)
+		if err != nil {
+			return err
+		}
+		if err := refuseRoot(cfg); err != nil {
+			return err
+		}
+		return runServe(context.Background(), cfg, *configPath)
 	}
 	cmd := args[0]
 	rest := args[1:]
@@ -370,72 +382,6 @@ func runRunner(args []string) error {
 func runSearchIndex(_ []string) error {
 	fmt.Fprintln(os.Stderr, "search-index: gitli uses on-demand `git grep`; no index is required")
 	return nil
-}
-
-// runAdmin provides administrative subcommands.
-func runAdmin(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("admin: usage: gitli admin <user-list|user-promote|user-reset-password>")
-	}
-	sub := args[0]
-	fs := flag.NewFlagSet("admin "+sub, flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	username := fs.String("username", "", "target username")
-	password := fs.String("password", "", "new password (user-reset-password)")
-	// Backward-compatible: also accept the config flag only.
-	if err := fs.Parse(args[1:]); err != nil {
-		return err
-	}
-	ctx := context.Background()
-	cfg, err := config.Load(*configPath)
-	if err != nil {
-		return err
-	}
-	a, err := app.New(ctx, cfg, *configPath)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = a.Close() }()
-
-	switch sub {
-	case "user-list":
-		users, err := a.Deps.Users.List(ctx, 100, 0)
-		if err != nil {
-			return err
-		}
-		for _, u := range users {
-			fmt.Printf("%d\t%s\t%s\tadmin=%v\n", u.ID, u.Username, u.Email, u.IsAdmin)
-		}
-		return nil
-	case "user-promote":
-		if *username == "" {
-			return fmt.Errorf("admin: --username required")
-		}
-		u, err := a.Deps.Users.ByUsername(ctx, *username)
-		if err != nil {
-			return err
-		}
-		if err := a.PromoteAdmin(ctx, u.ID); err != nil {
-			return err
-		}
-		fmt.Printf("user %s promoted to admin\n", u.Username)
-		return nil
-	case "user-reset-password":
-		if *username == "" || len(*password) < 12 {
-			return fmt.Errorf("admin: --username and a >=12 char --password are required")
-		}
-		u, err := a.Deps.Users.ByUsername(ctx, *username)
-		if err != nil {
-			return err
-		}
-		if err := a.Deps.Auth.UpdatePassword(ctx, u, *password); err != nil {
-			return err
-		}
-		fmt.Printf("password reset for %s\n", u.Username)
-		return nil
-	default:
-		return fmt.Errorf("admin: unknown subcommand %q", sub)
-	}
 }
 
 // runHookCommand executes a server-side git hook. Usage:

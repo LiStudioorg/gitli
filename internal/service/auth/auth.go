@@ -4,6 +4,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -527,4 +528,29 @@ func (s *Service) loginLDAP(ctx context.Context, username, password string) (*do
 		_ = s.users.UpdateProfile(ctx, u)
 	}
 	return u, nil
+}
+
+// ResetPassword sets a new random password for the user and returns it once.
+func (s *Service) ResetPassword(ctx context.Context, u *domain.User) (string, error) {
+	key, err := randomBytes(12)
+	if err != nil {
+		return "", err
+	}
+	pw := fmt.Sprintf("%x", key)
+	hash, err := s.hasher.Hash(pw)
+	if err != nil {
+		return "", err
+	}
+	if err := s.users.UpdatePassword(ctx, u.ID, hash); err != nil {
+		return "", err
+	}
+	return pw, nil
+}
+
+func randomBytes(n int) ([]byte, error) {
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return nil, err
+	}
+	return buf, nil
 }

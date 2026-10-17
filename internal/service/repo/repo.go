@@ -59,7 +59,7 @@ type CreateParams struct {
 	IsPrivate     bool
 }
 
-const repoColumns = `id, owner_id, owner_type, org_id, name, description, default_branch, is_private, is_fork, fork_id, is_mirror, stars_count, forks_count, size_kb, archived, created_at, updated_at`
+const repoColumns = `id, owner_id, owner_type, org_id, name, description, default_branch, is_private, is_fork, fork_id, is_mirror, stars_count, forks_count, size_kb, archived, created_at, updated_at, deleted_at`
 
 // Create creates a repo record and initializes its bare Git directory.
 func (s *Service) Create(ctx context.Context, p CreateParams) (*domain.Repo, error) {
@@ -291,11 +291,16 @@ type scanner interface {
 func scanRepo(sc scanner) (*domain.Repo, error) {
 	var r domain.Repo
 	var ownerType string
+	var deleted sql.NullTime
 	err := sc.Scan(&r.ID, &r.OwnerID, &ownerType, &r.OrgID, &r.Name, &r.Description, &r.DefaultBranch,
 		&r.IsPrivate, &r.IsFork, &r.ForkID, &r.IsMirror, &r.StarsCount, &r.ForksCount,
-		&r.SizeKB, &r.Archived, &r.CreatedAt, &r.UpdatedAt)
+		&r.SizeKB, &r.Archived, &r.CreatedAt, &r.UpdatedAt, &deleted)
 	if err != nil {
 		return nil, err
+	}
+	if deleted.Valid {
+		t := deleted.Time
+		r.DeletedAt = &t
 	}
 	r.OwnerType = domain.OwnerType(ownerType)
 	return &r, nil

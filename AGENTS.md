@@ -156,6 +156,9 @@ internal/domain    →  仅标准库（禁止 import 其它 internal 包）
 - **Webhook**：HMAC-SHA256 签名、SSRF 防护（禁止内网/元数据地址）、重试 + 死信。
 - **用户名可改**：旧名写入 `user_redirects`，HTTP 301 重定向，SSH 同样支持别名。
 - **审计**：所有敏感操作必须记审计；事件命名遵循 `resource.action`；写入异步、不可篡改、仅归档；仅管理员可查询/导出。事件清单见 `docs/AUDIT.md`。
+- **CLI 权限最高**：`gitli admin` 拥有最高、最全权限；Web 管理后台仅是 CLI 的子集与便捷视图，禁止在 Web 暴露彻底删除用户/仓库、垃圾回收、恢复备份等毁灭性操作。
+- **CLI 安全防呆**：交互式密码必须用 `golang.org/x/term.ReadPassword`；删除或降级管理员前必须校验至少保留一个活跃管理员；`--purge` 需二次确认；所有 CLI 操作写审计（`actor_type=system`，IP `127.0.0.1`）。
+- **默认启动**：裸执行 `gitli` 或 `gitli --config x.toml` 直接启动服务，不得强制 `serve`。
 - **SSH 密钥用途**：必须区分「认证」与「签名」用途，至少勾选一个；仅 `can_authenticate` 的密钥可用于 Git 认证，仅 `can_sign` 的密钥可用于提交签名验证。GPG 密钥默认用于签名。
 - **禁止以 root 运行**：Linux/Unix 下检测到 `os.Getuid() == 0` 时默认拒绝启动并退出（退出码 1），除非显式配置 `[server] allow_root = true`（强烈不建议）。Windows 跳过该检查。
 - **Runner 隔离执行**：gitli 主服务永不执行用户脚本；执行由独立 Runner 二进制（gitli-runner）在隔离环境中完成。

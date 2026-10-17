@@ -35,7 +35,7 @@ func (s *Server) handleAdminStats(w http.ResponseWriter, r *http.Request) {
 	}
 	counts := map[string]int64{}
 	for _, tbl := range []string{
-		"users", "repos", "orgs", "issues", "pull_requests",
+		"users", "repos", "orgs", "issues", "pulls",
 		"gists", "releases", "webhooks", "access_tokens",
 	} {
 		n, err := s.countAll(r, tbl)
@@ -50,7 +50,7 @@ func (s *Server) handleAdminStats(w http.ResponseWriter, r *http.Request) {
 		"repos":          counts["repos"],
 		"orgs":           counts["orgs"],
 		"issues":         counts["issues"],
-		"pulls":          counts["pull_requests"],
+		"pulls":          counts["pulls"],
 		"gists":          counts["gists"],
 		"releases":       counts["releases"],
 		"webhooks":       counts["webhooks"],

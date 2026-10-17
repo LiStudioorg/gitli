@@ -66,6 +66,7 @@ type Repo struct {
 	ForksCount    int
 	SizeKB        int64
 	Archived      bool
+	DeletedAt     *time.Time
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
