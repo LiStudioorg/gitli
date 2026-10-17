@@ -39,6 +39,8 @@ func (s *Server) Router() http.Handler {
 
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/metrics", s.handleMetrics)
+	r.Get("/api/openapi.json", s.handleOpenAPI)
+	r.Get("/api/docs", s.handleAPIDocs)
 
 	// OCI Distribution API (/v2). No CSRF; auth via session, PAT or Basic.
 	r.Group(func(vr chi.Router) {

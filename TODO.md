@@ -39,7 +39,7 @@
 - [x] 3.2 会话管理 UI：列表/单个注销/全部注销，显示 IP/UA/创建/最后活跃/过期时间
 - [x] 3.3 IP 允许列表：`ip_allowlist` 表、CIDR 校验、org 中间件、组织设置 API
 - [x] 3.4 审计日志导出：CSV/JSON 流式导出（支持 from/to 多格式时间）
-- [ ] 3.5 API 文档（OpenAPI）：swaggo 生成 + Swagger UI `/api/docs`
+- [x] 3.5 API 文档（OpenAPI）：`/api/openapi.json` + Swagger UI `/api/docs`（可在线调试）
 
 ### 批次 4：企业集成
 - [ ] 4.1 LDAP 登录：`[ldap]` 配置、认证后关联本地用户、组映射
