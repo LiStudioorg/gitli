@@ -2,8 +2,10 @@
 
 > 外部记忆文件。每次完成小模块就更新。上下文被压缩后先读本文件 + `ROADMAP.md` + `STATUS.md`。
 
-## 正在进行
-- [x] SSH key 双用途（认证 + 签名）+ GPG 签名密钥
+## 正在进行（阶段 A：功能冻结）
+- [ ] 编写并跑通 test/e2e.sh
+- [ ] 修复 E2E 失败项
+- [ ] 发布 v0.2.0-beta
 
 ## 企业级审计系统（用户单独要求，已完成）
 - [x] audit_logs 表扩展（actor/event/resource/target/old/new/result/request_id/metadata + 索引）

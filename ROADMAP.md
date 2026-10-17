@@ -99,6 +99,8 @@ AGENTS/README/LICENSE/config.example.toml、目录、main.go、config、db 三�
 Wiki、Gist、Release+附件上传下载、Git LFS、仓库镜像/导入、包管理（Generic/NPM/Docker/Go/Maven）、Docker Registry V2（blob 上传会话、manifest/tag）、CI 调度器、搜索（git grep）、IDE/Symbols、徽章/RSS/Atom、活动时间线、语言统计（后台队列刷新）、SMTP 邮件。
 
 ### Block 4：前端、运维、测试、文档 —— 已完成
+
+> **当前：功能冻结，阶段 A（E2E + v0.2.0-beta）。详见 STATUS.md。**
 Landing/Dashboard/Repo/Admin/Settings 页面、Clone 下拉、语言统计进度条、暗色模式、命令面板、响应式、无障碍、SSE 通知、工作流 Tab、Runner 管理页、指标 /metrics、健康检查 /healthz、管理面板 API、备份/恢复 CLI（加密+HMAC）、CLI 子命令（serve/migrate/hook/backup/restore/mirror/import/runner/admin/search-index）、多平台构建矩阵、静态编译、部署模板（systemd/docker/launchd/windows/termux）、文档（SECURITY/CI/RELEASE/ARCHITECTURE/SECURITY_AUDIT）。
 
 ### 独立 Runner（gitli-runner）—— 已完成
@@ -115,3 +117,11 @@ ID+Token 认证（Token 仅存 SHA-256）、心跳、原子 ClaimJob、日志限
 - 本地沙箱 SHA-256/SHA-1 在部分场景被 stub；依赖哈希的会话/PAT 本地端到端不稳，云端正常。
 - 本地无 goreleaser/docker 运行完整 CD；已用配置文件校验 + 交叉编译 + 云端验证替代。
 - 无 gh CLI；查 Actions 用 GitHub REST API：`curl -s https://api.github.com/repos/LiStudioorg/gitli/actions/runs`
+
+
+## 9. 阶段 A：功能冻结与 E2E（进行中）
+
+- 目标版本：`v0.2.0-beta`
+- 所有功能批次（1-5）、Runner、CLI、审计**已完成并冻结**。
+- 任务：编写并跑通 `test/e2e.sh` → 打 tag → 验证 CD。
+- 恢复提示：本文件 + `STATUS.md` 是唯一权威进度来源。
