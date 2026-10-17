@@ -27,6 +27,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/deploykey"
+	"github.com/LiStudioorg/gitli/internal/service/follow"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/globalsearch"
@@ -192,6 +193,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		DeployKeys:    deploykey.New(st),
 		SavedReplies:  savedreply.New(st),
 		GlobalSearch:  globalsearch.New(st),
+		Follows:       follow.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

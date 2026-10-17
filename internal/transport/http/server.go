@@ -264,6 +264,14 @@ func (s *Server) Router() http.Handler {
 		rr.Get("/{owner}/{repo}/imports", s.handleListImports)
 	})
 
+	api.Route("/users", func(pr chi.Router) {
+		pr.Get("/{username}", s.handleUserProfile)
+		pr.Get("/{username}/followers", s.handleListFollowers)
+		pr.Get("/{username}/following", s.handleListFollowing)
+		pr.Post("/{username}/follow", s.handleFollowUser)
+		pr.Delete("/{username}/follow", s.handleUnfollowUser)
+	})
+
 	api.Route("/gists", func(gr chi.Router) {
 		gr.Get("/", s.handleListGists)
 		gr.Post("/", s.handleCreateGist)

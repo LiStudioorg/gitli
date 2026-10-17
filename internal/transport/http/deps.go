@@ -19,6 +19,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/deploykey"
+	"github.com/LiStudioorg/gitli/internal/service/follow"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/globalsearch"
@@ -114,6 +115,7 @@ type Deps struct {
 	DeployKeys   *deploykey.Service
 	SavedReplies *savedreply.Service
 	GlobalSearch *globalsearch.Service
+	Follows      *follow.Service
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
 	// layer to avoid an import cycle.

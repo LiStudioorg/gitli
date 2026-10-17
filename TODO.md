@@ -29,9 +29,9 @@
 - [x] 1.7 归档功能：`repos.archived`/`archived_at`、禁止 push/Issue/PR/Wiki/Release、仅允许 clone/浏览/Star/Fork、组织级归档、审计
 
 ### 批次 2：用户与社区
-- [ ] 2.1 保存的回复（Saved Replies）：`saved_replies` 表 + API + 前端
-- [ ] 2.2 全局搜索 + 高级搜索：跨仓库/Issue/PR/用户/组织、`language:`/`stars:`/`is:`/`author:`/`org:`
-- [ ] 2.3 用户主页 + 关注/粉丝：`/username`、`follows` 表、关注按钮、粉丝列表
+- [x] 2.1 保存的回复（Saved Replies）：`saved_replies` 表 + API + 前端
+- [x] 2.2 全局搜索 + 高级搜索：跨仓库/Issue/PR/用户/组织、`language:`/`stars:`/`is:`/`author:`/`org:`
+- [x] 2.3 用户主页 + 关注/粉丝：`/username`、`follows` 表、关注按钮、粉丝列表（后端）
 - [ ] 2.4 探索页 + 趋势 + 话题：`/explore`、`/topics/{topic}`、`trending_cache`、每日聚合
 
 ### 批次 3：企业安全
