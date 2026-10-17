@@ -86,7 +86,7 @@ cj(){ curl -s -b "$CJ" -c "$CJ" "$@"; }
 post(){ cj -X POST "$1" -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -d "$2"; }
 
 section "准备测试数据"
-post "$BASE/api/v1/auth/register" '{"username":"stress","email":"stress@example.com","password":"stresstest123"}' >/dev/null
+post "$BASE/api/v1/setup" '{"username":"stress","email":"stress@example.com","password":"stresstest123"}' >/dev/null
 post "$BASE/api/v1/auth/login" '{"username":"stress","password":"stresstest123"}' >/dev/null
 cj "$BASE/api/v1/user/me" | grep -q '"username":"stress"' && ok "登录" || { no "登录"; exit 1; }
 post "$BASE/api/v1/repos" '{"name":"bench","default_branch":"main"}' >/dev/null
@@ -96,7 +96,13 @@ SRC="$WORK/src"; mkdir -p "$SRC"; cd "$SRC"
 git init -q -b main
 for i in $(seq 1 20); do head -c 2048 /dev/urandom | base64 > "file$i.bin"; done
 git add -A && git -c user.email=s@example.com -c user.name=s commit -qm init
-git push -q "$PUSH_URL" main && ok "初始 push" || { no "初始 push"; exit 1; }
+if ! git push -q "$PUSH_URL" main 2>"$WORK/init-push.err"; then
+  # A leftover branch from a previous run may be ahead; reset it explicitly.
+  git push -q --force "$PUSH_URL" main 2>>"$WORK/init-push.err" && ok "初始 push（强制重置）" || {
+    no "初始 push ($(tail -1 "$WORK/init-push.err"))"; exit 1; }
+else
+  ok "初始 push"
+fi
 cj "$BASE/api/v1/repos/stress/bench/issues" -H 'Content-Type: application/json' \
   -H "X-CSRF-Token: $CSRF" -d '{"title":"stress issue","body":"x"}' >/dev/null
 

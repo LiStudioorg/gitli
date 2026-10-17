@@ -101,6 +101,9 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if s.gitAuth != nil {
+		s.gitAuth.invalidate()
+	}
 	s.auditAction(r, u.ID, "admin.user.reset_password", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"password": tmp})
 }

@@ -33,6 +33,14 @@ func DefaultParams() Params {
 	}
 }
 
+// maxConcurrentKDF bounds simultaneous Argon2 derivations. Each derivation
+// allocates Memory KiB (64 MiB by default), so unbounded concurrency from
+// parallel Git pushes can exhaust the host. Queuing is far cheaper than OOM.
+const maxConcurrentKDF = 2
+
+// kdfSem serialises Argon2 derivations across all Hasher instances.
+var kdfSem = make(chan struct{}, maxConcurrentKDF)
+
 // Hasher hashes and verifies passwords using Argon2id with an optional pepper.
 type Hasher struct {
 	params Params
@@ -62,11 +70,18 @@ func (h *Hasher) Hash(plaintext string) (string, error) {
 	if _, err := rand.Read(salt); err != nil {
 		return "", fmt.Errorf("password: read salt: %w", err)
 	}
-	key := argon2.IDKey(h.peppered(plaintext), salt, h.params.Iterations, h.params.Memory, h.params.Parallelism, h.params.KeyLength)
+	key := h.derive(h.peppered(plaintext), salt, h.params.Iterations, h.params.Memory, h.params.Parallelism, h.params.KeyLength)
 	b64 := base64.RawStdEncoding
 	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version, h.params.Memory, h.params.Iterations, h.params.Parallelism,
 		b64.EncodeToString(salt), b64.EncodeToString(key)), nil
+}
+
+// derive runs argon2id while honouring the process-wide concurrency cap.
+func (h *Hasher) derive(secret, salt []byte, iterations, memory uint32, parallelism uint8, keyLen uint32) []byte {
+	kdfSem <- struct{}{}
+	defer func() { <-kdfSem }()
+	return argon2.IDKey(secret, salt, iterations, memory, parallelism, keyLen)
 }
 
 // Verify checks plaintext against a PHC hash, returning nil on success.
@@ -75,7 +90,7 @@ func (h *Hasher) Verify(plaintext, encoded string) error {
 	if err != nil {
 		return err
 	}
-	computed := argon2.IDKey(h.peppered(plaintext), salt, p.Iterations, p.Memory, p.Parallelism, uint32(len(key)))
+	computed := h.derive(h.peppered(plaintext), salt, p.Iterations, p.Memory, p.Parallelism, uint32(len(key)))
 	if subtle.ConstantTimeCompare(key, computed) != 1 {
 		return ErrMismatch
 	}

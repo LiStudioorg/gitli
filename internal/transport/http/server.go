@@ -17,15 +17,17 @@ import (
 
 // Server holds dependencies for the HTTP transport.
 type Server struct {
-	deps   *Deps
-	apiLim *middleware.RateLimiter
+	deps    *Deps
+	apiLim  *middleware.RateLimiter
+	gitAuth *gitAuthCache
 }
 
 // NewServer constructs the HTTP transport.
 func NewServer(deps *Deps) *Server {
 	return &Server{
-		deps:   deps,
-		apiLim: middleware.NewRateLimiter(600, time.Minute),
+		deps:    deps,
+		apiLim:  middleware.NewRateLimiter(600, time.Minute),
+		gitAuth: newGitAuthCache(),
 	}
 }
 

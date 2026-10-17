@@ -12,9 +12,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// apiError is the canonical JSON error envelope.
+// apiError is the canonical JSON error envelope. Code is a stable,
+// machine-readable identifier that clients must use instead of matching the
+// human-readable (and localised) Error text.
 type apiError struct {
 	Error string `json:"error"`
+	Code  string `json:"code,omitempty"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -25,6 +28,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, apiError{Error: msg})
+}
+
+// writeErrorCode writes an error envelope with a stable machine-readable code.
+func writeErrorCode(w http.ResponseWriter, status int, msg, code string) {
+	writeJSON(w, status, apiError{Error: msg, Code: code})
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {

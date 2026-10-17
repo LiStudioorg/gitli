@@ -68,6 +68,10 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	// Drop cached Git Basic credentials so an old password stops working at once.
+	if s.gitAuth != nil {
+		s.gitAuth.invalidate()
+	}
 	s.auditAction(r, u.ID, "user.password_change", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }

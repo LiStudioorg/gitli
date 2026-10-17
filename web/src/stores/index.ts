@@ -138,14 +138,20 @@ export const useAuthStore = defineStore('auth', {
       return this.user
     },
     async login(username: string, password: string, totpCode = '') {
-      // 登录成功后一律以 /user/me 的回读结果为准，而不是信任登录响应体的字段完整性：
-      // user 状态一旦缺字段就被置 loaded=true，路由守卫便不再回读，is_admin 会被永久误判为 false。
-      await api.post<{ id: number; username: string }>('/auth/login', {
+      // 登录响应现在返回完整公开档案；/user/me 回读用于确认会话 Cookie 已生效。
+      // 若回读偶发失败（网络抖动/代理丢 Cookie），回退到登录响应，避免“登录成功却进不去”。
+      const { data } = await api.post<User>('/auth/login', {
         username,
         password,
         totp_code: totpCode,
       })
-      return await this.fetchMe()
+      const me = await this.fetchMe()
+      if (!me && data) {
+        this.user = data
+        this.loaded = true
+        return this.user
+      }
+      return me
     },
     async logout() {
       try {
