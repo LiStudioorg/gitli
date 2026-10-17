@@ -24,8 +24,9 @@ sudo -u gitli cp /etc/gitli/config.example.toml /etc/gitli/config.toml
 sudo -u gitli /usr/local/bin/gitli serve --config /etc/gitli/config.toml
 ```
 
-首次启动会自动执行数据库迁移并进入初始化向导（`/setup`），
-创建第一个管理员后接口自动锁定。
+**解压即用，覆盖即升级。** 启动时会自动创建数据库、建表、补齐缺失迁移，
+全部成功后才开始监听端口；迁移失败会报错退出，不会带病运行。
+首次访问进入初始化向导（`/setup`），创建第一个管理员后接口自动锁定。
 
 ### 1.2 必须设置的环境变量
 
@@ -83,7 +84,7 @@ timeout_seconds = 300
 
 ```bash
 gitli serve            # 启动服务（别名：server；裸执行 gitli 等同）
-gitli migrate          # 手动强制同步数据库结构
+gitli migrate          # 高级用法：手动强制同步数据库结构（正常启动自动完成）
 gitli runner           # 内置 CI Runner（独立 runner 二进制更推荐）
 gitli mirror           # 镜像同步调度
 gitli import           # 仓库导入工具
@@ -241,4 +242,5 @@ systemctl start gitli
 - 禁止以 root 运行（`allow_root = true` 可强制，强烈不建议）。
 - 生产必须启用 HTTPS，并正确设置 `http_external_url`（Cookie `Secure` 依赖它）。
 - 定期执行 `gitli admin gc`、检查审计日志、轮换 Runner Token。
-- 升级后如遇结构异常，先 `gitli migrate`；正常升级无需手动迁移。
+- 升级只需覆盖二进制并重启：启动会自动比对并静默执行缺失迁移，失败则退出。
+- 仅在排查问题时才需要手动执行 `gitli migrate`。

@@ -29,9 +29,11 @@
 - **B4 备份恢复演练**：备份 → 恢复 → 用恢复数据启动，用户/仓库/Issue/Git 对象全部校验通过。
 - **B5 文档**：新增 `docs/ADMIN.md`、`docs/USER.md`；README 更新发布状态、自动迁移、Android/Termux 说明。
 - **中文提示**：CLI 帮助、flag 说明、错误信息与 HTTP API 错误信息全部改为简体中文。
+- **解压即用**：启动自动建库/建表/补齐迁移，全部成功后才监听；迁移逐版本事务化。
+  新增 `TestStartupCreatesDatabaseFromScratch` 与 `TestUpgradeFromPartialSchema`（旧库升级不丢数据）。
 
 ### 待办
-- B6 发布 `v0.9.0-rc1` 并验证 CD。
+- B6 发布 `v0.9.0-rc2`（含自动迁移升级测试与文档净化）。
 - B1 压测脚本已就绪，待在有足够内存的机器上跑完整 50 并发并记录结果。
 
 ## 已完成功能总览

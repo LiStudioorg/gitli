@@ -17,25 +17,28 @@ type Migration struct {
 }
 
 // ApplyMigrations runs all provided migrations in filename order inside a
-// schema_migrations ledger so re-runs are idempotent.
-func (d *DB) ApplyMigrations(ctx context.Context, migs []Migration) error {
+// schema_migrations ledger so re-runs are idempotent. It returns the number of
+// migrations applied by this call (zero on an already up-to-date database).
+func (d *DB) ApplyMigrations(ctx context.Context, migs []Migration) (int, error) {
 	if err := d.ensureLedger(ctx); err != nil {
-		return err
+		return 0, err
 	}
 	applied, err := d.appliedVersions(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	sort.Slice(migs, func(i, j int) bool { return migs[i].Version < migs[j].Version })
+	n := 0
 	for _, m := range migs {
 		if applied[m.Version] {
 			continue
 		}
 		if err := d.applyOne(ctx, m); err != nil {
-			return fmt.Errorf("migration %s: %w", m.Version, err)
+			return n, fmt.Errorf("migration %s: %w", m.Version, err)
 		}
+		n++
 	}
-	return nil
+	return n, nil
 }
 
 func (d *DB) applyOne(ctx context.Context, m Migration) error {

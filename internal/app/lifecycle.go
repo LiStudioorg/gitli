@@ -29,10 +29,15 @@ func (a *App) Migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := a.DB.ApplyMigrations(ctx, migs); err != nil {
+	applied, err := a.DB.ApplyMigrations(ctx, migs)
+	if err != nil {
 		return err
 	}
-	a.Log.Info("migrations applied", "count", len(migs), "dialect", a.DB.Dialect)
+	if applied > 0 {
+		a.Log.Info("database migrated", "applied", applied, "available", len(migs), "dialect", a.DB.Dialect)
+	} else {
+		a.Log.Info("database schema up to date", "version", len(migs), "dialect", a.DB.Dialect)
+	}
 	if a.Deps != nil && a.Deps.RBAC != nil {
 		if err := a.Deps.RBAC.Seed(ctx); err != nil {
 			return fmt.Errorf("seed rbac: %w", err)
