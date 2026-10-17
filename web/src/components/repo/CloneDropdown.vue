@@ -64,7 +64,7 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
           </div>
         </template>
         <template v-else>
-          <p class="placeholder-title">gli 命令行工具即将推出，敬请期待。</p>
+          <p class="placeholder-title">目前请使用上方 git clone/push 命令。gli 命令行工具尚未提供。</p>
           <p class="placeholder-sub">届时可用：</p>
           <pre class="placeholder-code">gli clone &lt;owner&gt;/&lt;repo&gt;
 gli issue list

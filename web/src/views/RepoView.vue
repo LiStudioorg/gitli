@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
 import RepoCodeBrowser from '../components/repo/RepoCodeBrowser.vue'
+import RepoReleases from '../components/repo/RepoReleases.vue'
+import RepoActivity from '../components/repo/RepoActivity.vue'
+import RepoWiki from '../components/repo/RepoWiki.vue'
 import DeployKeys from '../components/repo/DeployKeys.vue'
 import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import SavedReplies from '../components/common/SavedReplies.vue'
+import SkeletonBlock from '../components/common/SkeletonBlock.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 import { REPO_TABS, TABS, isRepoTab, type RepoTab } from '../constants/tabs'
@@ -56,6 +61,12 @@ const issues = ref<Issue[]>([])
 const pulls = ref<Pull[]>([])
 const issuesError = ref('')
 const pullsError = ref('')
+const issueFilter = ref<'open' | 'closed' | 'all'>('open')
+const pullFilter = ref<'open' | 'closed' | 'all'>('open')
+const diffOpen = ref<number | null>(null)
+const diffText = ref('')
+const diffLoading = ref(false)
+const diffMessage = ref('')
 const issuesLoading = ref(false)
 const pullsLoading = ref(false)
 
@@ -276,6 +287,59 @@ async function cancelJob(job: WorkflowJob) {
     }
   } catch {
     workflowsError.value = '取消工作流失败'
+  }
+}
+
+const filteredIssues = computed(() =>
+  issues.value.filter((i) => issueFilter.value === 'all' || i.State === issueFilter.value),
+)
+const filteredPulls = computed(() =>
+  pulls.value.filter((p) => pullFilter.value === 'all' || p.State === pullFilter.value),
+)
+
+function relTime(raw: string): string {
+  const d = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw.replace(' ', 'T') + 'Z')
+  if (Number.isNaN(d.getTime())) return raw
+  const diff = Math.max(0, Date.now() - d.getTime())
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return '刚刚'
+  if (min < 60) return `${min} 分钟前`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} 小时前`
+  const days = Math.floor(h / 24)
+  if (days < 30) return `${days} 天前`
+  return d.toLocaleDateString()
+}
+
+async function toggleDiff(p: Pull) {
+  if (diffOpen.value === p.ID) {
+    diffOpen.value = null
+    return
+  }
+  diffOpen.value = p.ID
+  diffText.value = ''
+  diffMessage.value = ''
+  diffLoading.value = true
+  try {
+    const { data } = await api.get(`/repos/${owner}/${name}/diff`, {
+      params: { base: p.BaseBranch, head: p.HeadBranch },
+      responseType: 'text',
+      transformResponse: [(v) => v],
+    })
+    if (typeof data === 'string' && data.trim().startsWith('{')) {
+      const parsed = JSON.parse(data)
+      if (parsed.too_large) {
+        diffMessage.value = parsed.message || '变更内容过大，请在本地查看或下载'
+      } else {
+        diffText.value = data
+      }
+    } else {
+      diffText.value = data || ''
+    }
+  } catch {
+    diffMessage.value = '无法加载变更内容'
+  } finally {
+    diffLoading.value = false
   }
 }
 
@@ -864,64 +928,130 @@ onUnmounted(() => {
     <div v-else-if="activeTab === '工单'" class="tab-panel">
       <div class="panel-head">
         <h3>工单</h3>
-        <button class="chip" @click="loadIssues">刷新</button>
+        <div class="head-actions">
+          <div class="seg" role="group" aria-label="按状态筛选工单">
+            <button type="button" :class="{ active: issueFilter === 'open' }" @click="issueFilter = 'open'">
+              开启 {{ issues.filter((i) => i.State === 'open').length }}
+            </button>
+            <button type="button" :class="{ active: issueFilter === 'closed' }" @click="issueFilter = 'closed'">
+              已关闭 {{ issues.filter((i) => i.State !== 'open').length }}
+            </button>
+            <button type="button" :class="{ active: issueFilter === 'all' }" @click="issueFilter = 'all'">全部</button>
+          </div>
+          <button class="ui-btn" type="button" @click="loadIssues">刷新</button>
+        </div>
       </div>
 
-      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createIssue">
-        <h4>新建工单</h4>
-        <select
-          v-if="issueTemplates.length"
-          v-model="selectedTemplate"
-          class="form-input"
-          @change="onTemplateChange"
-        >
-          <option value="">选择模板（可选）</option>
-          <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
-        </select>
-        <input v-model="newTitle" type="text" placeholder="标题" class="form-input" />
-        <SavedReplies @insert="onInsertReply" />
-        <textarea v-model="newBody" rows="3" placeholder="描述（可选）" class="form-input" />
-        <p v-if="createError" class="error">{{ createError }}</p>
-        <button class="chip primary" type="submit" :disabled="creating">
-          {{ creating ? '提交中...' : '创建' }}
-        </button>
-      </form>
+      <details v-if="auth.isLoggedIn" class="ui-card create-form" :open="!issues.length">
+        <summary>新建工单</summary>
+        <form class="ui-form" @submit.prevent="createIssue">
+          <select v-if="issueTemplates.length" v-model="selectedTemplate" class="ui-input" @change="onTemplateChange">
+            <option value="">选择模板（可选）</option>
+            <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
+          </select>
+          <div class="ui-field">
+            <label for="issue-title">标题</label>
+            <input id="issue-title" v-model="newTitle" class="ui-input" type="text" placeholder="简要描述问题" />
+          </div>
+          <SavedReplies @insert="onInsertReply" />
+          <div class="ui-field">
+            <label for="issue-body">描述</label>
+            <textarea id="issue-body" v-model="newBody" class="ui-input" rows="4" placeholder="补充细节、复现步骤（支持 Markdown）" />
+          </div>
+          <p v-if="createError" class="ui-alert ui-alert-error">{{ createError }}</p>
+          <button class="ui-btn ui-btn-primary" type="submit" :disabled="creating">
+            <span v-if="creating" class="ui-spinner" aria-hidden="true" />
+            {{ creating ? '提交中…' : '创建工单' }}
+          </button>
+        </form>
+      </details>
 
-      <p v-if="issuesError" class="error">{{ issuesError }}</p>
-      <ul v-if="issues.length" class="item-list">
-        <li v-for="i in issues" :key="i.ID" class="item-row">
-          <span class="num">#{{ i.Number }}</span>
-          <span class="item-title">{{ i.Title }}</span>
-          <span class="state" :class="i.State">{{ i.State }}</span>
+      <div v-if="issuesLoading" class="list-skeleton">
+        <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
+      </div>
+      <p v-else-if="issuesError" class="ui-alert ui-alert-error">{{ issuesError }}</p>
+      <EmptyState
+        v-else-if="!filteredIssues.length"
+        icon="◎"
+        :title="issues.length ? '该状态下没有工单' : '还没有工单'"
+        :description="issues.length ? '切换上方筛选条件查看其它状态的工单。' : '工单用于记录缺陷、功能建议与讨论。'"
+        action-label="创建第一个工单"
+        :show-action="auth.isLoggedIn && !issues.length"
+        @action="newTitle = ''"
+      />
+      <ul v-else class="item-list">
+        <li v-for="i in filteredIssues" :key="i.ID" class="item-row">
+          <span class="state-dot" :class="i.State === 'open' ? 'open' : 'closed'" :title="i.State === 'open' ? '开启' : '已关闭'" />
+          <div class="item-main">
+            <RouterLink class="item-title" :to="`/${owner}/${name}?tab=工单`">#{{ i.Number }} {{ i.Title }}</RouterLink>
+            <span class="item-meta">
+              <template v-if="i.AuthorName">{{ i.AuthorName }} 创建于 </template>{{ relTime(i.CreatedAt) }}
+            </span>
+          </div>
+          <span class="state" :class="i.State">{{ i.State === 'open' ? '开启' : '已关闭' }}</span>
         </li>
       </ul>
-      <p v-else-if="!issuesLoading && !issuesError" class="empty">暂无工单</p>
     </div>
 
     <div v-else-if="activeTab === '合并请求'" class="tab-panel">
       <div class="panel-head">
         <h3>合并请求</h3>
-        <button class="chip" @click="loadPulls">刷新</button>
+        <div class="head-actions">
+          <div class="seg" role="group" aria-label="按状态筛选合并请求">
+            <button type="button" :class="{ active: pullFilter === 'open' }" @click="pullFilter = 'open'">
+              开启 {{ pulls.filter((p) => p.State === 'open' && !p.Merged).length }}
+            </button>
+            <button type="button" :class="{ active: pullFilter === 'closed' }" @click="pullFilter = 'closed'">
+              已合并 {{ pulls.filter((p) => p.Merged).length }} / 其他
+            </button>
+            <button type="button" :class="{ active: pullFilter === 'all' }" @click="pullFilter = 'all'">全部</button>
+          </div>
+          <button class="ui-btn" type="button" @click="loadPulls">刷新</button>
+        </div>
       </div>
-      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent>
-        <h4>新建合并请求</h4>
-        <textarea
-          v-model="prBody"
-          rows="5"
-          placeholder="描述（可选）"
-          class="form-input"
-          :disabled="prTemplateLoading"
-        />
-      </form>
-      <p v-if="pullsError" class="error">{{ pullsError }}</p>
-      <ul v-if="pulls.length" class="item-list">
-        <li v-for="p in pulls" :key="p.ID" class="item-row">
-          <span class="num">#{{ p.Number }}</span>
-          <span class="item-title">{{ p.Title }}</span>
-          <span class="state" :class="p.State">{{ p.State }}</span>
+
+      <p v-if="pullsError" class="ui-alert ui-alert-error">{{ pullsError }}</p>
+      <div v-if="pullsLoading" class="list-skeleton">
+        <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
+      </div>
+      <EmptyState
+        v-else-if="!filteredPulls.length"
+        icon="⇄"
+        :title="pulls.length ? '该状态下没有合并请求' : '还没有合并请求'"
+        :description="pulls.length ? '切换上方筛选条件查看其它状态。' : '从功能分支向主干发起合并请求，即可在此评审与合并。'"
+        :action-label="pulls.length ? '' : '查看分支与克隆方式'"
+        :show-action="!pulls.length"
+        @action="activeTab = '代码'"
+      />
+      <ul v-else class="item-list">
+        <li v-for="p in filteredPulls" :key="p.ID" class="item-wrap">
+          <div class="item-row">
+            <span class="state-dot" :class="p.Merged ? 'merged' : p.State === 'open' ? 'open' : 'closed'" />
+            <div class="item-main">
+              <button class="item-title link-btn" type="button" @click="toggleDiff(p)">
+                #{{ p.Number }} {{ p.Title }}
+              </button>
+              <span class="item-meta">
+                {{ p.HeadBranch }} → {{ p.BaseBranch }}
+                <template v-if="p.AuthorName"> · {{ p.AuthorName }}</template>
+                · {{ relTime(p.CreatedAt) }}
+              </span>
+            </div>
+            <span class="state" :class="p.Merged ? 'merged' : p.State">
+              {{ p.Merged ? '已合并' : p.State === 'open' ? '开启' : '已关闭' }}
+            </span>
+            <button class="ui-btn" type="button" @click="toggleDiff(p)">
+              {{ diffOpen === p.ID ? '收起' : '查看变更' }}
+            </button>
+          </div>
+          <div v-if="diffOpen === p.ID" class="diff">
+            <p v-if="diffLoading" class="muted">正在加载变更…</p>
+            <p v-else-if="diffMessage" class="ui-alert">{{ diffMessage }}</p>
+            <pre v-else-if="diffText" class="diff-body">{{ diffText }}</pre>
+            <p v-else class="muted">该合并请求没有文本变更。</p>
+          </div>
         </li>
       </ul>
-      <p v-else-if="!pullsLoading && !pullsError" class="empty">暂无合并请求</p>
     </div>
 
     <div v-else-if="activeTab === '工作流'" class="tab-panel">
@@ -1092,9 +1222,15 @@ onUnmounted(() => {
             </form>
           </section>
         </div>
-        <p v-else-if="!projects.length && !projectsError" class="empty">
-          暂无项目，请先创建
-        </p>
+        <EmptyState
+          v-else-if="!projects.length && !projectsError"
+          icon="🗂"
+          title="还没有项目看板"
+          description="用看板把工单和合并请求按阶段组织起来，便于跟踪进度。"
+          action-label="创建项目看板"
+          :show-action="auth.isLoggedIn"
+          @action="activeTab = '项目'"
+        />
       </template>
     </div>
 
@@ -1158,7 +1294,15 @@ onUnmounted(() => {
           <span class="when">{{ fmtDate(d.created_at) }}</span>
         </li>
       </ul>
-      <p v-else-if="!discussionsError" class="empty">暂无讨论</p>
+      <EmptyState
+        v-else-if="!discussionsError"
+        icon="💬"
+        title="还没有讨论"
+        description="讨论适合开放式话题、答疑和方案评审。"
+        action-label="发起第一个讨论"
+        :show-action="auth.isLoggedIn"
+        @action="activeTab = '讨论'"
+      />
 
       <div v-if="selectedDiscussionId !== null" class="discussion-detail">
         <p v-if="discussionDetailError" class="error">{{ discussionDetailError }}</p>
@@ -1223,8 +1367,20 @@ onUnmounted(() => {
       />
     </div>
 
+    <div v-else-if="activeTab === '发布'" class="tab-panel">
+      <RepoReleases :owner="owner" :repo="name" />
+    </div>
+
+    <div v-else-if="activeTab === '活动'" class="tab-panel">
+      <RepoActivity :owner="owner" :repo="name" />
+    </div>
+
+    <div v-else-if="activeTab === '百科'" class="tab-panel">
+      <RepoWiki :owner="owner" :repo="name" />
+    </div>
+
     <div v-else class="tab-panel">
-      <p class="placeholder">「{{ activeTab }}」即将推出</p>
+      <p class="placeholder">未知页面：{{ activeTab }}</p>
     </div>
   </div>
 </template>
@@ -1524,6 +1680,111 @@ onUnmounted(() => {
   border-color: var(--success);
   color: var(--success);
   background: var(--success-soft);
+}
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.seg button + button {
+  border-left: 1px solid var(--border);
+}
+.seg button.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.state-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.state-dot.open {
+  background: var(--success);
+}
+.state-dot.closed {
+  background: var(--muted);
+}
+.state-dot.merged {
+  background: #8250df;
+}
+.item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+.item-meta {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+.link-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: var(--color-fg);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+.link-btn:hover {
+  color: var(--primary);
+}
+.item-wrap {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+}
+.item-wrap .item-row {
+  border-bottom: none;
+}
+.diff {
+  padding: 0.5rem 0.75rem 0.9rem;
+}
+.diff-body {
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  background: color-mix(in srgb, var(--border) 30%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+.list-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.state.merged {
+  color: #8250df;
+}
+.list-skeleton {
+  margin-top: 0.5rem;
 }
 .placeholder {
   color: var(--muted);

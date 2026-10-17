@@ -81,6 +81,7 @@ export interface Issue {
   Title: string
   Body: string
   AuthorID: number
+  AuthorName?: string
   State: string
   CreatedAt: string
   UpdatedAt: string
@@ -93,6 +94,7 @@ export interface Pull {
   Title: string
   Body: string
   AuthorID: number
+  AuthorName?: string
   State: string
   Merged: boolean
   HeadBranch: string

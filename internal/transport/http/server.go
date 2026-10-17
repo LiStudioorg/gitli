@@ -285,6 +285,7 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitLarge)).Post("/{owner}/{repo}/wiki", s.handleCreateWikiPage)
 		rr.With(middleware.MaxBody(middleware.BodyLimitLarge)).Put("/{owner}/{repo}/wiki/{slug}", s.handleUpdateWikiPage)
 		rr.Delete("/{owner}/{repo}/wiki/{slug}", s.handleDeleteWikiPage)
+		rr.Get("/{owner}/{repo}/activities", s.handleRepoActivities)
 		rr.Get("/{owner}/{repo}/releases", s.handleListReleases)
 		rr.Get("/{owner}/{repo}/releases/{tag}", s.handleGetRelease)
 		rr.Post("/{owner}/{repo}/releases", s.handleCreateRelease)

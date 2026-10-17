@@ -35,6 +35,7 @@ type Release struct {
 	Body         string `json:"body"`
 	IsDraft      bool   `json:"is_draft"`
 	IsPrerelease bool   `json:"is_prerelease"`
+	CreatedAt    string `json:"created_at"`
 }
 
 // Asset is a downloadable file attached to a release.
@@ -74,7 +75,7 @@ func (s *Service) ByTag(ctx context.Context, repoID int64, tag string) (*Release
 
 // List returns all releases for a repository ordered newest first.
 func (s *Service) List(ctx context.Context, repoID int64) ([]*Release, error) {
-	q := s.st.Rebind(`SELECT id, repo_id, author_id, tag, name, body, is_draft, is_prerelease FROM releases WHERE repo_id = ? ORDER BY id DESC`)
+	q := s.st.Rebind(`SELECT id, repo_id, author_id, tag, name, body, is_draft, is_prerelease, created_at FROM releases WHERE repo_id = ? ORDER BY id DESC`)
 	rows, err := s.st.DB.QueryContext(ctx, q, repoID)
 	if err != nil {
 		return nil, fmt.Errorf("release: list: %w", err)
@@ -83,7 +84,7 @@ func (s *Service) List(ctx context.Context, repoID int64) ([]*Release, error) {
 	var out []*Release
 	for rows.Next() {
 		var r Release
-		if err := rows.Scan(&r.ID, &r.RepoID, &r.AuthorID, &r.Tag, &r.Name, &r.Body, &r.IsDraft, &r.IsPrerelease); err != nil {
+		if err := rows.Scan(&r.ID, &r.RepoID, &r.AuthorID, &r.Tag, &r.Name, &r.Body, &r.IsDraft, &r.IsPrerelease, &r.CreatedAt); err != nil {
 			return nil, fmt.Errorf("release: scan: %w", err)
 		}
 		out = append(out, &r)

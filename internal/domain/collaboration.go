@@ -16,6 +16,8 @@ type Issue struct {
 	ClosedAt    *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	// AuthorName is populated by list queries for display; it is not stored.
+	AuthorName string
 }
 
 // Pull is a pull request.
@@ -33,6 +35,8 @@ type Pull struct {
 	Merged     bool
 	MergedBy   *int64
 	MergedAt   *time.Time
+	// AuthorName is populated by list queries for display; it is not stored.
+	AuthorName string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }

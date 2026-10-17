@@ -61,3 +61,26 @@ func (s *Server) handleExploreActivity(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, items)
 }
+
+// handleRepoActivities serves a single repository's activity timeline.
+func (s *Server) handleRepoActivities(w http.ResponseWriter, r *http.Request) {
+	rp, _, ok := s.resolveRepo(w, r, urlParam(r, "owner"), urlParam(r, "repo"), domain.PermRead)
+	if !ok {
+		return
+	}
+	limit := 50
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	items, err := s.deps.Activities.ListByRepo(r.Context(), rp.ID, limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if items == nil {
+		items = []*domain.Activity{}
+	}
+	writeJSON(w, http.StatusOK, items)
+}
