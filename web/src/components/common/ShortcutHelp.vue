@@ -53,7 +53,7 @@ function close() {
   width: min(520px, 100%);
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
   padding: 1.25rem 1.4rem;
 }

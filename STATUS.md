@@ -65,8 +65,19 @@
 - **全局错误兜底**：`app.config.errorHandler` 渲染友好提示而非整页白屏。
 - 后端：Issue/Pull 列表 JOIN 用户名；Release 增加 `created_at`；新增仓库级活动接口。
 
+### rc7：品牌视觉（现代极客风 · 赤陶橙）
+- 设计令牌：`--bg-base/--bg-surface/--text-primary/--text-secondary/--border-color`，
+  主色 `--color-primary: #ea580c`（深色 `#f97316`），语义色 success/danger/purple/info
+  均含 `-bg` 变体；旧变量（`--primary`/`--card`/`--border` 等）保留为别名，全站即时生效。
+- Logo：`favicon.svg` + `web/src/components/icons/LogoIcon.vue`（`currentColor`），
+  TopNav 与初始化页统一使用；删除旧 `icon-192/512.svg`。
+- Manifest：`theme_color #ea580c`，图标指向 `/favicon.svg`。
+- 组件规范：状态徽章（开启绿/关闭红/已合并紫）、Tab 下划线 2px、侧边栏选中主色底、
+  Diff 行级着色（增绿/删红/hunk 蓝）、卡片圆角统一 8px + 阴影。
+- 清理：移除硬编码蓝色（仅保留 Go 语言色与 `--color-info` 令牌）。
+
 ### 待办
-- B6 发布 `v0.9.0-rc6`（预发布）。
+- 发布 `v0.9.0-rc7`（预发布）。
 - B1 压测脚本已就绪，待在有足够内存的机器上跑完整 50 并发并记录结果。
 
 ### rc4 新增

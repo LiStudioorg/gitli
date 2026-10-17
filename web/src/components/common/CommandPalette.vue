@@ -168,7 +168,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   width: min(560px, 92vw);
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 }

@@ -1493,7 +1493,7 @@ onMounted(async () => {
 }
 .card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1.25rem;
   background: var(--card);
   display: flex;
@@ -1733,7 +1733,7 @@ label.check input {
 .modal {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1.25rem;
   width: 100%;
   max-width: 420px;

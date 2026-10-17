@@ -4,6 +4,7 @@ import api from '../api/client'
 import { useAuthStore } from '../stores'
 import { errMessage } from '../utils/error'
 import { useToast } from '../composables/useToast'
+import LogoIcon from '../components/icons/LogoIcon.vue'
 
 const auth = useAuthStore()
 const toast = useToast()
@@ -71,7 +72,7 @@ async function submit() {
 <template>
   <main class="auth-page setup-page">
     <section class="auth-card setup-card">
-      <div class="brand-badge" aria-hidden="true">&lt;/&gt;</div>
+      <div class="brand-badge"><LogoIcon /></div>
       <h1>初始化 gitli</h1>
       <p class="auth-subtitle">创建第一个管理员账号并设置站点名称。完成后本页面会自动锁定。</p>
 
@@ -160,19 +161,14 @@ async function submit() {
   width: min(460px, 100%);
 }
 .brand-badge {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: var(--primary);
-  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-weight: 700;
-  font-size: 1.15rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow-md);
+  margin-bottom: 0.9rem;
+}
+.brand-badge :deep(svg) {
+  width: 44px;
+  height: 44px;
 }
 .invalid {
   border-color: var(--danger) !important;

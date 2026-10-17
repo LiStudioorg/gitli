@@ -311,6 +311,15 @@ function relTime(raw: string): string {
   return d.toLocaleDateString()
 }
 
+// 行级配色：新增绿、删除红、hunk 头蓝、文件头加粗。
+function diffLineClass(line: string): string {
+  if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('diff ')) return 'meta'
+  if (line.startsWith('@@')) return 'hunk'
+  if (line.startsWith('+')) return 'add'
+  if (line.startsWith('-')) return 'del'
+  return ''
+}
+
 async function toggleDiff(p: Pull) {
   if (diffOpen.value === p.ID) {
     diffOpen.value = null
@@ -1047,7 +1056,13 @@ onUnmounted(() => {
           <div v-if="diffOpen === p.ID" class="diff">
             <p v-if="diffLoading" class="muted">正在加载变更…</p>
             <p v-else-if="diffMessage" class="ui-alert">{{ diffMessage }}</p>
-            <pre v-else-if="diffText" class="diff-body">{{ diffText }}</pre>
+            <pre v-else-if="diffText" class="diff-body"><code><span
+              v-for="(line, idx) in diffText.split('\n')"
+              :key="idx"
+              class="diff-line"
+              :class="diffLineClass(line)"
+            >{{ line || ' ' }}
+</span></code></pre>
             <p v-else class="muted">该合并请求没有文本变更。</p>
           </div>
         </li>
@@ -1506,7 +1521,7 @@ onUnmounted(() => {
   padding: 0;
   margin: 0 0 1.5rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
 }
 .row {
@@ -1546,7 +1561,7 @@ onUnmounted(() => {
 }
 .readme {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem 1.25rem;
   background: var(--card);
 }
@@ -1557,7 +1572,7 @@ onUnmounted(() => {
 }
 .card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0.9rem 1rem;
   background: var(--card);
 }
@@ -1617,7 +1632,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 0.5rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.25rem;
   background: var(--card);
@@ -1644,7 +1659,7 @@ onUnmounted(() => {
   padding: 0;
   margin: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
 }
 .item-row {
@@ -1677,9 +1692,19 @@ onUnmounted(() => {
   color: var(--muted);
 }
 .state.open {
-  border-color: var(--success);
-  color: var(--success);
-  background: var(--success-soft);
+  border-color: transparent;
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+.state.closed {
+  border-color: transparent;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+.state.merged {
+  border-color: transparent;
+  color: var(--color-purple);
+  background: var(--color-purple-bg);
 }
 .head-actions {
   display: flex;
@@ -1722,7 +1747,7 @@ onUnmounted(() => {
   background: var(--muted);
 }
 .state-dot.merged {
-  background: #8250df;
+  background: var(--color-purple);
 }
 .item-main {
   flex: 1;
@@ -1759,6 +1784,29 @@ onUnmounted(() => {
 .diff {
   padding: 0.5rem 0.75rem 0.9rem;
 }
+.diff-body .diff-line {
+  display: block;
+  padding: 0 0.5rem;
+  border-left: 2px solid transparent;
+}
+.diff-body .diff-line.add {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  border-left-color: var(--color-success);
+}
+.diff-body .diff-line.del {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
+  border-left-color: var(--color-danger);
+}
+.diff-body .diff-line.hunk {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+.diff-body .diff-line.meta {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
 .diff-body {
   margin: 0;
   max-height: 420px;
@@ -1781,7 +1829,9 @@ onUnmounted(() => {
   font-size: 0.85rem;
 }
 .state.merged {
-  color: #8250df;
+  border-color: transparent;
+  color: var(--color-purple);
+  background: var(--color-purple-bg);
 }
 .list-skeleton {
   margin-top: 0.5rem;
@@ -1810,7 +1860,7 @@ onUnmounted(() => {
 }
 .dep-group {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--card);
 }
@@ -1915,7 +1965,7 @@ onUnmounted(() => {
 .log-panel {
   margin-top: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--card);
 }
@@ -1959,7 +2009,7 @@ onUnmounted(() => {
 .kanban-col {
   flex: 0 0 260px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
   display: flex;
   flex-direction: column;
@@ -2048,7 +2098,7 @@ onUnmounted(() => {
 .discussion-detail {
   margin-top: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
 }

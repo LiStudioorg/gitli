@@ -23,7 +23,7 @@ app.config.errorHandler = (err, _instance, info) => {
   box.innerHTML =
     '<h2 style="margin:0 0 .5rem;font-size:1.1rem">页面渲染出错</h2>' +
     '<p style="margin:0 0 1rem;color:#57606a;font-size:.9rem">请刷新重试。若问题持续，请把浏览器控制台的错误信息反馈给我们。</p>' +
-    '<button style="padding:.5rem 1rem;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:.9rem">刷新页面</button>'
+    '<button style="padding:.5rem 1rem;border-radius:6px;border:none;background:#ea580c;color:#fff;cursor:pointer;font-size:.9rem">刷新页面</button>'
   box.querySelector('button')?.addEventListener('click', () => location.reload())
   host.prepend(box)
 }

@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore, useNotificationStore, useUiStore } from '../../stores'
 import { useTheme } from '../../composables/useTheme'
 import { useI18n } from 'vue-i18n'
+import LogoIcon from '../icons/LogoIcon.vue'
 
 const { t } = useI18n()
 
@@ -96,7 +97,10 @@ const unread = computed(() => notifications.unread)
       >
         ☰
       </button>
-      <RouterLink class="brand" to="/">gitli</RouterLink>
+      <RouterLink class="brand" to="/" aria-label="gitli 首页">
+        <LogoIcon />
+        <span>gitli</span>
+      </RouterLink>
       <template v-if="variant === 'landing'">
         <nav class="links">
           <a href="#features">{{ t('nav.features') }}</a>
@@ -223,21 +227,7 @@ const unread = computed(() => notifications.unread)
   text-decoration: none;
   padding: 0.2rem 0.1rem;
 }
-.brand::before {
-  content: '</>';
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem;
-  font-weight: 700;
-  box-shadow: var(--shadow-sm);
-}
+
 .links {
   display: flex;
   gap: 1.1rem;

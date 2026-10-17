@@ -76,7 +76,7 @@ function repoLink(r: Repo): string {
 <style scoped>
 .card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
 }

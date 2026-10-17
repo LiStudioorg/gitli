@@ -155,7 +155,7 @@ async function removeRepo(repo: Repo) {
 }
 .skeleton-card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
 }
@@ -168,7 +168,7 @@ async function removeRepo(repo: Repo) {
 }
 .empty-state {
   border: 1px dashed var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 2rem 1.25rem;
   text-align: center;
   background: var(--card);
@@ -193,7 +193,7 @@ async function removeRepo(repo: Repo) {
 }
 .panel {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
   padding: 0.9rem 1rem;
   margin-top: 1.5rem;
