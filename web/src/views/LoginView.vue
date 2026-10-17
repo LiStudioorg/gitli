@@ -33,6 +33,13 @@ async function submit() {
     loading.value = false
   }
 }
+function loginWithSAML() {
+  window.location.href = '/api/v1/auth/saml/login'
+}
+
+function loginWithOIDC() {
+  window.location.href = '/api/v1/auth/oidc/login'
+}
 </script>
 
 <template>
@@ -46,6 +53,9 @@ async function submit() {
         <input v-if="needsTOTP" v-model="totpCode" placeholder="两步验证码" inputmode="numeric" />
         <button type="submit" :disabled="loading">登录</button>
       </form>
+      <div class="divider"><span>或</span></div>
+      <button type="button" class="secondary" @click="loginWithSAML">通过 SAML 登录</button>
+      <button type="button" class="secondary" @click="loginWithOIDC">通过 OIDC 登录</button>
       <p v-if="error" class="error">{{ error }}</p>
     </main>
   </div>
@@ -72,5 +82,29 @@ button {
 }
 .error {
   color: #d1242f;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted, #6e7781);
+  font-size: 0.8rem;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, #d0d7de);
+}
+button.secondary {
+  background: transparent;
+  border: 1px solid var(--border, #d0d7de);
+  color: var(--color-fg, inherit);
+  cursor: pointer;
+}
+button.secondary:hover {
+  border-color: var(--primary, #0969da);
+  color: var(--primary, #0969da);
 }
 </style>

@@ -43,7 +43,7 @@ const cloneInfo = ref<CloneInfo | null>(null)
 const branches = ref<string[]>([])
 const selectedBranch = ref('')
 
-const tabs = ['代码', '工单', '合并请求', '工作流', '项目', '发布', '百科', '活动', '设置', '更多']
+const tabs = ['代码', '工单', '合并请求', '工作流', '依赖', '项目', '发布', '百科', '活动', '设置', '更多']
 const activeTab = ref('代码')
 
 const issues = ref<Issue[]>([])
@@ -66,6 +66,92 @@ const templatesLoaded = ref(false)
 const prBody = ref('')
 const prTemplateLoading = ref(false)
 const prTemplateLoaded = ref(false)
+
+interface Dependency {
+  ecosystem: string
+  name: string
+  version: string
+}
+
+interface DependenciesResponse {
+  dependencies: Dependency[] | null
+  groups: Record<string, Dependency[]> | null
+  counts: Record<string, number> | null
+}
+
+const dependencies = ref<Dependency[]>([])
+const dependencyGroups = ref<Record<string, Dependency[]>>({})
+const dependencyCounts = ref<Record<string, number>>({})
+const dependenciesError = ref('')
+const dependenciesLoading = ref(false)
+const dependenciesLoaded = ref(false)
+const dependenciesRefreshing = ref(false)
+const dependencyMessage = ref('')
+
+const ecosystemLabels: Record<string, string> = {
+  go: 'Go',
+  npm: 'npm',
+  maven: 'Maven',
+  pip: 'Python (pip)',
+}
+
+function ecosystemLabel(eco: string): string {
+  return ecosystemLabels[eco] ?? eco
+}
+
+function dependencyEntries(): [string, Dependency[]][] {
+  const groups = dependencyGroups.value
+  if (groups && Object.keys(groups).length) {
+    return Object.entries(groups)
+  }
+  const fallback: Record<string, Dependency[]> = {}
+  for (const dep of dependencies.value) {
+    const key = dep.ecosystem || 'other'
+    ;(fallback[key] ??= []).push(dep)
+  }
+  return Object.entries(fallback)
+}
+
+async function loadDependencies() {
+  dependenciesLoading.value = true
+  dependenciesError.value = ''
+  try {
+    const { data } = await api.get<DependenciesResponse>(`/repos/${owner}/${name}/dependencies`)
+    dependencies.value = data?.dependencies ?? []
+    dependencyGroups.value = data?.groups ?? {}
+    dependencyCounts.value = data?.counts ?? {}
+    dependenciesLoaded.value = true
+  } catch {
+    dependenciesError.value = '加载依赖失败'
+    dependencies.value = []
+    dependencyGroups.value = {}
+    dependencyCounts.value = {}
+  } finally {
+    dependenciesLoading.value = false
+  }
+}
+
+async function refreshDependencies() {
+  dependenciesRefreshing.value = true
+  dependenciesError.value = ''
+  dependencyMessage.value = ''
+  try {
+    const { data } = await api.post<{ status: string; count: number }>(
+      `/repos/${owner}/${name}/dependencies/refresh`,
+    )
+    dependencyMessage.value = `已刷新，共发现 ${data?.count ?? 0} 个依赖`
+    await loadDependencies()
+  } catch (e) {
+    const status = (e as { response?: { status?: number } })?.response?.status
+    if (status === 401 || status === 403) {
+      dependenciesError.value = '需要仓库写权限才能刷新依赖'
+    } else {
+      dependenciesError.value = '刷新依赖失败'
+    }
+  } finally {
+    dependenciesRefreshing.value = false
+  }
+}
 
 interface WorkflowJob {
   id: number
@@ -302,6 +388,7 @@ function selectTab(tab: string) {
     loadPrTemplate()
   }
   if (tab === '工作流' && !workflowsLoaded.value && !workflowsLoading.value) loadWorkflows()
+  if (tab === '依赖' && !dependenciesLoaded.value && !dependenciesLoading.value) loadDependencies()
   if (tab !== '工作流') closeLog()
 }
 
@@ -552,6 +639,48 @@ onUnmounted(() => {
         <p v-if="logError" class="error">{{ logError }}</p>
         <pre class="log-view">{{ logLines.join('\n') }}</pre>
       </div>
+    </div>
+
+    <div v-else-if="activeTab === '依赖'" class="tab-panel">
+      <div class="panel-head">
+        <h3>依赖</h3>
+        <div class="dep-actions">
+          <button class="chip" type="button" :disabled="dependenciesLoading" @click="loadDependencies">
+            刷新列表
+          </button>
+          <button
+            v-if="auth.isLoggedIn"
+            class="chip primary"
+            type="button"
+            :disabled="dependenciesRefreshing"
+            @click="refreshDependencies"
+          >
+            {{ dependenciesRefreshing ? '扫描中...' : '刷新' }}
+          </button>
+        </div>
+      </div>
+
+      <p v-if="dependenciesError" class="error">{{ dependenciesError }}</p>
+      <p v-if="dependencyMessage" class="dep-ok">{{ dependencyMessage }}</p>
+
+      <div v-if="dependenciesLoading" class="empty">加载中…</div>
+      <div v-else-if="dependencyEntries().length" class="dep-groups">
+        <section v-for="[eco, items] in dependencyEntries()" :key="eco" class="dep-group">
+          <header class="dep-group-head">
+            <strong>{{ ecosystemLabel(eco) }}</strong>
+            <span class="dep-count">{{ dependencyCounts[eco] ?? items.length }} 个</span>
+          </header>
+          <ul class="dep-list">
+            <li v-for="dep in items" :key="`${eco}-${dep.name}-${dep.version}`" class="dep-row">
+              <span class="dep-name">{{ dep.name }}</span>
+              <span class="dep-version">@ {{ dep.version || '-' }}</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+      <p v-else-if="!dependenciesError" class="empty">
+        未发现依赖清单（支持 go.mod / package.json / pom.xml / requirements.txt）
+      </p>
     </div>
 
     <div v-else-if="activeTab === '设置'" class="tab-panel">
@@ -870,6 +999,65 @@ onUnmounted(() => {
 .error {
   color: var(--accent);
   font-size: 0.85rem;
+}
+.dep-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.dep-ok {
+  color: var(--success);
+  font-size: 0.85rem;
+}
+.dep-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.dep-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
+}
+.dep-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--hover-bg);
+}
+.dep-count {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.dep-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dep-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+.dep-row:last-child {
+  border-bottom: none;
+}
+.dep-row:hover {
+  background: var(--hover-bg);
+}
+.dep-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+}
+.dep-version {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
 }
 .empty {
   color: var(--muted);
