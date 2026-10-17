@@ -311,10 +311,11 @@ maven_max_artifact_mb = 100
 # -----------------------------------------------------------------------------
 # 所有 Git 调用均带超时、白名单环境变量，且禁止 shell 字符串拼接。
 [git]
-# git 可执行文件路径。留空则自动从 PATH 查找。
-# 生产环境推荐显式指定，例如 "/usr/bin/git"，避免 PATH 被篡改。
+# git 可执行文件路径。留空则自动查找（Linux/macOS 用 PATH，
+# Android/Termux 使用固定路径，因为系统 seccomp 禁止 PATH 遍历）。
+# 生产环境推荐显式指定，例如 "/usr/bin/git"。
 # 默认：""（自动查找）
-bin = "/usr/bin/git"
+bin = ""
 
 # 单次 git 调用超时（秒）。默认：300
 timeout_seconds = 300

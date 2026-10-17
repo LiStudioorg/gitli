@@ -41,6 +41,7 @@ func (s *Server) Router() http.Handler {
 	r.Use(middleware.SecurityHeaders(d.HTTPSecure()))
 	r.Use(middleware.CORS(d.ExternalBase()))
 	r.Use(middleware.Compress())
+	r.Use(middleware.IssueCSRF())
 	r.Use(s.usernameRedirect)
 
 	r.Get("/healthz", s.handleHealth)

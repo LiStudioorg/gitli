@@ -76,7 +76,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   s.deps.HTTPSecure(),
+		Secure:   s.deps.cookieSecure(r),
 		MaxAge:   30 * 24 * 3600,
 	})
 	// 登录响应必须是完整公开档案：前端 auth store 直接把响应体写入 user 状态并置

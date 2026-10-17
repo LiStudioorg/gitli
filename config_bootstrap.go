@@ -18,7 +18,34 @@ var defaultConfigTemplate string
 var (
 	rePepper = regexp.MustCompile(`(?m)^pepper\s*=\s*".*"`)
 	reKeyHex = regexp.MustCompile(`(?m)^key_hex\s*=\s*".*"`)
+	reGitBin = regexp.MustCompile(`(?m)^bin\s*=\s*".*"`)
 )
+
+// detectGitBinary returns the git path to write into a generated config.
+// Termux must be handled explicitly: Android's seccomp policy rejects the
+// syscall used by PATH lookup, and the desktop path /usr/bin/git does not
+// exist there.
+func detectGitBinary() string {
+	termuxPaths := []string{
+		"/data/data/com.termux/files/usr/bin/git",
+		"/data/data/com.termux/files/usr/local/bin/git",
+	}
+	if _, err := os.Stat("/data/data/com.termux"); err == nil ||
+		strings.HasPrefix(os.Getenv("PREFIX"), "/data/data/com.termux/") {
+		for _, p := range termuxPaths {
+			if info, err := os.Stat(p); err == nil && !info.IsDir() && info.Mode().Perm()&0o111 != 0 {
+				return p
+			}
+		}
+		return "" // let gitcmd report a clear, non-panicking error at startup
+	}
+	for _, p := range []string{"/usr/bin/git", "/usr/local/bin/git", "/bin/git"} {
+		if info, err := os.Stat(p); err == nil && !info.IsDir() && info.Mode().Perm()&0o111 != 0 {
+			return p
+		}
+	}
+	return ""
+}
 
 // ensureConfigFile creates configPath from the embedded template when it is
 // missing, then fills in freshly generated secrets. It reports whether the
@@ -49,6 +76,9 @@ func ensureConfigFile(configPath string) (created bool, err error) {
 	}
 	content := rePepper.ReplaceAllString(defaultConfigTemplate, `pepper = "`+pepper+`"`)
 	content = reKeyHex.ReplaceAllString(content, `key_hex = "`+key+`"`)
+	if gitBin := detectGitBinary(); gitBin != "" {
+		content = reGitBin.ReplaceAllString(content, `bin = "`+gitBin+`"`)
+	}
 	content = strings.ReplaceAll(content, "# 复制为 config.toml 后按需修改：cp config.example.toml config.toml\n#",
 		"# 本文件由 gitli 首次启动自动生成，可直接编辑。\n#")
 	if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {

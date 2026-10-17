@@ -54,7 +54,7 @@ func (s *Server) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name: "gitli_session", Value: raw, Path: "/", HttpOnly: true,
-		SameSite: http.SameSiteLaxMode, Secure: s.deps.HTTPSecure(), MaxAge: 30 * 24 * 3600,
+		SameSite: http.SameSiteLaxMode, Secure: s.deps.cookieSecure(r), MaxAge: 30 * 24 * 3600,
 	})
 	s.auditAction(r, u.ID, "auth.saml_login", "success")
 	http.Redirect(w, r, "/dashboard", http.StatusFound)

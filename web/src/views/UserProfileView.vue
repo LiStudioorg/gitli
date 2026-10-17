@@ -84,7 +84,14 @@ async function loadProfile() {
   error.value = ''
   try {
     const { data } = await api.get<ProfileResponse>(`/users/${username.value}`)
-    profile.value = data
+    // Defensive normalisation: a null repos array would crash template
+    // evaluation and leave the whole page blank.
+    profile.value = {
+      ...data,
+      repos: data.repos ?? [],
+      followers: data.followers ?? 0,
+      following: data.following ?? 0,
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载用户信息失败'
     profile.value = null

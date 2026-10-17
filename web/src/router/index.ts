@@ -39,15 +39,23 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (to.meta.public) return true
+  // Always ask the server whether the instance has an administrator yet. This
+  // runs for /setup too so the page can confirm state, and primes the CSRF
+  // cookie for the first POST.
+  let initialized: boolean | null = null
   try {
     const { data } = await api.get('/version')
-    if (data?.initialized === false) {
-      return { path: '/setup' }
-    }
+    if (typeof data?.initialized === 'boolean') initialized = data.initialized
   } catch {
     return true
   }
+  if (initialized === false && to.path !== '/setup') {
+    return { path: '/setup' }
+  }
+  if (initialized !== false && to.path === '/setup') {
+    return { path: '/login' }
+  }
+  if (to.meta.public) return true
   const auth = useAuthStore()
   if (!auth.loaded) {
     await auth.fetchMe()

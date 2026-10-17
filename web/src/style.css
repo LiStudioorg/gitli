@@ -95,3 +95,355 @@ button {
   cursor: pointer;
   font: inherit;
 }
+
+/* =============================================================================
+   设计系统：卡片 / 表单 / 按钮 / 反馈
+   所有组件共享这些类，避免每个页面重复手写样式而逐渐退化成“裸标签”。
+   ========================================================================== */
+
+:root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.1), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.14);
+  --ring: rgba(59, 130, 246, 0.35);
+  --danger: #d1242f;
+  --danger-hover: #b91c1c;
+}
+
+:root[data-theme='dark'] {
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.65);
+  --ring: rgba(96, 165, 250, 0.45);
+  --danger: #f85149;
+  --danger-hover: #ff7b72;
+}
+
+/* 认证类页面：渐变背景 + 居中卡片 */
+.auth-page {
+  min-height: calc(100vh - 57px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+  background:
+    radial-gradient(1200px 400px at 50% -10%, var(--primary-soft), transparent 70%),
+    var(--color-bg);
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 2rem 1.75rem;
+}
+
+.auth-card h1,
+.auth-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+}
+
+.auth-subtitle {
+  margin: 0 0 1.4rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* 通用卡片 */
+.ui-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+}
+
+/* 表单 */
+.ui-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ui-field > label,
+.ui-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.ui-input,
+.ui-textarea,
+.ui-select,
+.ui-form input:not([type='checkbox']):not([type='radio']),
+.ui-form select,
+.ui-form textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--color-fg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.ui-input:hover,
+.ui-form input:hover,
+.ui-form select:hover {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.ui-input:focus,
+.ui-textarea:focus,
+.ui-select:focus,
+.ui-form input:focus,
+.ui-form select:focus,
+.ui-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.ui-input::placeholder,
+.ui-form input::placeholder {
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+.ui-help {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ui-error {
+  font-size: 0.82rem;
+  color: var(--danger);
+}
+
+/* 按钮 */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.58rem 1rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.08s ease,
+    box-shadow 0.15s ease;
+}
+
+.ui-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+.ui-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ui-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.ui-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ui-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.35);
+}
+
+.ui-btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #ffffff;
+}
+
+.ui-btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+}
+
+.ui-btn-danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+
+.ui-btn-block {
+  width: 100%;
+}
+
+.ui-btn-lg {
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+}
+
+/* 按钮中的加载指示 */
+.ui-spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: ui-spin 0.7s linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner {
+    animation-duration: 2s;
+  }
+}
+
+/* 提示条 */
+.ui-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--border) 25%, transparent);
+}
+
+.ui-alert-error {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+.ui-alert-success {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--success);
+}
+
+/* 分隔线 */
+.ui-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0.35rem 0;
+}
+
+.ui-divider::before,
+.ui-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* -----------------------------------------------------------------------------
+   覆盖早期页面里的“裸标签”样式：这些页面直接使用 .card / input / button，
+   统一在这里注入质感，避免逐个组件重写而遗漏。
+   -------------------------------------------------------------------------- */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 任何未被组件显式覆盖的输入控件都获得一致外观 */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='search'],
+input[type='number'],
+input[type='url'],
+input:not([type]),
+textarea,
+select {
+  font: inherit;
+  color: var(--color-fg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+input[type='search']:focus,
+input[type='number']:focus,
+input[type='url']:focus,
+input:not([type]):focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* 只对没有自定义类的裸 button 生效，避免覆盖组件自己的按钮样式 */
+button:not([class]) {
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--color-fg);
+  font: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+button:not([class]):hover {
+  background: var(--hover-bg);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+button:not([class]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* 键盘可达性：所有可交互元素都有清晰的焦点环 */
+a:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -197,9 +197,14 @@ const unread = computed(() => notifications.unread)
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 0.65rem 1.5rem;
+  padding: 0.6rem 1.5rem;
   border-bottom: 1px solid var(--border);
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
 }
 .left,
 .right {
@@ -208,25 +213,61 @@ const unread = computed(() => notifications.unread)
   gap: 1rem;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-weight: 700;
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   color: var(--color-fg);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  padding: 0.2rem 0.1rem;
+}
+.brand::before {
+  content: '</>';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 .links {
   display: flex;
   gap: 1.1rem;
   color: var(--muted);
+  font-size: 0.9rem;
+}
+.links a {
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+.links a:hover {
+  color: var(--color-fg);
 }
 .search-form {
   display: flex;
 }
 .search {
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
+  padding: 0.42rem 0.8rem;
+  border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--color-bg);
+  background: color-mix(in srgb, var(--color-bg) 70%, var(--card));
   color: var(--color-fg);
-  min-width: 220px;
+  min-width: 240px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.search:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--card);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 .btn {
   padding: 0.35rem 0.9rem;

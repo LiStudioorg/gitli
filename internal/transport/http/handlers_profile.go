@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 package http
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/LiStudioorg/gitli/internal/domain"
+)
 
 // handleUserProfile implements GET /api/v1/users/{username}.
 func (s *Server) handleUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -16,6 +20,11 @@ func (s *Server) handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	repos, _ := s.deps.Repos.ListByOwner(r.Context(), user.ID, 30, 0)
+	if repos == nil {
+		// Always send an array: the client indexes into it and a JSON null
+		// would crash rendering (blank profile page).
+		repos = []*domain.Repo{}
+	}
 	followers, following, _ := s.deps.Follows.Counts(r.Context(), user.ID)
 	var isFollowing bool
 	if u := userFrom(r.Context()); u != nil {
