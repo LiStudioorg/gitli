@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore, useUiStore } from '../../stores'
 import { useTheme } from '../../composables/useTheme'
 
@@ -10,8 +10,24 @@ const props = withDefaults(defineProps<{ variant?: 'landing' | 'app' }>(), {
 
 const auth = useAuthStore()
 const ui = useUiStore()
+const route = useRoute()
 const router = useRouter()
 const { theme, cycleTheme } = useTheme()
+
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
+
+watch(
+  () => route.query.q,
+  (q) => {
+    searchQuery.value = typeof q === 'string' ? q : ''
+  },
+)
+
+function submitSearch() {
+  const q = searchQuery.value.trim()
+  if (!q) return
+  router.push({ path: '/search', query: { q } })
+}
 
 const variantClass = computed(() => `topnav-${props.variant}`)
 
@@ -53,7 +69,15 @@ async function logout() {
         </nav>
       </template>
       <template v-else>
-        <input class="search" type="search" placeholder="搜索..." />
+        <form class="search-form" @submit.prevent="submitSearch">
+          <input
+            v-model="searchQuery"
+            class="search"
+            type="search"
+            placeholder="搜索仓库、Issue、用户..."
+            aria-label="全局搜索"
+          />
+        </form>
       </template>
     </div>
 
@@ -119,6 +143,9 @@ async function logout() {
   display: flex;
   gap: 1.1rem;
   color: var(--muted);
+}
+.search-form {
+  display: flex;
 }
 .search {
   padding: 0.4rem 0.75rem;

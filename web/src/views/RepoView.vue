@@ -6,6 +6,7 @@ import CloneDropdown from '../components/repo/CloneDropdown.vue'
 import DeployKeys from '../components/repo/DeployKeys.vue'
 import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
+import SavedReplies from '../components/common/SavedReplies.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 import type { CloneInfo, Issue, LanguageStat, Pull, Repo } from '../stores'
@@ -212,6 +213,10 @@ async function loadPulls() {
   } finally {
     pullsLoading.value = false
   }
+}
+
+function onInsertReply(body: string) {
+  newBody.value = newBody.value ? `${newBody.value}\n${body}` : body
 }
 
 async function createIssue() {
@@ -459,6 +464,7 @@ onUnmounted(() => {
           <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
         </select>
         <input v-model="newTitle" type="text" placeholder="标题" class="form-input" />
+        <SavedReplies @insert="onInsertReply" />
         <textarea v-model="newBody" rows="3" placeholder="描述（可选）" class="form-input" />
         <p v-if="createError" class="error">{{ createError }}</p>
         <button class="chip primary" type="submit" :disabled="creating">
