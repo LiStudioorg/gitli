@@ -90,7 +90,35 @@ interface Session {
   current?: boolean
 }
 
-type TabKey = 'profile' | 'password' | 'keys' | 'tokens' | 'totp' | 'deleted' | 'security'
+interface OAuthApp {
+  id: number
+  owner_id?: number
+  name: string
+  client_id: string
+  redirect_uris: string[]
+  scopes: string[]
+  created_at?: string
+}
+
+interface OAuthAuthorization {
+  id: number
+  user_id?: number
+  app_id: number
+  app_name: string
+  client_id: string
+  scopes: string[]
+  created_at?: string
+}
+
+type TabKey =
+  | 'profile'
+  | 'password'
+  | 'keys'
+  | 'tokens'
+  | 'oauth'
+  | 'totp'
+  | 'deleted'
+  | 'security'
 
 interface Tab {
   key: TabKey
@@ -102,6 +130,7 @@ const tabs: Tab[] = [
   { key: 'password', label: '密码' },
   { key: 'keys', label: 'SSH / GPG 密钥' },
   { key: 'tokens', label: '访问令牌' },
+  { key: 'oauth', label: 'OAuth 应用' },
   { key: 'totp', label: '两步验证' },
   { key: 'deleted', label: '已删除的仓库' },
   { key: 'security', label: '安全活动' },
@@ -456,6 +485,122 @@ async function revokeToken(id: number | undefined) {
   }
 }
 
+// --- oauth apps ---
+const oauthScopes: { value: string; label: string }[] = [
+  { value: 'read:user', label: 'read:user（读取用户资料）' },
+  { value: 'read:repo', label: 'read:repo（读取仓库）' },
+  { value: 'write:repo', label: 'write:repo（写入仓库）' },
+]
+
+const oauthApps = ref<OAuthApp[]>([])
+const oauthAppsLoading = ref(false)
+const oauthAppsError = ref('')
+const newApp = reactive({ name: '', redirect_uris: '', scopes: ['read:user'] as string[] })
+const appCreating = ref(false)
+const createdSecret = ref('')
+const createdAppName = ref('')
+const secretCopied = ref(false)
+
+const oauthAuths = ref<OAuthAuthorization[]>([])
+const oauthAuthsLoading = ref(false)
+const oauthAuthsError = ref('')
+const revokingAuth = ref<number | null>(null)
+
+async function loadOAuthApps() {
+  oauthAppsLoading.value = true
+  oauthAppsError.value = ''
+  try {
+    const { data } = await api.get<OAuthApp[]>('/user/oauth-apps')
+    oauthApps.value = data ?? []
+  } catch (e) {
+    oauthAppsError.value = errMessage(e)
+  } finally {
+    oauthAppsLoading.value = false
+  }
+}
+
+async function loadOAuthAuths() {
+  oauthAuthsLoading.value = true
+  oauthAuthsError.value = ''
+  try {
+    const { data } = await api.get<OAuthAuthorization[]>('/user/oauth-authorizations')
+    oauthAuths.value = data ?? []
+  } catch (e) {
+    oauthAuthsError.value = errMessage(e)
+  } finally {
+    oauthAuthsLoading.value = false
+  }
+}
+
+async function createApp() {
+  oauthAppsError.value = ''
+  createdSecret.value = ''
+  secretCopied.value = false
+  if (!newApp.name.trim()) {
+    oauthAppsError.value = '请填写应用名称'
+    return
+  }
+  const uris = newApp.redirect_uris
+    .split('\n')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+  if (uris.length === 0) {
+    oauthAppsError.value = '请至少填写一个回调地址'
+    return
+  }
+  appCreating.value = true
+  try {
+    const { data } = await api.post<{ app: OAuthApp; client_secret: string }>(
+      '/user/oauth-apps',
+      { name: newApp.name.trim(), redirect_uris: uris, scopes: newApp.scopes },
+    )
+    createdSecret.value = data.client_secret
+    createdAppName.value = data.app?.name ?? newApp.name.trim()
+    newApp.name = ''
+    newApp.redirect_uris = ''
+    newApp.scopes = ['read:user']
+    await loadOAuthApps()
+  } catch (e) {
+    oauthAppsError.value = errMessage(e)
+  } finally {
+    appCreating.value = false
+  }
+}
+
+async function copySecret() {
+  try {
+    await navigator.clipboard.writeText(createdSecret.value)
+    secretCopied.value = true
+  } catch {
+    secretCopied.value = false
+  }
+}
+
+async function deleteApp(id: number) {
+  if (!window.confirm('确定要删除该 OAuth 应用吗？已授权的用户将立即失效。')) return
+  oauthAppsError.value = ''
+  try {
+    await api.delete(`/user/oauth-apps/${id}`)
+    await loadOAuthApps()
+  } catch (e) {
+    oauthAppsError.value = errMessage(e)
+  }
+}
+
+async function revokeAuthorization(appId: number) {
+  if (!window.confirm('确定要撤销该应用的授权吗？')) return
+  revokingAuth.value = appId
+  oauthAuthsError.value = ''
+  try {
+    await api.delete(`/user/oauth-authorizations/${appId}`)
+    await loadOAuthAuths()
+  } catch (e) {
+    oauthAuthsError.value = errMessage(e)
+  } finally {
+    revokingAuth.value = null
+  }
+}
+
 // --- totp ---
 const totpSecret = ref('')
 const totpURL = ref('')
@@ -694,6 +839,10 @@ function selectTab(key: TabKey) {
     if (gpgKeys.value.length === 0 && !gpgLoading.value) loadGpg()
   }
   if (key === 'tokens' && tokens.value.length === 0 && !tokensLoading.value) loadTokens()
+  if (key === 'oauth') {
+    if (oauthApps.value.length === 0 && !oauthAppsLoading.value) loadOAuthApps()
+    if (oauthAuths.value.length === 0 && !oauthAuthsLoading.value) loadOAuthAuths()
+  }
   if (key === 'deleted' && deletedRepos.value.length === 0 && !deletedLoading.value) {
     loadDeletedRepos()
   }
@@ -892,6 +1041,118 @@ onMounted(async () => {
           <button class="primary" :disabled="tokenCreating" @click="createToken">
             {{ tokenCreating ? '生成中…' : '生成令牌' }}
           </button>
+        </section>
+
+        <!-- OAuth 应用 -->
+        <section v-else-if="active === 'oauth'" class="card">
+          <div v-if="createdSecret" class="token-callout">
+            <p class="token-warn">
+              应用「{{ createdAppName }}」已创建。Client Secret 仅显示这一次，请立即复制保存。
+            </p>
+            <div class="token-row">
+              <code class="token-value">{{ createdSecret }}</code>
+              <button type="button" @click="copySecret">{{ secretCopied ? '已复制' : '复制' }}</button>
+            </div>
+            <button class="link" type="button" @click="createdSecret = ''">我已保存，关闭</button>
+          </div>
+
+          <h3>我的应用</h3>
+          <p v-if="oauthAppsError" class="error">{{ oauthAppsError }}</p>
+          <p v-if="oauthAppsLoading" class="muted">加载中…</p>
+          <template v-else-if="oauthApps.length">
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>应用</th>
+                  <th>回调地址 / 权限</th>
+                  <th class="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in oauthApps" :key="a.id">
+                  <td>
+                    <strong>{{ a.name }}</strong>
+                    <div class="muted"><code class="fingerprint">{{ a.client_id }}</code></div>
+                    <div class="muted nowrap">创建于 {{ fmtTime(a.created_at) }}</div>
+                  </td>
+                  <td>
+                    <div v-for="u in a.redirect_uris" :key="u" class="muted">
+                      <code class="fingerprint">{{ u }}</code>
+                    </div>
+                    <div class="scope-chips">
+                      <span v-for="s in a.scopes" :key="s" class="scope-chip">{{ s }}</span>
+                    </div>
+                  </td>
+                  <td class="center nowrap">
+                    <button class="danger" type="button" @click="deleteApp(a.id)">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+          <p v-else class="muted">暂无 OAuth 应用</p>
+
+          <h3>创建 OAuth 应用</h3>
+          <label>应用名称<input v-model="newApp.name" placeholder="例如：我的集成" /></label>
+          <label>
+            回调地址（每行一个）
+            <textarea
+              v-model="newApp.redirect_uris"
+              rows="3"
+              placeholder="https://example.com/oauth/callback"
+            />
+          </label>
+          <div class="scope-group">
+            <span class="muted">权限范围</span>
+            <label v-for="s in oauthScopes" :key="s.value" class="check">
+              <input v-model="newApp.scopes" type="checkbox" :value="s.value" />
+              {{ s.label }}
+            </label>
+          </div>
+          <button class="primary" :disabled="appCreating" @click="createApp">
+            {{ appCreating ? '创建中…' : '创建应用' }}
+          </button>
+
+          <hr class="divider" />
+
+          <h3>已授权应用</h3>
+          <p v-if="oauthAuthsError" class="error">{{ oauthAuthsError }}</p>
+          <p v-if="oauthAuthsLoading" class="muted">加载中…</p>
+          <template v-else-if="oauthAuths.length">
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>应用</th>
+                  <th>权限</th>
+                  <th>授权时间</th>
+                  <th class="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="g in oauthAuths" :key="g.id">
+                  <td>
+                    <strong>{{ g.app_name }}</strong>
+                    <div class="muted"><code class="fingerprint">{{ g.client_id }}</code></div>
+                  </td>
+                  <td>
+                    <span v-for="s in g.scopes" :key="s" class="scope-chip">{{ s }}</span>
+                  </td>
+                  <td class="muted nowrap">{{ fmtTime(g.created_at) }}</td>
+                  <td class="center nowrap">
+                    <button
+                      class="danger"
+                      type="button"
+                      :disabled="revokingAuth === g.app_id"
+                      @click="revokeAuthorization(g.app_id)"
+                    >
+                      {{ revokingAuth === g.app_id ? '撤销中…' : '撤销' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+          <p v-else class="muted">暂无已授权应用</p>
         </section>
 
         <!-- 两步验证 -->
@@ -1441,6 +1702,27 @@ label.inline {
 .deleted-hint {
   color: var(--muted);
   font-size: 0.85rem;
+}
+.scope-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.scope-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+.scope-chip {
+  display: inline-block;
+  margin: 0 0.25rem 0.25rem 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--hover-bg, transparent);
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 .pager {
   display: flex;

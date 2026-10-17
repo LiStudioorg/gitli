@@ -9,7 +9,9 @@ const routes = [
   { path: '/explore', name: 'explore', component: () => import('../views/ExploreView.vue'), meta: { requiresAuth: true } },
   { path: '/search', name: 'search', component: () => import('../views/SearchView.vue'), meta: { requiresAuth: true } },
   { path: '/settings', name: 'settings', component: () => import('../views/UserSettingsView.vue'), meta: { requiresAuth: true } },
+  { path: '/orgs/:org/settings', name: 'org-settings', component: () => import('../views/OrgSettingsView.vue'), meta: { requiresAuth: true } },
   { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/oauth/authorize', name: 'oauth-authorize', component: () => import('../views/OAuthAuthorizeView.vue') },
   { path: '/users/:username', name: 'user', component: () => import('../views/UserProfileView.vue') },
   { path: '/:owner/:repo', name: 'repo', component: () => import('../views/RepoView.vue') },
 ]
