@@ -20,13 +20,13 @@
 ## 功能批次
 
 ### 批次 1：基础协作 + 归档（进行中）
-- [ ] 1.1 部署密钥（Deploy Key）：`deploy_keys` 表、只读/读写、API、前端、SSH 认证
-- [ ] 1.2 CODEOWNERS：解析根/`.github/`/`docs/`、路径模式、PR 自动请求 review、分支保护 `require_codeowners_review`
-- [ ] 1.3 仓库重命名 + 重定向：`repo_redirects` 表、Web 301、Git HTTP 301、SSH 重定向
-- [ ] 1.4 仓库软删除 + 恢复：`repos.deleted_at`、30 天清理任务、管理后台恢复、用户自查
-- [ ] 1.5 许可证自动识别（SPDX）：解析 LICENSE、写 `repos.license`、首页徽章
-- [ ] 1.6 Issue/PR 模板：`.gitli`/`.github` 模板、YAML front matter、创建时选择
-- [ ] 1.7 归档功能：`repos.archived`/`archived_at`、禁止 push/Issue/PR/Wiki/Release、仅允许 clone/浏览/Star/Fork、组织级归档、审计
+- [x] 1.1 部署密钥（Deploy Key）：`deploy_keys` 表、只读/读写、API、前端、SSH 认证
+- [x] 1.2 CODEOWNERS：解析根/`.github/`/`docs/`、路径模式、PR 自动请求 review、分支保护 `require_codeowners_review`
+- [x] 1.3 仓库重命名 + 重定向：`repo_redirects` 表、Web 301、Git HTTP 301、SSH 重定向
+- [x] 1.4 仓库软删除 + 恢复：`repos.deleted_at`、30 天清理任务、管理后台恢复、用户自查
+- [x] 1.5 许可证自动识别（SPDX）：解析 LICENSE、写 `repos.license`、首页徽章
+- [x] 1.6 Issue/PR 模板：`.gitli`/`.github` 模板、YAML front matter、创建时选择
+- [x] 1.7 归档功能：`repos.archived`/`archived_at`、禁止 push/Issue/PR/Wiki/Release、仅允许 clone/浏览/Star/Fork、组织级归档、审计
 
 ### 批次 2：用户与社区
 - [ ] 2.1 保存的回复（Saved Replies）：`saved_replies` 表 + API + 前端
