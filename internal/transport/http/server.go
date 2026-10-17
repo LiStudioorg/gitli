@@ -241,6 +241,8 @@ func (s *Server) Router() http.Handler {
 		rr.Post("/{owner}/{repo}/releases", s.handleCreateRelease)
 		rr.Post("/{owner}/{repo}/releases/{tag}/publish", s.handlePublishRelease)
 		rr.Get("/{owner}/{repo}/releases/{tag}/assets", s.handleListReleaseAssets)
+		rr.Get("/{owner}/{repo}/issue-templates", s.handleListIssueTemplates)
+		rr.Get("/{owner}/{repo}/pr-template", s.handlePullRequestTemplate)
 		rr.With(middleware.MaxBody(middleware.BodyLimitHuge)).Post("/{owner}/{repo}/releases/{tag}/assets", s.handleUploadReleaseAsset)
 		rr.Get("/{owner}/{repo}/releases/{tag}/assets/{name}", s.handleDownloadReleaseAsset)
 		rr.Get("/{owner}/{repo}/search", s.handleSearch)

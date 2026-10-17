@@ -45,6 +45,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/search"
 	"github.com/LiStudioorg/gitli/internal/service/signature"
 	"github.com/LiStudioorg/gitli/internal/service/subscription"
+	"github.com/LiStudioorg/gitli/internal/service/template"
 	"github.com/LiStudioorg/gitli/internal/service/topic"
 	"github.com/LiStudioorg/gitli/internal/service/user"
 	"github.com/LiStudioorg/gitli/internal/service/userwebhook"
@@ -117,6 +118,11 @@ type Deps struct {
 
 	// RequestCodeOwnerReviews creates review requests for CODEOWNERS matches.
 	RequestCodeOwnerReviews func(ctx context.Context, repoID int64, repoPath, base, head string, pullID int64) []string
+
+	// ListIssueTemplates returns parsed issue templates for a repo.
+	ListIssueTemplates func(ctx context.Context, repoPath, ref string) []*template.IssueTemplate
+	// PullRequestTemplate returns the repo's PR template body.
+	PullRequestTemplate func(ctx context.Context, repoPath, ref string) string
 }
 
 // ExternalBase returns the externally visible HTTP base URL.

@@ -201,6 +201,8 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		owners, _ := a.RequestCodeOwnerReviews(ctx, repoID, repoPath, base, head, pullID)
 		return owners
 	}
+	deps.ListIssueTemplates = a.ListIssueTemplates
+	deps.PullRequestTemplate = a.PullRequestTemplate
 	q := queue.New(2, 256, log)
 	q.Register(LanguageRefreshKind, func(ctx context.Context, payload string) error {
 		repoID, err := ParseLanguageRefreshPayload(payload)
