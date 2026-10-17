@@ -223,6 +223,7 @@ func (s *Service) AuthenticateRequest(ctx context.Context, rawToken, ip, agent s
 	if s.bindAgent && agent != "" && sess.UserAgent != "" && sess.UserAgent != agent {
 		return nil, nil, ErrInvalidCredentials
 	}
+	_, _ = s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE sessions SET last_seen_at = ? WHERE id = ?`), time.Now().UTC(), sess.ID)
 	u, err := s.users.ByID(ctx, sess.UserID)
 	if err != nil {
 		return nil, nil, err
@@ -409,12 +410,13 @@ func hashString(s string) string {
 
 // SessionInfo describes a device session for the settings UI (no token value).
 type SessionInfo struct {
-	ID        int64      `json:"id"`
-	IP        string     `json:"ip"`
-	UserAgent string     `json:"user_agent"`
-	CreatedAt time.Time  `json:"created_at"`
-	ExpiresAt *time.Time `json:"expires_at"`
-	Current   bool       `json:"current"`
+	ID         int64      `json:"id"`
+	IP         string     `json:"ip"`
+	UserAgent  string     `json:"user_agent"`
+	CreatedAt  time.Time  `json:"created_at"`
+	LastSeenAt *time.Time `json:"last_seen_at"`
+	ExpiresAt  *time.Time `json:"expires_at"`
+	Current    bool       `json:"current"`
 }
 
 // ListSessions returns a user's active sessions. rawCurrent is the raw session
@@ -424,7 +426,7 @@ func (s *Service) ListSessions(ctx context.Context, userID int64, rawCurrent str
 	if rawCurrent != "" {
 		currentHash = token.Hash(rawCurrent)
 	}
-	q := s.st.Rebind(`SELECT id, token_hash, ip, user_agent, expires_at, created_at FROM sessions WHERE user_id = ? ORDER BY id DESC`)
+	q := s.st.Rebind(`SELECT id, token_hash, ip, user_agent, expires_at, created_at, last_seen_at FROM sessions WHERE user_id = ? ORDER BY id DESC`)
 	rows, err := s.st.DB.QueryContext(ctx, q, userID)
 	if err != nil {
 		return nil, err
@@ -434,13 +436,17 @@ func (s *Service) ListSessions(ctx context.Context, userID int64, rawCurrent str
 	for rows.Next() {
 		var si SessionInfo
 		var hash string
-		var exp sql.NullTime
-		if err := rows.Scan(&si.ID, &hash, &si.IP, &si.UserAgent, &exp, &si.CreatedAt); err != nil {
+		var exp, lastSeen sql.NullTime
+		if err := rows.Scan(&si.ID, &hash, &si.IP, &si.UserAgent, &exp, &si.CreatedAt, &lastSeen); err != nil {
 			return nil, err
 		}
 		if exp.Valid {
 			t := exp.Time
 			si.ExpiresAt = &t
+		}
+		if lastSeen.Valid {
+			t := lastSeen.Time
+			si.LastSeenAt = &t
 		}
 		si.Current = currentHash != "" && hash == currentHash
 		out = append(out, si)

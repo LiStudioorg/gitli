@@ -85,6 +85,7 @@ interface Session {
   ip?: string
   user_agent?: string
   created_at?: string
+  last_seen_at?: string
   expires_at?: string
   current?: boolean
 }
@@ -1038,6 +1039,7 @@ onMounted(async () => {
                   <th>IP</th>
                   <th>User-Agent</th>
                   <th>创建时间</th>
+                  <th>最后活跃</th>
                   <th>过期时间</th>
                   <th class="center">操作</th>
                 </tr>
@@ -1047,6 +1049,7 @@ onMounted(async () => {
                   <td class="nowrap"><code>{{ s.ip || '-' }}</code></td>
                   <td :title="s.user_agent || ''">{{ truncateUA(s.user_agent) }}</td>
                   <td class="muted nowrap">{{ fmtTime(s.created_at) }}</td>
+                  <td class="muted nowrap">{{ fmtTime(s.last_seen_at) }}</td>
                   <td class="muted nowrap">{{ fmtTime(s.expires_at) }}</td>
                   <td class="center nowrap">
                     <span v-if="s.current" class="badge badge-success">当前设备</span>
