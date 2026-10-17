@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { useAuthStore, useUiStore } from '../../stores'
+import { useAuthStore, useNotificationStore, useUiStore } from '../../stores'
 import { useTheme } from '../../composables/useTheme'
 import { useI18n } from 'vue-i18n'
 
@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{ variant?: 'landing' | 'app' }>(), {
 })
 
 const auth = useAuthStore()
+const notifications = useNotificationStore()
 const ui = useUiStore()
 const route = useRoute()
 const router = useRouter()
@@ -49,6 +50,38 @@ async function logout() {
   await auth.logout()
   router.push('/')
 }
+
+const plusOpen = ref(false)
+const avatarOpen = ref(false)
+
+const createItems = [
+  { label: '新建仓库', to: '/new/repo' },
+  { label: '新建组织', to: '/new/org' },
+  { label: '新建工单', to: '/new/repo', disabled: true, hint: '请先选择仓库' },
+  { label: '导入仓库', to: '/new/import' },
+]
+
+function goCreate(path: string) {
+  plusOpen.value = false
+  router.push(path)
+}
+
+function goAvatar(path: string) {
+  avatarOpen.value = false
+  router.push(path)
+}
+
+function closeMenus() {
+  plusOpen.value = false
+  avatarOpen.value = false
+}
+
+watch(
+  () => route.fullPath,
+  () => closeMenus(),
+)
+
+const unread = computed(() => notifications.unread)
 </script>
 
 <template>
@@ -84,6 +117,14 @@ async function logout() {
       </template>
     </div>
 
+    <nav v-if="variant === 'app'" class="app-links">
+      <RouterLink to="/dashboard">控制台</RouterLink>
+      <RouterLink to="/explore">仓库</RouterLink>
+      <RouterLink to="/explore?tab=trending">趋势</RouterLink>
+      <RouterLink to="/explore?tab=topics">话题</RouterLink>
+      <RouterLink to="/search">搜索</RouterLink>
+    </nav>
+
     <div class="right">
       <button
         class="icon-btn palette-trigger"
@@ -104,13 +145,42 @@ async function logout() {
         {{ themeIcon }}
       </button>
       <template v-if="auth.isLoggedIn">
-        <RouterLink v-if="variant === 'app'" class="icon-btn" to="/dashboard" title="通知">通知</RouterLink>
         <RouterLink v-if="variant === 'landing'" class="btn primary" to="/dashboard">{{ t('nav.dashboard') }}</RouterLink>
         <template v-else>
-          <span class="avatar">{{ auth.user?.username?.[0]?.toUpperCase() }}</span>
-          <RouterLink class="icon-btn" to="/settings" title="用户设置">设置</RouterLink>
-          <RouterLink v-if="auth.isAdmin" class="icon-btn" to="/admin" title="管理面板">管理</RouterLink>
-          <button class="btn dropdown-toggle" @click="logout">退出</button>
+          <RouterLink class="icon-btn bell" to="/dashboard" title="通知" aria-label="通知">
+            🔔<span v-if="unread > 0" class="bell-badge">{{ unread > 99 ? '99+' : unread }}</span>
+          </RouterLink>
+          <div class="menu-wrap">
+            <button class="icon-btn plus" type="button" aria-label="快速创建" title="快速创建" @click="plusOpen = !plusOpen">
+              +
+            </button>
+            <div v-if="plusOpen" class="menu" role="menu">
+              <button
+                v-for="item in createItems"
+                :key="item.label"
+                type="button"
+                role="menuitem"
+                class="menu-item"
+                :disabled="item.disabled"
+                @click="!item.disabled && goCreate(item.to)"
+              >
+                {{ item.label }}
+                <small v-if="item.hint">{{ item.hint }}</small>
+              </button>
+            </div>
+          </div>
+          <div class="menu-wrap">
+            <button class="avatar" type="button" :aria-label="`用户菜单 ${auth.user?.username}`" @click="avatarOpen = !avatarOpen">
+              {{ auth.user?.username?.[0]?.toUpperCase() }}
+            </button>
+            <div v-if="avatarOpen" class="menu" role="menu">
+              <div class="menu-head">{{ auth.user?.username }}</div>
+              <button type="button" class="menu-item" role="menuitem" @click="goAvatar(`/${auth.user?.username}`)">个人主页</button>
+              <button type="button" class="menu-item" role="menuitem" @click="goAvatar('/settings')">设置</button>
+              <button v-if="auth.isAdmin" type="button" class="menu-item" role="menuitem" @click="goAvatar('/admin')">管理面板</button>
+              <button type="button" class="menu-item danger" role="menuitem" @click="logout">退出登录</button>
+            </div>
+          </div>
         </template>
       </template>
       <template v-else>
@@ -207,6 +277,111 @@ async function logout() {
 }
 .dropdown-toggle {
   color: var(--color-fg);
+}
+.app-links {
+  display: flex;
+  gap: 1.1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.app-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.app-links a:hover,
+.app-links a.router-link-active {
+  color: var(--color-fg);
+}
+.bell {
+  position: relative;
+}
+.bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #d1242f;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.menu-wrap {
+  position: relative;
+}
+.plus {
+  border: 1px solid var(--border);
+  font-size: 1.1rem;
+  font-weight: 600;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar {
+  border: none;
+  cursor: pointer;
+}
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.3rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+.menu-head {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--color-fg);
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  width: 100%;
+}
+.menu-item:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.menu-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.menu-item small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.menu-item.danger {
+  color: #d1242f;
+}
+@media (max-width: 900px) {
+  .app-links {
+    display: none;
+  }
 }
 @media (max-width: 720px) {
   .search {

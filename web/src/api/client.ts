@@ -19,4 +19,16 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 412 && err.response.data?.code === 'setup_required') {
+      if (location.pathname !== '/setup') {
+        location.assign('/setup')
+      }
+    }
+    return Promise.reject(err)
+  },
+)
+
 export default api

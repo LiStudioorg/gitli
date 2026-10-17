@@ -91,7 +91,7 @@ func run(args []string) error {
 	ctx := context.Background()
 
 	switch cmd {
-	case "serve":
+	case "serve", "server":
 		return runServe(ctx, cfg, *configPath)
 	case "migrate":
 		return runMigrate(ctx, cfg, *configPath)
@@ -418,7 +418,7 @@ Usage:
   gitli <command> [--config path/to/config.toml]
 
 Commands:
-  serve          start HTTP + SSH service
+  serve, server  start HTTP + SSH service
   migrate        apply database migrations
   runner         CI runner
   mirror         mirror synchronization scheduler

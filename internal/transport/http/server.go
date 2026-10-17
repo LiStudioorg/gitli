@@ -3,7 +3,9 @@
 package http
 
 import (
+	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -39,6 +41,9 @@ func (s *Server) Router() http.Handler {
 
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/metrics", s.handleMetrics)
+	if d.Cfg.Server.EnablePprof {
+		r.Mount("/debug/pprof", http.DefaultServeMux)
+	}
 	r.Get("/api/openapi.json", s.handleOpenAPI)
 	r.Get("/api/docs", s.handleAPIDocs)
 
@@ -88,11 +93,17 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api := chi.NewRouter()
+	api.Use(middleware.SetupGuard(
+		func(ctx context.Context) (bool, error) { return d.Auth.IsInitialized(ctx) },
+		[]string{"/api/v1/version", "/api/v1/setup/status", "/api/v1/setup"},
+	))
 	api.Use(middleware.MaxBody(middleware.BodyLimitLarge))
 	api.Use(d.Auth.AuthenticateMiddleware)
 	api.Use(middleware.CSRF())
 
 	api.Get("/version", s.handleVersion)
+	api.Get("/setup/status", s.handleSetupStatus)
+	api.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/setup", s.handleSetup)
 	api.Get("/search", s.handleGlobalSearch)
 	api.Get("/oauth/authorize-info", s.handleOAuthAuthorizeInfo)
 	api.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/oauth/approve", s.handleOAuthApprove)
@@ -403,11 +414,15 @@ func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte(s.deps.Metrics.Prometheus()))
 }
 
-func (s *Server) handleVersion(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 	info := version.Get()
-	writeJSON(w, http.StatusOK, map[string]any{
+	resp := map[string]any{
 		"version": info.Version,
 		"commit":  info.Commit,
 		"date":    info.Date,
-	})
+	}
+	if initd, err := s.deps.Auth.IsInitialized(r.Context()); err == nil {
+		resp["initialized"] = initd
+	}
+	writeJSON(w, http.StatusOK, resp)
 }

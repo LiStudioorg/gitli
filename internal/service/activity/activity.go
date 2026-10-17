@@ -22,8 +22,8 @@ func New(st *store.Store) *Service {
 
 // Record inserts an activity entry.
 func (s *Service) Record(ctx context.Context, a *domain.Activity) error {
-	q := s.st.Rebind(`INSERT INTO activities (actor_id, verb, object_type, object_id, repo_id) VALUES (?, ?, ?, ?, ?)`)
-	_, err := s.st.DB.ExecContext(ctx, q, a.ActorID, a.Verb, a.ObjectType, a.ObjectID, a.RepoID)
+	q := s.st.Rebind(`INSERT INTO activities (actor_id, verb, object_type, object_id, repo_id, repo_name, summary) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+	_, err := s.st.DB.ExecContext(ctx, q, a.ActorID, a.Verb, a.ObjectType, a.ObjectID, a.RepoID, a.RepoName, a.Summary)
 	return err
 }
 
@@ -32,7 +32,7 @@ func (s *Service) ListByActor(ctx context.Context, actorID int64, limit int) ([]
 	if limit <= 0 || limit > 100 {
 		limit = 30
 	}
-	q := s.st.Rebind(`SELECT id, actor_id, verb, object_type, object_id, repo_id, created_at FROM activities WHERE actor_id = ? ORDER BY id DESC LIMIT ?`)
+	q := s.st.Rebind(`SELECT ` + activityColumns + ` FROM activities WHERE actor_id = ? ORDER BY id DESC LIMIT ?`)
 	rows, err := s.st.DB.QueryContext(ctx, q, actorID, limit)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (s *Service) ListByRepo(ctx context.Context, repoID int64, limit int) ([]*d
 	if limit <= 0 || limit > 100 {
 		limit = 30
 	}
-	q := s.st.Rebind(`SELECT id, actor_id, verb, object_type, object_id, repo_id, created_at FROM activities WHERE repo_id = ? ORDER BY id DESC LIMIT ?`)
+	q := s.st.Rebind(`SELECT ` + activityColumns + ` FROM activities WHERE repo_id = ? ORDER BY id DESC LIMIT ?`)
 	rows, err := s.st.DB.QueryContext(ctx, q, repoID, limit)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (s *Service) ListPublic(ctx context.Context, limit int) ([]*domain.Activity
 	if limit <= 0 || limit > 100 {
 		limit = 30
 	}
-	q := s.st.Rebind(`SELECT id, actor_id, verb, object_type, object_id, repo_id, created_at FROM activities WHERE repo_id IS NOT NULL ORDER BY id DESC LIMIT ?`)
+	q := s.st.Rebind(`SELECT ` + activityColumns + ` FROM activities WHERE repo_id IS NOT NULL ORDER BY id DESC LIMIT ?`)
 	rows, err := s.st.DB.QueryContext(ctx, q, limit)
 	if err != nil {
 		return nil, err
@@ -69,11 +69,13 @@ func (s *Service) ListPublic(ctx context.Context, limit int) ([]*domain.Activity
 	return scan(rows)
 }
 
+const activityColumns = `id, actor_id, verb, object_type, object_id, repo_id, repo_name, summary, created_at`
+
 func scan(rows *sql.Rows) ([]*domain.Activity, error) {
 	var out []*domain.Activity
 	for rows.Next() {
 		var a domain.Activity
-		if err := rows.Scan(&a.ID, &a.ActorID, &a.Verb, &a.ObjectType, &a.ObjectID, &a.RepoID, &a.CreatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.ActorID, &a.Verb, &a.ObjectType, &a.ObjectID, &a.RepoID, &a.RepoName, &a.Summary, &a.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &a)

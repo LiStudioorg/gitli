@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -47,8 +48,22 @@ func ResolveGitPath(bin string) (string, error) {
 	return resolved, nil
 }
 
+// termuxGitCandidates lists the well-known Git locations shipped by Termux.
+// Android's seccomp policy rejects faccessat2, which the Go runtime uses inside
+// os/exec.LookPath, so we never call LookPath on Android.
+var termuxGitCandidates = []string{
+	"/data/data/com.termux/files/usr/bin/git",
+	"/data/data/com.termux/files/usr/local/bin/git",
+}
+
 func resolveOnce(bin string) (string, error) {
 	if bin == "" {
+		if runtime.GOOS == "android" || isTermux() {
+			if p, ok := findTermuxGit(); ok {
+				return p, nil
+			}
+			return "", fmt.Errorf("gitcmd: 未能自动定位 git。Android/Termux 下请在 config.toml 中显式设置 [git] bin，例如：%s（先执行 pkg install git）", termuxGitCandidates[0])
+		}
 		p, err := exec.LookPath("git")
 		if err != nil {
 			return "", fmt.Errorf("gitcmd: git not found in PATH: %w", err)
@@ -70,6 +85,27 @@ func resolveOnce(bin string) (string, error) {
 		return bin, nil
 	}
 	return abs, nil
+}
+
+// isTermux reports whether we are running inside Termux regardless of GOOS,
+// which covers binaries cross-compiled for linux and executed on Android.
+func isTermux() bool {
+	if _, err := os.Stat("/data/data/com.termux"); err == nil {
+		return true
+	}
+	if p := os.Getenv("PREFIX"); strings.HasPrefix(p, "/data/data/com.termux/") {
+		return true
+	}
+	return false
+}
+
+func findTermuxGit() (string, bool) {
+	for _, p := range termuxGitCandidates {
+		if info, err := os.Stat(p); err == nil && !info.IsDir() && info.Mode().Perm()&0o111 != 0 {
+			return p, true
+		}
+	}
+	return "", false
 }
 
 // Configure resolves the git binary, checks its version and returns a Runner.

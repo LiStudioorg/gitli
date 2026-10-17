@@ -5,11 +5,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 )
+
+// emptySHA is the all-zero object id git uses for deletions.
+const emptySHA = "0000000000000000000000000000000000000000"
 
 // RunHook executes a server-side git hook. It reads the hook's stdin (the
 // ref-update lines) and enforces repository protections.
@@ -122,6 +127,7 @@ func (a *App) runPostReceive(ctx context.Context, owner, repoName string) error 
 		return nil
 	}
 	repoPath := a.Deps.FS.Path(owner, repoName)
+	a.recordPushActivity(ctx, rp, owner, repoName, repoPath, updates)
 	for _, u := range updates {
 		if u.IsDelete() {
 			continue
@@ -132,4 +138,74 @@ func (a *App) runPostReceive(ctx context.Context, owner, repoName string) error 
 		}
 	}
 	return nil
+}
+
+// recordPushActivity writes one timeline entry per pushed branch or tag.
+func (a *App) recordPushActivity(ctx context.Context, rp *domain.Repo, owner, repoName, repoPath string, updates []git.RefUpdate) {
+	if a.Deps == nil || a.Deps.Activities == nil {
+		return
+	}
+	actorName := os.Getenv("GITLI_HOOK_ACTOR")
+	actorID := int64(0)
+	if u, err := a.Deps.Users.ByUsername(ctx, actorName); err == nil {
+		actorID = u.ID
+	}
+	repoID := rp.ID
+	fullName := owner + "/" + repoName
+	for _, u := range updates {
+		if u.IsDelete() || u.New == emptySHA {
+			continue
+		}
+		if strings.HasPrefix(u.Ref, "refs/tags/") {
+			if actorID == 0 {
+				continue
+			}
+			_ = a.Deps.Activities.Record(ctx, &domain.Activity{
+				ActorID:    actorID,
+				Verb:       "published_tag",
+				ObjectType: "tag",
+				ObjectID:   repoID,
+				RepoID:     &repoID,
+				RepoName:   fullName,
+				Summary:    strings.TrimPrefix(u.Ref, "refs/tags/"),
+			})
+			continue
+		}
+		if actorID == 0 {
+			continue
+		}
+		summary := u.New[:8]
+		count := 1
+		if u.Old != "" && u.Old != emptySHA {
+			if out, err := a.Deps.GitCmd.Run(ctx, repoPath, "rev-list", "--count", u.Old+".."+u.New); err == nil {
+				if n, err := strconv.Atoi(strings.TrimSpace(out)); err == nil && n > 0 {
+					count = n
+				}
+			}
+		}
+		if out, err := a.Deps.GitCmd.Run(ctx, repoPath, "log", "-1", "--format=%s", u.New); err == nil {
+			if msg := strings.TrimSpace(out); msg != "" {
+				summary += " " + truncateSummary(msg, 80)
+			}
+		}
+		if count > 1 {
+			summary += fmt.Sprintf(" (%d commits)", count)
+		}
+		_ = a.Deps.Activities.Record(ctx, &domain.Activity{
+			ActorID:    actorID,
+			Verb:       "pushed",
+			ObjectType: "branch",
+			ObjectID:   repoID,
+			RepoID:     &repoID,
+			RepoName:   fullName,
+			Summary:    summary,
+		})
+	}
+}
+
+func truncateSummary(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n-1] + "…"
 }

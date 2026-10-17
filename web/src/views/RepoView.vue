@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
+import RepoCodeBrowser from '../components/repo/RepoCodeBrowser.vue'
 import DeployKeys from '../components/repo/DeployKeys.vue'
 import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
@@ -818,60 +819,21 @@ onUnmounted(() => {
     </header>
 
     <div class="repo-meta">
-      <span>225 提交</span>
       <span>{{ branches.length }} 分支</span>
-      <span>7 Git 标签</span>
-      <input class="code-search" type="search" placeholder="搜索代码..." />
     </div>
 
     <div v-if="activeTab === '代码'" class="repo-body">
       <main class="main-col">
-        <div class="toolbar">
-          <select v-model="selectedBranch" class="branch-select">
-            <option v-for="b in branches.length ? branches : [selectedBranch]" :key="b" :value="b">{{ b }}</option>
-          </select>
-          <button class="chip">转到文件</button>
-          <button class="chip primary">添加文件</button>
+        <div class="toolbar-actions">
           <CloneDropdown :owner="owner" :repo="name" :clone-info="cloneInfo" />
         </div>
 
-        <ul class="file-list">
-          <li class="row">
-            <span class="fi folder">📁</span>
-            <span class="fname">internal</span>
-            <span class="msg">refactor: structure</span>
-            <span class="when">1 小时前</span>
-          </li>
-          <li class="row">
-            <span class="fi folder">📁</span>
-            <span class="fname">web</span>
-            <span class="msg">feat: landing page</span>
-            <span class="when">3 小时前</span>
-          </li>
-          <li class="row">
-            <span class="fi file">📄</span>
-            <span class="fname">.gitignore</span>
-            <span class="msg">chore: init</span>
-            <span class="when">上周</span>
-          </li>
-          <li class="row">
-            <span class="fi file">📄</span>
-            <span class="fname">main.go</span>
-            <span class="msg">feat: entrypoint</span>
-            <span class="when">上周</span>
-          </li>
-          <li class="row">
-            <span class="fi file">📄</span>
-            <span class="fname">README.md</span>
-            <span class="msg">docs: readme</span>
-            <span class="when">上周</span>
-          </li>
-        </ul>
-
-        <section class="readme">
-          <h3>README.md</h3>
-          <p>本仓库为镜像仓库，内容随上游同步更新。</p>
-        </section>
+        <RepoCodeBrowser
+          v-model:branch="selectedBranch"
+          :owner="owner"
+          :repo="name"
+          :branches="branches"
+        />
       </main>
 
       <aside class="side-col">
@@ -1421,6 +1383,11 @@ onUnmounted(() => {
 .when {
   color: var(--muted);
   font-size: 0.82rem;
+}
+.toolbar-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
 }
 .readme {
   border: 1px solid var(--border);

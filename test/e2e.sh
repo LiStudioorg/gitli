@@ -87,6 +87,17 @@ post(){ cj -X POST "$1" -H 'Content-Type: application/json' -H "X-CSRF-Token: $C
 patch(){ cj -X PATCH "$1" -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -d "$2"; }
 del(){ cj -X DELETE "$1" -H "X-CSRF-Token: $CSRF"; }
 
+# ---------------------------------------------------------------- 0. 初始化
+section "0. 首次启动：初始化向导"
+cj "$BASE/api/v1/setup/status" | grep -q '"initialized":false' && ok "新实例未初始化" || no "新实例未初始化"
+cj -X POST "$BASE/api/v1/setup" -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" \
+  -d '{"site_name":"gitli","username":"root","email":"root@example.com","password":"rootpass123"}' | grep -q '"username":"root"' \
+  && ok "创建初始管理员" || no "创建初始管理员"
+cj -X POST "$BASE/api/v1/setup" -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" \
+  -d '{"username":"root2","email":"r2@example.com","password":"rootpass123"}' -o /dev/null -w '%{http_code}' | grep -q '409' \
+  && ok "初始化接口锁定（409）" || no "初始化接口锁定"
+cj "$BASE/api/v1/setup/status" | grep -q '"initialized":true' && ok "初始化状态已更新" || no "初始化状态"
+
 # ---------------------------------------------------------------- 1. 用户
 section "1. 用户：注册 / 登录 / 改名 / 301"
 post "$BASE/api/v1/auth/register" '{"username":"alice","email":"alice@example.com","password":"supersecret123"}' | grep -q '"username":"alice"' && ok "注册" || no "注册"
@@ -211,9 +222,18 @@ fi
 # ---------------------------------------------------------------- 8. Runner
 section "8. Runner：工作流触发 / 执行 / 日志回传"
 if [ -x "$RUNNER_BIN" ]; then
+  CJ="$WORK/cj-root"
+  CSRF=$(curl -s -c "$CJ" "$BASE/api/v1/version" -D - -o /dev/null | grep -i 'set-cookie: gitli_csrf' | sed 's/.*gitli_csrf=\([^;]*\).*/\1/')
+  post "$BASE/api/v1/auth/login" '{"username":"root","password":"rootpass123"}' >/dev/null
   RRES=$(post "$BASE/api/v1/admin/runners" '{"name":"e2e-runner","labels":["linux"]}')
   RID=$(echo "$RRES" | python3 -c "import sys,json;print(json.load(sys.stdin).get('runner_id',''))")
   RTOKEN=$(echo "$RRES" | python3 -c "import sys,json;print(json.load(sys.stdin).get('token',''))")
+  # Switch back to the non-admin user that owns the workflow repository.
+  CJ="$WORK/cj-alice"
+  CSRF=$(curl -s -c "$CJ" "$BASE/api/v1/version" -D - -o /dev/null | grep -i 'set-cookie: gitli_csrf' | sed 's/.*gitli_csrf=\([^;]*\).*/\1/')
+  ACODE=$(totp "$SECRET" 2>/dev/null)
+  LRES=$(post "$BASE/api/v1/auth/login" "{\"username\":\"alice2\",\"password\":\"supersecret123\",\"totp_code\":\"$ACODE\"}")
+  echo "$LRES" | grep -q '"username":"alice2"' && ok "切回 alice2" || no "切回 alice2 ($LRES)"
   if [ -n "$RID" ] && [ -n "$RTOKEN" ]; then
     ok "创建 Runner ($RID)"
     cat > "$WORK/runner.toml" <<EOF
@@ -238,7 +258,8 @@ enable = true
 dir = "$WORK/runner-cache"
 EOF
     # 推入带 .gitli/workflows 的仓库
-    post "$BASE/api/v1/repos" '{"name":"wfrepo","default_branch":"main"}' >/dev/null
+    WRES=$(post "$BASE/api/v1/repos" '{"name":"wfrepo","default_branch":"main"}')
+    echo "$WRES" | grep -q '"Name":"wfrepo"' && ok "创建 wfrepo" || no "创建 wfrepo ($WRES)"
     WF="$WORK/wf"; mkdir -p "$WF/.gitli/workflows"; cd "$WF"
     git init -q -b main
     printf 'name: ci\non: [push]\njobs:\n  build:\n    steps:\n      - name: hello\n        run: echo "E2E_WORKFLOW_OK"\n' > .gitli/workflows/ci.yml

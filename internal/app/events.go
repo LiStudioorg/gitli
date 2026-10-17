@@ -20,7 +20,11 @@ type Event struct {
 // DispatchRepoEvent delivers a repository event to all active webhooks whose
 // event filter matches. Delivery is best-effort and never blocks the caller.
 func (a *App) DispatchRepoEvent(ctx context.Context, ev Event) {
-	if a.Deps == nil || a.Deps.Webhooks == nil {
+	if a.Deps == nil {
+		return
+	}
+	a.recordEventActivity(ctx, ev)
+	if a.Deps.Webhooks == nil {
 		return
 	}
 	hooks, err := a.Deps.Webhooks.ListForRepo(ctx, ev.RepoID)
@@ -48,6 +52,86 @@ func (a *App) DispatchRepoEvent(ctx context.Context, ev Event) {
 		} else {
 			a.deliverWebhook(ctx, hook, ev.Action, body)
 		}
+	}
+}
+
+// recordEventActivity mirrors repository events into the activity timeline so
+// the dashboard feed reflects issues, pull requests and discussions.
+func (a *App) recordEventActivity(ctx context.Context, ev Event) {
+	if a.Deps.Activities == nil || ev.ActorID == 0 || ev.RepoID == 0 {
+		return
+	}
+	verb, ok := activityVerb(ev.Action, ev.Payload)
+	if !ok {
+		return
+	}
+	repoID := ev.RepoID
+	fullName := ""
+	if a.Deps.Repos != nil {
+		if rp, err := a.Deps.Repos.ByID(ctx, ev.RepoID); err == nil && rp != nil {
+			fullName = rp.Name
+			if a.Deps.Users != nil && rp.OwnerType == domain.OwnerUser {
+				if owner, err := a.Deps.Users.ByID(ctx, rp.OwnerID); err == nil && owner != nil {
+					fullName = owner.Username + "/" + rp.Name
+				}
+			}
+		}
+	}
+	objectID := ev.RepoID
+	if v, ok := ev.Payload["number"].(int); ok {
+		objectID = int64(v)
+	} else if v, ok := ev.Payload["id"].(int64); ok {
+		objectID = v
+	}
+	summary, _ := ev.Payload["title"].(string)
+	if summary == "" {
+		summary, _ = ev.Payload["tag"].(string)
+	}
+	_ = a.Deps.Activities.Record(ctx, &domain.Activity{
+		ActorID:    ev.ActorID,
+		Verb:       verb,
+		ObjectType: ev.Action,
+		ObjectID:   objectID,
+		RepoID:     &repoID,
+		RepoName:   fullName,
+		Summary:    summary,
+	})
+}
+
+// activityVerb maps an event action plus payload action to a timeline verb.
+func activityVerb(action string, payload map[string]any) (string, bool) {
+	sub, _ := payload["action"].(string)
+	switch action {
+	case "issues":
+		switch sub {
+		case "opened", "created":
+			return "opened_issue", true
+		case "closed":
+			return "closed_issue", true
+		default:
+			return "", false
+		}
+	case "pull_request":
+		switch sub {
+		case "opened", "created":
+			return "opened_pull", true
+		case "closed", "merged":
+			if merged, _ := payload["merged"].(bool); merged {
+				return "merged_pull", true
+			}
+			return "closed_pull", true
+		default:
+			return "", false
+		}
+	case "release":
+		if sub == "published" || sub == "created" {
+			return "published_release", true
+		}
+		return "", false
+	case "discussion":
+		return "started_discussion", sub == "created"
+	default:
+		return "", false
 	}
 }
 

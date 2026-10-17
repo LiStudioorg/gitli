@@ -43,10 +43,10 @@ func (a *App) Migrate(ctx context.Context) error {
 
 // Serve starts all HTTP and (optionally) SSH listeners, blocking until cancelled.
 func (a *App) Serve(ctx context.Context) error {
-	if a.Deps != nil && a.Deps.RBAC != nil {
-		if err := a.Deps.RBAC.Seed(ctx); err != nil {
-			return fmt.Errorf("seed rbac: %w", err)
-		}
+	// Fresh installs must have their schema before any seed or query runs.
+	if err := a.Migrate(ctx); err != nil {
+		a.Log.Error("database migration failed, refusing to start", "error", err)
+		return fmt.Errorf("migrate: %w", err)
 	}
 	handler := httptransport.NewServer(a.Deps).Router()
 

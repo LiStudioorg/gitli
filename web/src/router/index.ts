@@ -1,11 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import api from '../api/client'
 import { useAuthStore } from '../stores'
 
 const routes = [
   { path: '/', name: 'landing', component: () => import('../views/LandingView.vue') },
+  { path: '/setup', name: 'setup', component: () => import('../views/SetupView.vue'), meta: { public: true } },
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
   { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue'), meta: { guestOnly: true } },
   { path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { requiresAuth: true } },
+  { path: '/new/repo', name: 'new-repo', component: () => import('../views/NewRepoView.vue'), meta: { requiresAuth: true } },
+  { path: '/new/org', name: 'new-org', component: () => import('../views/NewOrgView.vue'), meta: { requiresAuth: true } },
+  { path: '/new/import', name: 'new-import', component: () => import('../views/ImportRepoView.vue'), meta: { requiresAuth: true } },
   { path: '/explore', name: 'explore', component: () => import('../views/ExploreView.vue'), meta: { requiresAuth: true } },
   { path: '/search', name: 'search', component: () => import('../views/SearchView.vue'), meta: { requiresAuth: true } },
   { path: '/settings', name: 'settings', component: () => import('../views/UserSettingsView.vue'), meta: { requiresAuth: true } },
@@ -22,6 +27,15 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (to.meta.public) return true
+  try {
+    const { data } = await api.get('/version')
+    if (data?.initialized === false) {
+      return { path: '/setup' }
+    }
+  } catch {
+    return true
+  }
   const auth = useAuthStore()
   if (!auth.loaded) {
     await auth.fetchMe()

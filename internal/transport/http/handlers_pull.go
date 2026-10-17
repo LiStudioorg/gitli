@@ -109,6 +109,9 @@ func (s *Server) handleMergePull(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auditAction(r, u.ID, "pull.merge", "success")
+	s.dispatch(r, "pull_request", rp.ID, u.ID, map[string]any{
+		"action": "merged", "number": p.Number, "title": p.Title, "pull_id": p.ID, "merged": true,
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"status": "merged"})
 }
 

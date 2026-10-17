@@ -316,3 +316,56 @@ func validateRepoName(name string) error {
 	}
 	return nil
 }
+
+// DashboardRepo is a repository summary enriched with ownership metadata for
+// the dashboard sidebar.
+type DashboardRepo struct {
+	*domain.Repo
+	OwnerName string `json:"owner_name"`
+	Relation  string `json:"relation"` // owned | collaborated
+}
+
+// ListAccessible returns repositories the user owns or collaborates on,
+// annotated with the owner name and relation. Deleted repos are excluded.
+func (s *Service) ListAccessible(ctx context.Context, userID int64, limit int) ([]*DashboardRepo, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 100
+	}
+	q := s.st.Rebind(`SELECT ` + repoColumns + ` FROM repos
+		WHERE deleted_at IS NULL AND (owner_id = ? OR id IN (SELECT repo_id FROM collaborators WHERE user_id = ?))
+		ORDER BY updated_at DESC LIMIT ?`)
+	rows, err := s.st.DB.QueryContext(ctx, q, userID, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	repos, err := s.scanMany(rows)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*DashboardRepo, 0, len(repos))
+	names := make(map[int64]string)
+	for _, rp := range repos {
+		ownerID := rp.OwnerID
+		ownerName, ok := names[ownerID]
+		if !ok {
+			ownerName = s.ownerName(ctx, ownerID)
+			names[ownerID] = ownerName
+		}
+		relation := "collaborated"
+		if ownerID == userID {
+			relation = "owned"
+		}
+		out = append(out, &DashboardRepo{Repo: rp, OwnerName: ownerName, Relation: relation})
+	}
+	return out, nil
+}
+
+func (s *Service) ownerName(ctx context.Context, ownerID int64) string {
+	var name string
+	q := s.st.Rebind(`SELECT username FROM users WHERE id = ?`)
+	if err := s.st.DB.QueryRowContext(ctx, q, ownerID).Scan(&name); err != nil {
+		return ""
+	}
+	return name
+}

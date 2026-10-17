@@ -13,7 +13,7 @@ func (s *Server) handleMyRepos(w http.ResponseWriter, r *http.Request) {
 	if u == nil {
 		return
 	}
-	repos, err := s.deps.Repos.ListByOwner(r.Context(), u.ID, 50, 0)
+	repos, err := s.deps.Repos.ListAccessible(r.Context(), u.ID, 100)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

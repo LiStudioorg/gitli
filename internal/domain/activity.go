@@ -45,13 +45,16 @@ type Notification struct {
 
 // Activity is a timeline entry.
 type Activity struct {
-	ID         int64
-	ActorID    int64
-	Verb       string
-	ObjectType string
-	ObjectID   int64
-	RepoID     *int64
-	CreatedAt  time.Time
+	ID         int64     `json:"id"`
+	ActorID    int64     `json:"actor_id"`
+	Verb       string    `json:"verb"`
+	ObjectType string    `json:"object_type"`
+	ObjectID   int64     `json:"object_id"`
+	RepoID     *int64    `json:"repo_id,omitempty"`
+	RepoName   string    `json:"repo_name,omitempty"`
+	Summary    string    `json:"summary,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	ActorName  string    `json:"actor_name,omitempty"`
 }
 
 // AuditLog records a security-relevant action.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import api from '../api/client'
 
@@ -39,7 +39,22 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'trending', label: '趋势' },
   { key: 'topics', label: '话题' },
 ]
-const activeTab = ref<Tab>('repos')
+const route = useRoute()
+const router = useRouter()
+const validTabs: Tab[] = ['repos', 'trending', 'topics']
+const initialTab = validTabs.includes(route.query.tab as Tab) ? (route.query.tab as Tab) : 'repos'
+const activeTab = ref<Tab>(initialTab)
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (validTabs.includes(tab as Tab) && activeTab.value !== tab) {
+      activeTab.value = tab as Tab
+      if (activeTab.value === 'trending' && !trending.value.length && !trendingLoading.value) loadTrending()
+      if (activeTab.value === 'topics' && !topics.value.length && !topicsLoading.value) loadTopics()
+    }
+  },
+)
 
 const repos = ref<ExploreRepo[]>([])
 const query = ref('')
@@ -146,6 +161,7 @@ async function selectTopic(topic: string) {
 
 function selectTab(tab: Tab) {
   activeTab.value = tab
+  router.replace({ query: { ...route.query, tab } })
   if (tab === 'trending' && !trending.value.length && !trendingLoading.value) loadTrending()
   if (tab === 'topics' && !topics.value.length && !topicsLoading.value) loadTopics()
 }

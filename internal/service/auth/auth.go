@@ -33,6 +33,7 @@ var (
 	ErrInvalidTOTP        = errors.New("auth: invalid totp code")
 	ErrUserExists         = errors.New("auth: user already exists")
 	ErrWeakPassword       = errors.New("auth: password too short")
+	ErrAlreadySetUp       = errors.New("auth: instance already initialized")
 )
 
 // Service coordinates authentication.
@@ -553,4 +554,46 @@ func randomBytes(n int) ([]byte, error) {
 		return nil, err
 	}
 	return buf, nil
+}
+
+// IsInitialized reports whether at least one user account exists. An empty
+// database means the instance still needs its first administrator.
+func (s *Service) IsInitialized(ctx context.Context) (bool, error) {
+	first, err := s.isFirstUser(ctx)
+	if err != nil {
+		return false, err
+	}
+	return !first, nil
+}
+
+// SetupParams describes the first-run administrator creation request.
+type SetupParams struct {
+	Username string
+	Email    string
+	Password string
+}
+
+// Setup creates the initial administrator account. It fails with ErrAlreadySetUp
+// when any user already exists so the endpoint cannot be reused.
+func (s *Service) Setup(ctx context.Context, p SetupParams) (*domain.User, error) {
+	if len(p.Password) < 8 {
+		return nil, ErrWeakPassword
+	}
+	first, err := s.isFirstUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !first {
+		return nil, ErrAlreadySetUp
+	}
+	hash, err := s.hasher.Hash(p.Password)
+	if err != nil {
+		return nil, err
+	}
+	return s.users.Create(ctx, user.CreateParams{
+		Username:     p.Username,
+		Email:        p.Email,
+		PasswordHash: hash,
+		IsAdmin:      true,
+	})
 }

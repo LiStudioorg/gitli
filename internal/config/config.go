@@ -149,6 +149,7 @@ type ServerConfig struct {
 	SSHListen       []string `toml:"ssh_listen"`
 	SSHExternal     string   `toml:"ssh_external"`
 	AllowRoot       bool     `toml:"allow_root"`
+	EnablePprof     bool     `toml:"pprof"`
 
 	// Deprecated single-address fields, accepted for backward compatibility.
 	HTTP        string `toml:"http"`

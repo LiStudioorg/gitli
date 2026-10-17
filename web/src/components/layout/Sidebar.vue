@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore, useRepoStore, useUiStore } from '../../stores'
 
 const auth = useAuthStore()
 const repos = useRepoStore()
 const ui = useUiStore()
+const router = useRouter()
+
+function go(path: string) {
+  ui.sidebarOpen = false
+  router.push(path)
+}
 </script>
 
 <template>
@@ -15,9 +21,9 @@ const ui = useUiStore()
         <RouterLink to="/dashboard">首页</RouterLink>
         <RouterLink to="/explore">探索</RouterLink>
         <RouterLink to="/explore">仓库</RouterLink>
-        <RouterLink to="/explore">组织</RouterLink>
-        <RouterLink to="/explore">工单</RouterLink>
-        <RouterLink to="/explore">合并请求</RouterLink>
+        <RouterLink to="/explore?tab=topics">话题</RouterLink>
+        <RouterLink to="/explore?tab=trending">趋势</RouterLink>
+        <RouterLink to="/search">搜索</RouterLink>
         <RouterLink to="/settings">设置</RouterLink>
         <RouterLink v-if="auth.isAdmin" to="/admin">管理面板</RouterLink>
       </nav>
@@ -37,9 +43,9 @@ const ui = useUiStore()
     <section class="group">
       <h4>快捷操作</h4>
       <div class="quick">
-        <button class="quick-btn">＋ 新建仓库</button>
-        <button class="quick-btn">＋ 新建组织</button>
-        <button class="quick-btn">＋ 导入仓库</button>
+        <button class="quick-btn" type="button" @click="go('/new/repo')">＋ 新建仓库</button>
+        <button class="quick-btn" type="button" @click="go('/new/org')">＋ 新建组织</button>
+        <button class="quick-btn" type="button" @click="go('/new/import')">＋ 导入仓库</button>
       </div>
     </section>
   </aside>

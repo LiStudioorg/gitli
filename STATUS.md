@@ -1,15 +1,32 @@
 # gitli 开发状态（STATUS）
 
-> **上下文丢失时的恢复入口**：先读本文件 + `ROADMAP.md`，再继续阶段 A 的 E2E 测试。
+> **上下文丢失时的恢复入口**：先读本文件 + `ROADMAP.md`，再继续阶段 B 的稳定化工作。
 
 ## 当前阶段
 
-**阶段 A：功能冻结与 E2E 测试**（目标版本 `v0.2.0-beta`）
+**阶段 B：稳定化（进行中）**
 
-- 所有计划功能（批次 1-5 + Runner + CLI + 审计）**已开发完毕**。
-- 新功能已冻结，只做 E2E 验证与 Bug 修复。
-- 当前 HEAD：`c66583b`（main，已推送）
-- CI：主 gitli `success`；gitli-runner `success`。
+- A 阶段已完成：`v0.2.0-beta` 已发布，E2E `PASS=40 FAIL=0 SKIP=2`。
+- 本轮完成 B1 前置与 Android/首次使用体验修复（见下方「B 阶段进展」）。
+- 验收命令全部通过：`gofmt` / `go vet` / `go test ./...` / `golangci-lint` / 静态构建 / E2E。
+
+## B 阶段进展
+
+### 已完成
+- **自动迁移**：`Serve` 启动即迁移（含 RBAC seed），失败即退出；新增 `TestServeAutoMigratesFreshDatabase`。
+- **首次初始化向导**：`/api/v1/setup` + `/api/v1/setup/status`，未初始化时 API 返回 `412 setup_required`；首个账号自动成为管理员；接口单次有效（409）。
+- **Android/Termux**：Git 路径解析绕过 `os/exec.LookPath`（避免 `faccessat2` 触发 SIGSYS），自动探测 Termux 路径，缺失时给出中文提示。
+- **CLI**：`server` 作为 `serve` 别名；裸执行 `gitli` / `gitli --config x.toml` 直接启动服务。
+- **活动流**：写入 push（含 commit 摘要与提交数）、tag、release、issue、PR、讨论；`0023_activity_summary` 迁移新增 `summary` / `repo_name`。
+- **Dashboard**：两栏布局（动态流 + 仓库卡片/贡献热力图），活动图标与相对时间，仓库 Tabs 与即时过滤。
+- **RepoView**：接入真实文件树、分支切换、README Markdown 渲染、最新提交；Clone 弹窗含 HTTPS/SSH 切换与复制。
+- **交互修复**：新建仓库/组织/导入页面与路由；TopNav `+` 菜单与头像菜单；通知 401（未登录时不再拉取）。
+- **监控**：`/metrics` 暴露 `go_goroutines`、内存指标；`[server] pprof` 可选启用；`/healthz` 校验数据库。
+- **工具**：新增 `test/stress.sh`（并发 clone/push + API 压测，内置 RSS/Goroutine 阈值）。
+
+### 待办
+- B2 安全审计（govulncheck、SQL/exec 扫描、敏感 API RBAC+CSRF 复核）。
+- B4 备份恢复演练；B5 文档（`docs/ADMIN.md`、`docs/USER.md`、README）；B6 `v0.9.0-rc1`。
 
 ## 已完成功能总览
 

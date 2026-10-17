@@ -51,7 +51,7 @@ func (s *Server) handleGitService(w http.ResponseWriter, r *http.Request, servic
 	if service == git.ServiceReceivePack {
 		need = domain.PermWrite
 	}
-	rp, _, ok := s.gitRepoAccess(w, r, service, need)
+	rp, gu, ok := s.gitRepoAccess(w, r, service, need)
 	if !ok {
 		return
 	}
@@ -72,7 +72,15 @@ func (s *Server) handleGitService(w http.ResponseWriter, r *http.Request, servic
 	}
 	w.Header().Set("Content-Type", git.ResultContentType(service))
 	w.Header().Set("Cache-Control", "no-cache")
-	if err := s.deps.Git.ServeSmartHTTP(r.Context(), path, service, git.ResultContentType(service), body, w); err != nil {
+	extraEnv := map[string]string{}
+	if gu != nil {
+		extraEnv["GITLI_HOOK_ACTOR"] = gu.Username
+		if gu.IsAdmin {
+			extraEnv["GITLI_HOOK_IS_ADMIN"] = "1"
+		}
+	}
+	_ = rp
+	if err := s.deps.Git.ServeSmartHTTPWithEnv(r.Context(), path, service, git.ResultContentType(service), body, w, extraEnv); err != nil {
 		s.deps.Log.Warn("git service failed", "service", service, "error", err)
 	}
 }

@@ -12,10 +12,23 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
-const canSubmit = computed(() => username.value && email.value && password.value.length >= 12)
+const disabledReason = computed(() => {
+  if (!username.value) return '请填写用户名'
+  if (!email.value) return '请填写邮箱'
+  if (password.value.length < 8) return '密码至少 8 位'
+  return ''
+})
 
 async function submit() {
   error.value = ''
+  if (!username.value || !email.value) {
+    error.value = '请填写用户名和邮箱'
+    return
+  }
+  if (password.value.length < 8) {
+    error.value = '密码至少 8 位'
+    return
+  }
   loading.value = true
   try {
     const { default: api } = await import('../api/client')
@@ -42,9 +55,10 @@ async function submit() {
       <form @submit.prevent="submit">
         <input v-model="username" placeholder="用户名" autocomplete="username" />
         <input v-model="email" type="email" placeholder="邮箱" autocomplete="email" />
-        <input v-model="password" type="password" placeholder="密码（至少 12 位）" autocomplete="new-password" />
-        <button type="submit" :disabled="!canSubmit || loading">注册</button>
+        <input v-model="password" type="password" placeholder="密码（至少 8 位）" autocomplete="new-password" />
+        <button type="submit" :disabled="loading">{{ loading ? '注册中…' : '注册' }}</button>
       </form>
+      <p v-if="disabledReason && !error" class="hint">{{ disabledReason }}</p>
       <p v-if="error" class="error">{{ error }}</p>
     </main>
   </div>
@@ -71,5 +85,9 @@ button {
 }
 .error {
   color: #d1242f;
+}
+.hint {
+  color: var(--muted, #57606a);
+  font-size: 0.85rem;
 }
 </style>

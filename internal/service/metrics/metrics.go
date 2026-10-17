@@ -4,6 +4,7 @@ package metrics
 
 import (
 	"fmt"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -68,6 +69,12 @@ func (r *Registry) Prometheus() string {
 		metric := promName(name)
 		fmt.Fprintf(&b, "# TYPE %s counter\n%s %d\n", metric, metric, snap[name])
 	}
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	fmt.Fprintf(&b, "# TYPE go_goroutines gauge\ngo_goroutines %d\n", runtime.NumGoroutine())
+	fmt.Fprintf(&b, "# TYPE go_memstats_alloc_bytes gauge\ngo_memstats_alloc_bytes %d\n", ms.Alloc)
+	fmt.Fprintf(&b, "# TYPE go_memstats_sys_bytes gauge\ngo_memstats_sys_bytes %d\n", ms.Sys)
+	fmt.Fprintf(&b, "# TYPE go_memstats_heap_inuse_bytes gauge\ngo_memstats_heap_inuse_bytes %d\n", ms.HeapInuse)
 	fmt.Fprintf(&b, "# TYPE gitli_uptime_seconds gauge\ngitli_uptime_seconds %f\n", r.Uptime().Seconds())
 	return b.String()
 }

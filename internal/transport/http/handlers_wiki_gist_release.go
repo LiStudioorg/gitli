@@ -256,6 +256,9 @@ func (s *Server) handleCreateRelease(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auditAction(r, u.ID, "release.create", "success")
+	s.dispatch(r, "release", rp.ID, u.ID, map[string]any{
+		"action": "published", "tag": req.Tag, "title": req.Name, "release_id": rel.ID,
+	})
 	writeJSON(w, http.StatusCreated, rel)
 }
 

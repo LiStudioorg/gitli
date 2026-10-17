@@ -20,16 +20,24 @@ export interface Repo {
   description: string
   default_branch: string
   is_private: boolean
+  is_fork?: boolean
   archived: boolean
   archived_at: string | null
   updated_at: string
+  owner_name?: string
+  relation?: 'owned' | 'collaborated'
 }
 
 export interface Activity {
   id: number
+  actor_id: number
   verb: string
   object_type: string
   object_id: number
+  repo_id?: number | null
+  repo_name?: string
+  summary?: string
+  actor_name?: string
   created_at: string
 }
 
@@ -200,6 +208,11 @@ export const useRepoStore = defineStore('repos', {
         params: { page: 1, per_page: 20 },
       })
       this.activities = data ?? []
+    },
+    async removeRepo(repo: Repo) {
+      const owner = repo.owner_name || ''
+      await api.delete(`/repos/${owner}/${repo.name}`)
+      this.myRepos = this.myRepos.filter((r) => r.id !== repo.id)
     },
   },
 })

@@ -31,7 +31,9 @@ const actions = computed<Action[]>(() => {
     { id: 'dashboard', label: '前往控制台', hint: 'Dashboard', run: () => router.push('/dashboard') },
     { id: 'explore', label: '前往探索', hint: 'Explore', run: () => router.push('/explore') },
     { id: 'settings', label: '前往设置', hint: 'Settings', run: () => router.push('/settings') },
-    { id: 'new-repo', label: '新建仓库', hint: 'New Repo', run: () => router.push('/dashboard') },
+    { id: 'new-repo', label: '新建仓库', hint: 'New Repo', run: () => router.push('/new/repo') },
+    { id: 'new-org', label: '新建组织', hint: 'New Org', run: () => router.push('/new/org') },
+    { id: 'new-import', label: '导入仓库', hint: 'Import Repo', run: () => router.push('/new/import') },
     { id: 'theme', label: '切换主题', hint: 'Toggle theme', run: () => cycleTheme() },
   ]
   if (auth.isLoggedIn) {

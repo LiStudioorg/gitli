@@ -26,6 +26,12 @@ func IsSmartService(name string) bool {
 // client without buffering. contentType should be "application/x-git-*-advertisement"
 // for the info/refs phase or "application/x-git-*-result" for the service phase.
 func (s *Service) ServeSmartHTTP(ctx context.Context, repoPath, service, contentType string, r io.Reader, w io.Writer) error {
+	return s.ServeSmartHTTPWithEnv(ctx, repoPath, service, contentType, r, w, nil)
+}
+
+// ServeSmartHTTPWithEnv is ServeSmartHTTP with extra hook environment, such as
+// the authenticated actor used for activity attribution.
+func (s *Service) ServeSmartHTTPWithEnv(ctx context.Context, repoPath, service, contentType string, r io.Reader, w io.Writer, extraEnv map[string]string) error {
 	if !IsSmartService(service) {
 		return fmt.Errorf("git: unsupported service %q", service)
 	}
@@ -37,9 +43,13 @@ func (s *Service) ServeSmartHTTP(ctx context.Context, repoPath, service, content
 		args = append(args, "--advertise-refs")
 	}
 	args = append(args, ".")
-	cmd := exec.CommandContext(ctx, s.runner.Path(), args...)
+	runner := s.runner
+	if len(extraEnv) > 0 {
+		runner = runner.WithEnv(extraEnv)
+	}
+	cmd := exec.CommandContext(ctx, runner.Path(), args...)
 	cmd.Dir = repoPath
-	cmd.Env = s.runner.Env()
+	cmd.Env = runner.Env()
 	cmd.Stdin = r
 	cmd.Stdout = w
 	var errBuf strings.Builder

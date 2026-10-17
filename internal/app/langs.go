@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 )
@@ -34,6 +35,12 @@ func (a *App) RefreshLanguages(ctx context.Context, repoID int64) error {
 	path := a.Deps.FS.Path(owner, rp.Name)
 	detected, err := a.Deps.Git.DetectLanguages(ctx, path, rp.DefaultBranch)
 	if err != nil {
+		// A push to a non-default branch (or a fresh repo) can land before the
+		// default branch exists; treat that as "nothing to detect" rather than
+		// an error so the queue stays clean.
+		if strings.Contains(err.Error(), "Not a valid object name") {
+			return nil
+		}
 		return fmt.Errorf("detect languages for repo %d: %w", repoID, err)
 	}
 	stats := make([]repo.LanguageStat, 0, len(detected))
