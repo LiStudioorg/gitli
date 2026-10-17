@@ -44,7 +44,7 @@
 ### 批次 4：企业集成
 - [x] 4.1 LDAP 登录：`[auth.ldap]` 配置、认证回退、自动创建/关联本地用户（组映射预留）
 - [x] 4.2 SAML 登录：crewjam/saml、SP-initiated（login + ACS 回调）
-- [ ] 4.3 依赖图：解析 go.mod/package.json/pom.xml/requirements.txt、`repo_dependencies`、依赖 Tab
+- [x] 4.3 依赖图：解析 go.mod/package.json/pom.xml/requirements.txt、`repo_dependencies`、post-receive 触发、依赖 API
 - [ ] 4.4 入站邮件（Reply by Email）：IMAP、reply+{token}、评论写入、附件
 
 ### 批次 5：体验提升

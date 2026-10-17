@@ -263,6 +263,8 @@ func (s *Server) Router() http.Handler {
 		rr.Post("/{owner}/{repo}/releases/{tag}/publish", s.handlePublishRelease)
 		rr.Get("/{owner}/{repo}/releases/{tag}/assets", s.handleListReleaseAssets)
 		rr.Get("/{owner}/{repo}/issue-templates", s.handleListIssueTemplates)
+		rr.Get("/{owner}/{repo}/dependencies", s.handleListDependencies)
+		rr.Post("/{owner}/{repo}/dependencies/refresh", s.handleRefreshDependencies)
 		rr.Get("/{owner}/{repo}/pr-template", s.handlePullRequestTemplate)
 		rr.With(middleware.MaxBody(middleware.BodyLimitHuge)).Post("/{owner}/{repo}/releases/{tag}/assets", s.handleUploadReleaseAsset)
 		rr.Get("/{owner}/{repo}/releases/{tag}/assets/{name}", s.handleDownloadReleaseAsset)

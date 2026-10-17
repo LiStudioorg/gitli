@@ -29,6 +29,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/deploykey"
+	"github.com/LiStudioorg/gitli/internal/service/deps"
 	"github.com/LiStudioorg/gitli/internal/service/explore"
 	"github.com/LiStudioorg/gitli/internal/service/follow"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
@@ -205,6 +206,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		OAuth:         oauth.New(st),
 		IPAllow:       ipallow.New(st),
 		SAML:          samlSvc,
+		Deps:          deps.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),
@@ -214,6 +216,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		a.DispatchRepoEvent(ctx, Event{Action: action, RepoID: repoID, ActorID: actorID, Payload: payload})
 	}
 	deps.Notify = a.Notify
+	deps.RefreshDeps = a.RefreshDependencies
 	deps.RequestCodeOwnerReviews = func(ctx context.Context, repoID int64, repoPath, base, head string, pullID int64) []string {
 		owners, _ := a.RequestCodeOwnerReviews(ctx, repoID, repoPath, base, head, pullID)
 		return owners

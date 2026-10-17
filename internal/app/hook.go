@@ -121,11 +121,15 @@ func (a *App) runPostReceive(ctx context.Context, owner, repoName string) error 
 	if err != nil {
 		return nil
 	}
+	repoPath := a.Deps.FS.Path(owner, repoName)
 	for _, u := range updates {
 		if u.IsDelete() {
 			continue
 		}
 		_, _ = a.CreateWorkflowJobs(ctx, rp.ID, u.New, u.Ref)
+		if _, err := a.RefreshDependencies(ctx, rp.ID, repoPath, u.New); err != nil {
+			a.Log.Debug("refresh dependencies failed", "error", err)
+		}
 	}
 	return nil
 }
