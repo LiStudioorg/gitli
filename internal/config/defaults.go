@@ -139,6 +139,9 @@ func Defaults() *Config {
 			HeartbeatTimeoutSeconds: 90,
 			OfflineSweepIntervalSec: 60,
 		},
+		Auth: AuthConfig{
+			LDAP: LDAPConfig{Port: 389, UserFilter: "(uid=%s)"},
+		},
 		Audit: AuditConfig{
 			RetentionDays:        365,
 			ArchiveRetentionDays: 1095,

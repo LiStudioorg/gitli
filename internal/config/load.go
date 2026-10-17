@@ -159,6 +159,18 @@ func applyEnvOverrides(cfg *Config) {
 	setStr(&cfg.Search.Engine, "GITLI_SEARCH_ENGINE")
 	setStr(&cfg.Modules.Search, "GITLI_MODULES_SEARCH")
 
+	setBool(&cfg.Auth.LDAP.Enabled, "GITLI_AUTH_LDAP_ENABLED")
+	setStr(&cfg.Auth.LDAP.Host, "GITLI_AUTH_LDAP_HOST")
+	setInt(&cfg.Auth.LDAP.Port, "GITLI_AUTH_LDAP_PORT")
+	setStr(&cfg.Auth.LDAP.BaseDN, "GITLI_AUTH_LDAP_BASE_DN")
+	setStr(&cfg.Auth.LDAP.BindDN, "GITLI_AUTH_LDAP_BIND_DN")
+	setStr(&cfg.Auth.LDAP.BindPassword, "GITLI_AUTH_LDAP_BIND_PASSWORD")
+	setStr(&cfg.Auth.LDAP.UserFilter, "GITLI_AUTH_LDAP_USER_FILTER")
+
+	setBool(&cfg.Auth.SAML.Enabled, "GITLI_AUTH_SAML_ENABLED")
+	setStr(&cfg.Auth.SAML.IDPMetadataURL, "GITLI_AUTH_SAML_IDP_METADATA_URL")
+	setStr(&cfg.Auth.SAML.RootURL, "GITLI_AUTH_SAML_ROOT_URL")
+
 	setBool(&cfg.Runner.Enabled, "GITLI_RUNNER_ENABLED")
 	setInt(&cfg.Runner.JobTimeoutMinutes, "GITLI_RUNNER_JOB_TIMEOUT_MINUTES")
 	setInt(&cfg.Runner.LogMaxMB, "GITLI_RUNNER_LOG_MAX_MB")

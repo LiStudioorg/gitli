@@ -42,7 +42,7 @@
 - [x] 3.5 API 文档（OpenAPI）：`/api/openapi.json` + Swagger UI `/api/docs`（可在线调试）
 
 ### 批次 4：企业集成
-- [ ] 4.1 LDAP 登录：`[ldap]` 配置、认证后关联本地用户、组映射
+- [x] 4.1 LDAP 登录：`[auth.ldap]` 配置、认证回退、自动创建/关联本地用户（组映射预留）
 - [ ] 4.2 SAML 登录：crewjam/saml、SP/IdP-initiated
 - [ ] 4.3 依赖图：解析 go.mod/package.json/pom.xml/requirements.txt、`repo_dependencies`、依赖 Tab
 - [ ] 4.4 入站邮件（Reply by Email）：IMAP、reply+{token}、评论写入、附件

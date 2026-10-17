@@ -16,6 +16,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/infra/crypto"
 	"github.com/LiStudioorg/gitli/internal/infra/fsrepo"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/ldapauth"
 	"github.com/LiStudioorg/gitli/internal/infra/queue"
 	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 	"github.com/LiStudioorg/gitli/internal/infra/weakpass"
@@ -126,6 +127,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		MinPasswordLength: cfg.Security.Password.MinLength,
 		BindIP:            cfg.Security.Session.BindIP,
 		BindAgent:         cfg.Security.Session.BindAgent,
+		LDAP:              newLDAPAdapter(ldapauth.New(cfg.Auth.LDAP)),
 	})
 	authSvc.SetPepper(cfg.Security.Password.Pepper)
 	if cfg.Security.Password.HIBP {

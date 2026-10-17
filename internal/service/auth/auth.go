@@ -46,6 +46,7 @@ type Service struct {
 	weak      *weakpass.Checker
 	bindIP    bool
 	bindAgent bool
+	ldap      LDAPAuthenticator
 }
 
 // Options configures the auth service.
@@ -58,6 +59,12 @@ type Options struct {
 	MinPasswordLength int
 	BindIP            bool
 	BindAgent         bool
+	LDAP              LDAPAuthenticator
+}
+
+// LDAPAuthenticator verifies credentials against an external directory.
+type LDAPAuthenticator interface {
+	Authenticate(ctx context.Context, username, password string) (string, string, string, error)
 }
 
 // New builds the auth Service.
@@ -152,17 +159,30 @@ func (s *Service) Login(ctx context.Context, p LoginParams) (*LoginResult, error
 	if !s.limiter.allow(key) {
 		return nil, ErrLockedOut
 	}
+	viaLDAP := false
 	u, err := s.users.ByUsername(ctx, p.Username)
 	if err != nil {
-		if errors.Is(err, user.ErrNotFound) {
+		if !errors.Is(err, user.ErrNotFound) {
+			return nil, err
+		}
+		lu, lerr := s.loginLDAP(ctx, p.Username, p.Password)
+		if lerr != nil {
 			s.limiter.fail(key)
 			return nil, ErrInvalidCredentials
 		}
-		return nil, err
+		u = lu
+		viaLDAP = true
 	}
-	if err := s.hasher.Verify(p.Password, u.PasswordHash); err != nil {
-		s.limiter.fail(key)
-		return nil, ErrInvalidCredentials
+	if !viaLDAP {
+		if verr := s.hasher.Verify(p.Password, u.PasswordHash); verr != nil {
+			// Local password failed: fall back to LDAP when configured.
+			lu, lerr := s.loginLDAP(ctx, p.Username, p.Password)
+			if lerr != nil {
+				s.limiter.fail(key)
+				return nil, ErrInvalidCredentials
+			}
+			u = lu
+		}
 	}
 	if u.TOTPEnabled {
 		if p.TOTPCode == "" {
@@ -465,4 +485,46 @@ func (s *Service) RevokeOtherSessions(ctx context.Context, userID int64, rawCurr
 	hash := token.Hash(rawCurrent)
 	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM sessions WHERE user_id = ? AND token_hash != ?`), userID, hash)
 	return err
+}
+
+// loginLDAP verifies credentials against LDAP and provision/links the local
+// user. Returns ErrInvalidCredentials when LDAP is disabled or rejects the
+// credentials.
+func (s *Service) loginLDAP(ctx context.Context, username, password string) (*domain.User, error) {
+	if s.ldap == nil {
+		return nil, ErrInvalidCredentials
+	}
+	ldapUser, email, fullName, err := s.ldap.Authenticate(ctx, username, password)
+	if err != nil {
+		return nil, ErrInvalidCredentials
+	}
+	// Link by username, then by email.
+	if u, err := s.users.ByUsername(ctx, username); err == nil {
+		return u, nil
+	}
+	if email != "" {
+		if u, err := s.users.ByEmail(ctx, email); err == nil {
+			return u, nil
+		}
+	}
+	name := ldapUser
+	if name == "" {
+		name = username
+	}
+	if email == "" {
+		email = name + "@ldap.local"
+	}
+	u, err := s.users.Create(ctx, user.CreateParams{Username: name, Email: email})
+	if err != nil {
+		// Race or name conflict: try the requested username.
+		if u2, e2 := s.users.ByUsername(ctx, username); e2 == nil {
+			return u2, nil
+		}
+		return nil, err
+	}
+	if fullName != "" {
+		u.FullName = fullName
+		_ = s.users.UpdateProfile(ctx, u)
+	}
+	return u, nil
 }

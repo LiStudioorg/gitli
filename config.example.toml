@@ -522,3 +522,33 @@ retention_days = 365
 
 # 归档表额外保留天数（归档后可再保留多久）。默认：1095（3 年）
 archive_retention_days = 1095
+
+
+# -----------------------------------------------------------------------------
+# [auth.ldap] LDAP 登录
+# -----------------------------------------------------------------------------
+[auth.ldap]
+# 是否启用 LDAP 认证。启用后本地密码失败会回退到 LDAP。默认：false
+enabled = false
+
+# LDAP 服务器主机与端口。默认端口 389（LDAPS 636）
+host = "ldap.example.com"
+port = 389
+
+# 搜索用户的基础 DN。默认：""
+base_dn = "ou=people,dc=example,dc=com"
+
+# 服务账号（用于搜索用户），留空则匿名搜索。默认：""
+bind_dn = "cn=gitli,ou=services,dc=example,dc=com"
+bind_password = ""          # 建议从环境变量 GITLI_AUTH_LDAP_BIND_PASSWORD 注入
+
+# 用户过滤器，%s 会被替换为转义后的用户名。默认："(uid=%s)"
+user_filter = "(uid=%s)"
+
+# 组过滤器（预留，暂未实现组同步）。默认：""
+group_filter = ""
+
+# 是否使用 LDAPS。默认：false
+use_tls = false
+# 是否跳过 TLS 证书校验（仅测试环境）。默认：false
+skip_verify = false

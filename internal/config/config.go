@@ -25,6 +25,37 @@ type Config struct {
 	Search   SearchConfig   `toml:"search"`
 	Runner   RunnerConfig   `toml:"runner"`
 	Audit    AuditConfig    `toml:"audit"`
+	Auth     AuthConfig     `toml:"auth"`
+}
+
+// AuthConfig groups external identity providers.
+type AuthConfig struct {
+	LDAP LDAPConfig `toml:"ldap"`
+	SAML SAMLConfig `toml:"saml"`
+}
+
+// LDAPConfig configures LDAP authentication.
+type LDAPConfig struct {
+	Enabled      bool   `toml:"enabled"`
+	Host         string `toml:"host"`
+	Port         int    `toml:"port"`
+	BaseDN       string `toml:"base_dn"`
+	BindDN       string `toml:"bind_dn"`
+	BindPassword string `toml:"bind_password"`
+	UserFilter   string `toml:"user_filter"`
+	GroupFilter  string `toml:"group_filter"`
+	UseTLS       bool   `toml:"use_tls"`
+	SkipVerify   bool   `toml:"skip_verify"`
+}
+
+// SAMLConfig configures SAML SP-initiated login.
+type SAMLConfig struct {
+	Enabled        bool   `toml:"enabled"`
+	IDPMetadataURL string `toml:"idp_metadata_url"`
+	IDPMetadataXML string `toml:"idp_metadata_xml"`
+	SPCert         string `toml:"sp_cert"`
+	SPKey          string `toml:"sp_key"`
+	RootURL        string `toml:"root_url"`
 }
 
 // AuditConfig configures audit log retention.
