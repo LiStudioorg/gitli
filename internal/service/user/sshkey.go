@@ -65,8 +65,7 @@ func (s *Service) UpdateSSHKeyPurposes(ctx context.Context, userID, keyID int64,
 
 // DeleteSSHKey removes a key owned by the user.
 func (s *Service) DeleteSSHKey(ctx context.Context, userID, keyID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM ssh_keys WHERE id = ? AND user_id = ?`), keyID, userID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM ssh_keys WHERE id = ? AND user_id = ?`), keyID, userID)
 }
 
 // UserBySSHFingerprint resolves the owner of a public key that is allowed to
@@ -134,8 +133,7 @@ func (s *Service) ListSigningKeys(ctx context.Context, userID int64) ([]*domain.
 
 // DeleteSigningKey removes a signing key owned by the user.
 func (s *Service) DeleteSigningKey(ctx context.Context, userID, keyID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM signing_keys WHERE id = ? AND user_id = ?`), keyID, userID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM signing_keys WHERE id = ? AND user_id = ?`), keyID, userID)
 }
 
 // SigningPublicKeys returns all signing-capable public keys for a user, drawn

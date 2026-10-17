@@ -249,7 +249,7 @@ func (s *Server) handleDeleteSSHKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Users.DeleteSSHKey(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "SSH 密钥不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "user.sshkey_delete", fmt.Sprintf("id=%d", id))
@@ -306,7 +306,7 @@ func (s *Server) handleDeleteSigningKey(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := s.deps.Users.DeleteSigningKey(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "签名密钥不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "user.gpgkey_delete", fmt.Sprintf("id=%d", id))
@@ -387,7 +387,7 @@ func (s *Server) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Tokens.Revoke(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "令牌不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "user.pat_revoke", "success")
@@ -469,7 +469,7 @@ func (s *Server) handleRevokeSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Auth.RevokeSession(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "会话不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "auth.session.revoke", "success")

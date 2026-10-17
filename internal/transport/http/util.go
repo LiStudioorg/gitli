@@ -3,6 +3,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -10,6 +11,19 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/LiStudioorg/gitli/internal/service/auth"
+	"github.com/LiStudioorg/gitli/internal/service/comment"
+	"github.com/LiStudioorg/gitli/internal/service/deploykey"
+	"github.com/LiStudioorg/gitli/internal/service/discussion"
+	"github.com/LiStudioorg/gitli/internal/service/ipallow"
+	"github.com/LiStudioorg/gitli/internal/service/issue"
+	"github.com/LiStudioorg/gitli/internal/service/notification"
+	"github.com/LiStudioorg/gitli/internal/service/oauth"
+	"github.com/LiStudioorg/gitli/internal/service/pat"
+	"github.com/LiStudioorg/gitli/internal/service/rbac"
+	"github.com/LiStudioorg/gitli/internal/service/savedreply"
+	"github.com/LiStudioorg/gitli/internal/service/user"
 )
 
 // apiError is the canonical JSON error envelope.
@@ -25,6 +39,39 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, apiError{Error: msg})
+}
+
+// notFoundErrs 汇总各 service 的归属类 NotFound 哨兵。
+//
+// 这些错误来自 `WHERE id = ? AND <owner> = ?` 命中 0 行的写操作：要么资源不存在，
+// 要么存在但不属于调用方。两者都必须回 404 而不是 500 —— 500 既误导用户
+// （"服务器错误"会诱使他重试），也让越权探测凭空拿到一个区分信号。
+var notFoundErrs = []error{
+	auth.ErrSessionNotFound,
+	comment.ErrNotFound,
+	deploykey.ErrNotFound,
+	discussion.ErrNotFound,
+	ipallow.ErrNotFound,
+	issue.ErrNotFound,
+	notification.ErrNotFound,
+	oauth.ErrNotFound,
+	pat.ErrNotFound,
+	rbac.ErrNotFound,
+	savedreply.ErrNotFound,
+	user.ErrNotFound,
+}
+
+// writeServiceError maps a service-layer error to the right HTTP status.
+// notFoundMsg is the user-facing text used when the error means "no such row
+// owned by you".
+func writeServiceError(w http.ResponseWriter, err error, notFoundMsg string) {
+	for _, sentinel := range notFoundErrs {
+		if errors.Is(err, sentinel) {
+			writeError(w, http.StatusNotFound, notFoundMsg)
+			return
+		}
+	}
+	writeError(w, http.StatusInternalServerError, err.Error())
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {

@@ -233,7 +233,7 @@ func (s *Server) handleDeleteLabel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Issues.DeleteLabel(r.Context(), rp.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "标签不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})

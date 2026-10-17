@@ -70,7 +70,7 @@ func (s *Server) handleDeleteSavedReply(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := s.deps.SavedReplies.Delete(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "快捷回复不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})

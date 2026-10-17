@@ -197,6 +197,29 @@ B 组织的团队/角色」「有仓库 A 写权限者可操作仓库 B 的看�
 / 删内置角色**全部 404**；跨仓加列 / 加卡 / 移卡 / 删卡**全部 404**；对应的同组织、同仓库
 操作**仍 201/200 成功**，双向验证未误伤正常功能。
 
+### 归属写操作的「假成功」修复（2026-10-17，安全/正确性）
+
+15 处 `DELETE/UPDATE ... WHERE id = ? AND <owner> = ?` 只检查了 `err`，没检查 `RowsAffected`。
+SQL 本身带归属条件，所以**没有**跨用户删除，但命中 0 行时返回 `nil`，导致：
+- 用户 A 删用户 B 的密钥，得到 `200 {"status":"ok"}`，实际什么都没删；
+- 重复删除已删除的资源同样返回 200；
+- 越权探测因此无法与"不存在"区分，前端也无法提示资源已不存在。
+
+修复：
+- `service/store` 新增 `ExecAffected` / `ExecAffectedOr`，把 `RowsAffected` 一并纳入契约；
+- 15 处改造覆盖 ssh_keys、signing_keys、sessions、access_tokens、saved_replies、
+  oauth_apps、notifications（读标记）、deploy_keys、labels、ip_allowlist、
+  discussions、comments，以及 rbac 的 org_members / team_members / repo_collaborators；
+- `notification`、`auth` 新增 `ErrNotFound` / `ErrSessionNotFound` 哨兵；
+- `transport/http` 新增 `writeServiceError`，把各包 NotFound 统一映射为 **404**（而非 500），
+  12 个 handler 接入。
+
+回归测试：`user.TestDeleteKeyRejectsForeignOwner`（跨用户删除返回 ErrNotFound 且目标资源存活、
+属主删除成功、重复删除返回 ErrNotFound）。
+
+端到端验证（真实服务、两个用户）：alice 删 bob 的 SSH 密钥 → `404 {"error":"SSH 密钥不存在"}`
+（修复前为 200 假成功），密钥仍在；bob 删自己的 → 200；bob 重复删除 → 404。
+
 ### 已知遗留（非本次引入）
 
 - 多个端点直接 marshal `domain` 结构体，JSON 是 PascalCase（`{"ID":1,"RepoID":1,...}`），

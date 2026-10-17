@@ -218,6 +218,5 @@ func (s *Service) MarkAnswer(ctx context.Context, discussionID, commentID int64)
 
 // Delete removes a discussion owned by the author.
 func (s *Service) Delete(ctx context.Context, discussionID, authorID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM discussions WHERE id = ? AND author_id = ?`), discussionID, authorID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM discussions WHERE id = ? AND author_id = ?`), discussionID, authorID)
 }

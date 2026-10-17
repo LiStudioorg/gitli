@@ -86,6 +86,5 @@ func (s *Service) list(ctx context.Context, column string, id int64) ([]*domain.
 
 // Delete removes a comment authored by userID.
 func (s *Service) Delete(ctx context.Context, id, authorID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM comments WHERE id = ? AND author_id = ?`), id, authorID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM comments WHERE id = ? AND author_id = ?`), id, authorID)
 }

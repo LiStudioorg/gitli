@@ -85,7 +85,7 @@ func (s *Server) handleDeleteDeployKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.DeployKeys.Delete(r.Context(), rp.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "部署密钥不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "deploy_key.delete", "success")

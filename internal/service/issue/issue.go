@@ -173,8 +173,7 @@ func (s *Service) ListLabels(ctx context.Context, repoID int64) ([]*domain.Label
 
 // DeleteLabel removes a repository label.
 func (s *Service) DeleteLabel(ctx context.Context, repoID, labelID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM labels WHERE id = ? AND repo_id = ?`), labelID, repoID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM labels WHERE id = ? AND repo_id = ?`), labelID, repoID)
 }
 
 // CreateMilestone creates a repository milestone.

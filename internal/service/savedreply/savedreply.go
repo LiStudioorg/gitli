@@ -92,6 +92,5 @@ func (s *Service) Update(ctx context.Context, userID, id int64, title, body stri
 
 // Delete removes a saved reply owned by the user.
 func (s *Service) Delete(ctx context.Context, userID, id int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM saved_replies WHERE id = ? AND user_id = ?`), id, userID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM saved_replies WHERE id = ? AND user_id = ?`), id, userID)
 }

@@ -190,7 +190,7 @@ func (s *Server) handleDeleteOAuthApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.OAuth.DeleteApp(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "应用不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "oauth_app.delete", "success")

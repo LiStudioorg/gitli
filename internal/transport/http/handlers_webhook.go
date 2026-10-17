@@ -73,7 +73,7 @@ func (s *Server) handleMarkNotificationRead(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err := s.deps.Notifications.MarkRead(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "通知不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})

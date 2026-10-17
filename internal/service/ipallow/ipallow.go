@@ -123,8 +123,7 @@ func (s *Service) List(ctx context.Context, orgID int64) ([]*Rule, error) {
 
 // Delete removes a rule.
 func (s *Service) Delete(ctx context.Context, orgID, id int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM ip_allowlist WHERE id = ? AND org_id = ?`), id, orgID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM ip_allowlist WHERE id = ? AND org_id = ?`), id, orgID)
 }
 
 // SetEnabled toggles enforcement for an org.

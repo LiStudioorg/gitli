@@ -3,6 +3,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/LiStudioorg/gitli/internal/config"
@@ -40,6 +41,42 @@ func TestAddSSHKeyRequiresPurpose(t *testing.T) {
 	ctx := context.Background()
 	if _, err := s.AddSSHKey(ctx, 1, "k", testSSHPub, false, false); err == nil {
 		t.Fatal("expected error when neither purpose is selected")
+	}
+}
+
+// 回归测试：删除不属于自己的密钥必须返回 ErrNotFound，且不能删掉目标资源。
+// 修复前只检查 SQL 错误，RowsAffected 为 0 时也返回 nil，越权请求会得到 200「成功」。
+func TestDeleteKeyRejectsForeignOwner(t *testing.T) {
+	s, st := newTestService(t)
+	ctx := context.Background()
+	if _, err := st.DB.ExecContext(ctx, `INSERT INTO users (id, username, email, password_hash) VALUES (2, 'bob', 'b@e.com', 'x')`); err != nil {
+		t.Fatal(err)
+	}
+	k, err := s.AddSSHKey(ctx, 2, "bob-key", testSSHPub, true, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// alice(1) 试图删除 bob(2) 的密钥
+	if err := s.DeleteSSHKey(ctx, 1, k.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("foreign DeleteSSHKey: want ErrNotFound, got %v", err)
+	}
+	// 密钥必须还在
+	var n int
+	if err := st.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM ssh_keys WHERE id = ?`, k.ID).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("key must survive a cross-user delete, count = %d", n)
+	}
+
+	// 属主自己删除应当成功
+	if err := s.DeleteSSHKey(ctx, 2, k.ID); err != nil {
+		t.Fatalf("owner DeleteSSHKey: %v", err)
+	}
+	// 重复删除应当返回 ErrNotFound（此前会静默成功）
+	if err := s.DeleteSSHKey(ctx, 2, k.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("repeat DeleteSSHKey: want ErrNotFound, got %v", err)
 	}
 }
 

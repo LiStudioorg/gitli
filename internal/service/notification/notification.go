@@ -4,11 +4,15 @@ package notification
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 )
+
+// ErrNotFound 表示通知不存在，或不属于该用户。
+var ErrNotFound = errors.New("notification: not found")
 
 // Service manages notifications.
 type Service struct {
@@ -63,8 +67,7 @@ func (s *Service) List(ctx context.Context, userID int64, unreadOnly bool, limit
 
 // MarkRead marks a notification read.
 func (s *Service) MarkRead(ctx context.Context, userID, id int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE notifications SET is_read = ? WHERE id = ? AND user_id = ?`), true, id, userID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`UPDATE notifications SET is_read = ? WHERE id = ? AND user_id = ?`), true, id, userID)
 }
 
 // UnreadCount returns the number of unread notifications.

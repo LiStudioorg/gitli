@@ -172,7 +172,7 @@ func (s *Service) AddOrgMember(ctx context.Context, actorID, orgID, userID int64
 
 // RemoveOrgMember removes an org member.
 func (s *Service) RemoveOrgMember(ctx context.Context, actorID, orgID, userID int64) error {
-	if _, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM org_members WHERE org_id = ? AND user_id = ?`), orgID, userID); err != nil {
+	if err := s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM org_members WHERE org_id = ? AND user_id = ?`), orgID, userID); err != nil {
 		return err
 	}
 	_ = s.recordAudit(ctx, AuditEntry{ActorID: &actorID, TargetType: "org_member", TargetID: &userID, Action: "remove"})
@@ -196,7 +196,7 @@ func (s *Service) AddTeamMember(ctx context.Context, actorID, teamID, userID int
 
 // RemoveTeamMember removes a user from a team.
 func (s *Service) RemoveTeamMember(ctx context.Context, actorID, teamID, userID int64) error {
-	if _, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM team_members WHERE team_id = ? AND user_id = ?`), teamID, userID); err != nil {
+	if err := s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM team_members WHERE team_id = ? AND user_id = ?`), teamID, userID); err != nil {
 		return err
 	}
 	_ = s.recordAudit(ctx, AuditEntry{ActorID: &actorID, TargetType: "team_member", TargetID: &userID, Action: "remove"})
@@ -240,7 +240,7 @@ func (s *Service) SetCollaborator(ctx context.Context, actorID, repoID, userID i
 
 // RemoveCollaborator removes a direct repo grant.
 func (s *Service) RemoveCollaborator(ctx context.Context, actorID, repoID, userID int64) error {
-	if _, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM repo_collaborators WHERE repo_id = ? AND user_id = ?`), repoID, userID); err != nil {
+	if err := s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM repo_collaborators WHERE repo_id = ? AND user_id = ?`), repoID, userID); err != nil {
 		return err
 	}
 	_ = s.recordAudit(ctx, AuditEntry{ActorID: &actorID, TargetType: "repo_collaborator", TargetID: &userID, Action: "remove"})

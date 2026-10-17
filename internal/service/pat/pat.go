@@ -121,8 +121,7 @@ func (s *Service) List(ctx context.Context, userID int64) ([]*domain.AccessToken
 
 // Revoke deletes a token.
 func (s *Service) Revoke(ctx context.Context, userID, tokenID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM access_tokens WHERE id = ? AND user_id = ?`), tokenID, userID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM access_tokens WHERE id = ? AND user_id = ?`), tokenID, userID)
 }
 
 // Resolve validates a raw token and returns it with scopes and grants loaded.

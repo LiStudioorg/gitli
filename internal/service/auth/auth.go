@@ -34,6 +34,7 @@ var (
 	ErrUserExists         = errors.New("auth: user already exists")
 	ErrWeakPassword       = errors.New("auth: password too short")
 	ErrAlreadySetUp       = errors.New("auth: instance already initialized")
+	ErrSessionNotFound    = errors.New("auth: session not found")
 )
 
 // Service coordinates authentication.
@@ -478,8 +479,7 @@ func (s *Service) ListSessions(ctx context.Context, userID int64, rawCurrent str
 
 // RevokeSession deletes one session owned by the user.
 func (s *Service) RevokeSession(ctx context.Context, userID, sessionID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM sessions WHERE id = ? AND user_id = ?`), sessionID, userID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrSessionNotFound, s.st.Rebind(`DELETE FROM sessions WHERE id = ? AND user_id = ?`), sessionID, userID)
 }
 
 // RevokeOtherSessions deletes all sessions for a user except the current one.

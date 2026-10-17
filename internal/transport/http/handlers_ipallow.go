@@ -67,7 +67,7 @@ func (s *Server) handleDeleteIPAllow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.IPAllow.Delete(r.Context(), o.ID, id); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "规则不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "org.ip_allowlist_delete", "success")

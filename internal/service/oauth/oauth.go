@@ -120,8 +120,7 @@ func (s *Service) ListAppsByOwner(ctx context.Context, ownerID int64) ([]*App, e
 
 // DeleteApp removes an app (owner only).
 func (s *Service) DeleteApp(ctx context.Context, ownerID, appID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM oauth_apps WHERE id = ? AND owner_id = ?`), appID, ownerID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM oauth_apps WHERE id = ? AND owner_id = ?`), appID, ownerID)
 }
 
 // VerifyClient validates client_id + secret.

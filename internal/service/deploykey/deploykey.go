@@ -79,8 +79,7 @@ func (s *Service) SetReadOnly(ctx context.Context, repoID, keyID int64, readOnly
 
 // Delete removes a deploy key scoped to a repository.
 func (s *Service) Delete(ctx context.Context, repoID, keyID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM deploy_keys WHERE id = ? AND repo_id = ?`), keyID, repoID)
-	return err
+	return s.st.ExecAffectedOr(ctx, ErrNotFound, s.st.Rebind(`DELETE FROM deploy_keys WHERE id = ? AND repo_id = ?`), keyID, repoID)
 }
 
 // Resolve maps a public key fingerprint to its repository and permission.

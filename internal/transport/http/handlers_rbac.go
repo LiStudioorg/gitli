@@ -97,7 +97,7 @@ func (s *Server) handleRemoveOrgMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.RBAC.RemoveOrgMember(r.Context(), u.ID, o.ID, target.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "成员不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
@@ -219,7 +219,7 @@ func (s *Server) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := s.deps.RBAC.RemoveTeamMember(r.Context(), u.ID, teamID, target.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "团队成员不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
@@ -376,7 +376,7 @@ func (s *Server) handleRemoveCollaborator(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if err := s.deps.RBAC.RemoveCollaborator(r.Context(), u.ID, rp.ID, target.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err, "协作者不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
