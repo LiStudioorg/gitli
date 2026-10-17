@@ -128,3 +128,28 @@ func (a *App) runRepoCleanup(ctx context.Context) {
 		}
 	}
 }
+
+// runTrendingAggregator recomputes the trending cache once per day.
+func (a *App) runTrendingAggregator(ctx context.Context) {
+	if a.Deps.Explore == nil {
+		return
+	}
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	agg := func() {
+		if n, err := a.Deps.Explore.RecomputeTrending(ctx); err != nil {
+			a.Log.Warn("trending aggregation failed", "error", err)
+		} else {
+			a.Log.Info("trending cache refreshed", "repos", n)
+		}
+	}
+	agg()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			agg()
+		}
+	}
+}

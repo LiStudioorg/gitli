@@ -4,62 +4,52 @@ package http
 import (
 	"net/http"
 	"strconv"
-
-	"github.com/LiStudioorg/gitli/internal/domain"
 )
 
-// handleExploreRepos serves a public, unauthenticated listing of repositories.
-func (s *Server) handleExploreRepos(w http.ResponseWriter, r *http.Request) {
-	limit := 20
+// handleTrending implements GET /api/v1/explore/trending?language=&limit=.
+func (s *Server) handleTrending(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Explore == nil {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+	limit := 25
 	if v := r.URL.Query().Get("limit"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+		if n, err := strconv.Atoi(v); err == nil {
 			limit = n
 		}
 	}
-	offset := 0
-	if v := r.URL.Query().Get("offset"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
-			offset = n
-		}
-	}
-
-	var (
-		repos []*domain.Repo
-		err   error
-	)
-	if q := r.URL.Query().Get("q"); q != "" {
-		repos, err = s.deps.Repos.Search(r.Context(), q, limit, offset)
-	} else {
-		repos, err = s.deps.Repos.ListPublic(r.Context(), limit, offset)
-	}
+	repos, err := s.deps.Explore.Trending(r.Context(), r.URL.Query().Get("language"), limit)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if repos == nil {
-		repos = []*domain.Repo{}
-	}
+	writeJSON(w, http.StatusOK, repos)
+}
 
-	ownerCache := make(map[int64]string)
-	out := make([]map[string]any, 0, len(repos))
-	for _, rp := range repos {
-		owner, ok := ownerCache[rp.OwnerID]
-		if !ok {
-			if u, uerr := s.deps.Users.ByID(r.Context(), rp.OwnerID); uerr == nil && u != nil {
-				owner = u.Username
-			}
-			ownerCache[rp.OwnerID] = owner
-		}
-		out = append(out, map[string]any{
-			"id":             rp.ID,
-			"name":           rp.Name,
-			"owner":          owner,
-			"owner_id":       rp.OwnerID,
-			"description":    rp.Description,
-			"default_branch": rp.DefaultBranch,
-			"updated_at":     rp.UpdatedAt,
-			"stars_count":    rp.StarsCount,
-		})
+// handleTopic implements GET /api/v1/explore/topics/{topic}?language=.
+func (s *Server) handleTopic(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Explore == nil {
+		writeJSON(w, http.StatusOK, []any{})
+		return
 	}
-	writeJSON(w, http.StatusOK, out)
+	repos, err := s.deps.Explore.ByTopic(r.Context(), urlParam(r, "topic"), r.URL.Query().Get("language"), 50)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, repos)
+}
+
+// handleTopTopics implements GET /api/v1/explore/topics.
+func (s *Server) handleTopTopics(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Explore == nil {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+	topics, err := s.deps.Explore.TopTopics(r.Context(), 30)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, topics)
 }

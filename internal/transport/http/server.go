@@ -339,6 +339,9 @@ func (s *Server) Router() http.Handler {
 	r.Get("/feed/{owner}/{repo}.xml", s.handleRSS)
 	r.Get("/feed/{owner}/{repo}.atom", s.handleAtom)
 	r.Get("/api/v1/explore/repos", s.handleExploreRepos)
+	r.Get("/api/v1/explore/trending", s.handleTrending)
+	r.Get("/api/v1/explore/topics", s.handleTopTopics)
+	r.Get("/api/v1/explore/topics/{topic}", s.handleTopic)
 	r.Get("/api/v1/explore/activity", s.handleExploreActivity)
 
 	web.Mount(r, d.Log)

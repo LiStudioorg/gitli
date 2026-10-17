@@ -59,6 +59,9 @@ func (a *App) Serve(ctx context.Context) error {
 	if a.Deps.Repos != nil {
 		go a.runRepoCleanup(ctx)
 	}
+	if a.Deps.Explore != nil {
+		go a.runTrendingAggregator(ctx)
+	}
 
 	httpServers, err := a.startHTTP(ctx, handler)
 	if err != nil {

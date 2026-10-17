@@ -32,7 +32,7 @@
 - [x] 2.1 保存的回复（Saved Replies）：`saved_replies` 表 + API + 前端
 - [x] 2.2 全局搜索 + 高级搜索：跨仓库/Issue/PR/用户/组织、`language:`/`stars:`/`is:`/`author:`/`org:`
 - [x] 2.3 用户主页 + 关注/粉丝：`/username`、`follows` 表、关注按钮、粉丝列表（后端）
-- [ ] 2.4 探索页 + 趋势 + 话题：`/explore`、`/topics/{topic}`、`trending_cache`、每日聚合
+- [x] 2.4 探索页 + 趋势 + 话题：`/explore`、`/topics/{topic}`、`trending_cache`、每日聚合（后端）
 
 ### 批次 3：企业安全
 - [ ] 3.1 OAuth2 应用（Provider）：`oauth_apps`/`oauth_authorizations`、授权/Token/用户信息端点、管理页
