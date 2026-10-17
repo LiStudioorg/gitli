@@ -58,7 +58,7 @@ interface AlertRule {
   created_at: string
 }
 
-type TabKey = 'users' | 'repos' | 'tasks' | 'runner' | 'audit' | 'system'
+type TabKey = 'users' | 'repos' | 'orgs' | 'tasks' | 'runner' | 'audit' | 'system'
 
 interface Tab {
   key: TabKey
@@ -68,11 +68,241 @@ interface Tab {
 const tabs: Tab[] = [
   { key: 'users', label: '用户' },
   { key: 'repos', label: '仓库' },
+  { key: 'orgs', label: '组织' },
   { key: 'tasks', label: '任务' },
   { key: 'runner', label: 'Runner' },
   { key: 'audit', label: '审计日志' },
   { key: 'system', label: '系统状态' },
 ]
+
+interface AdminUser {
+  id: number
+  username: string
+  email: string
+  is_admin: boolean
+  is_active: boolean
+  totp_enabled: boolean
+  created_at: string
+}
+
+interface AdminRepo {
+  id: number
+  name: string
+  owner_id: number
+  is_private: boolean
+  archived: boolean
+  deleted: boolean
+  size_kb: number
+  default_branch: string
+}
+
+interface AdminOrg {
+  ID: number
+  Name: string
+  DisplayName: string
+  Description: string
+  OwnerID: number
+}
+
+interface SystemInfo {
+  go_version?: string
+  goroutines?: number
+  heap_alloc_mb?: number
+  sys_mb?: number
+  num_cpu?: number
+  db_open?: number
+  db_in_use?: number
+  db_idle?: number
+  db_wait_count?: number
+  disk_total_mb?: number
+  disk_free_mb?: number
+  git_binary?: string
+}
+
+interface AdminViewState<T> {
+  items: T
+  loading: boolean
+  loaded: boolean
+  error: string
+}
+
+function emptyListState<T>(): AdminViewState<T[]> {
+  return { items: [], loading: false, loaded: false, error: '' }
+}
+
+const usersState = ref<AdminViewState<AdminUser[]>>(emptyListState<AdminUser>())
+const reposState = ref<AdminViewState<AdminRepo[]>>(emptyListState<AdminRepo>())
+const orgsState = ref<AdminViewState<AdminOrg[]>>(emptyListState<AdminOrg>())
+
+const usersQuery = ref('')
+const reposQuery = ref('')
+
+const userActionId = ref<number | null>(null)
+const reposActionId = ref<number | null>(null)
+const resetPassword = ref<{ username: string; password: string } | null>(null)
+
+const systemInfo = ref<SystemInfo | null>(null)
+const systemLoading = ref(false)
+const systemError = ref('')
+
+async function loadUsers() {
+  usersState.value.loading = true
+  usersState.value.error = ''
+  try {
+    const params: Record<string, string> = {}
+    const q = usersQuery.value.trim()
+    if (q) params.q = q
+    const { data } = await api.get<AdminUser[]>('/admin/users', { params })
+    usersState.value.items = data ?? []
+    usersState.value.loaded = true
+  } catch (e) {
+    usersState.value.error = errMessage(e)
+    usersState.value.items = []
+  } finally {
+    usersState.value.loading = false
+  }
+}
+
+async function toggleUserActive(u: AdminUser) {
+  const next = !u.is_active
+  if (!next && !window.confirm(`确定要禁用用户「${u.username}」吗？`)) return
+  usersState.value.error = ''
+  userActionId.value = u.id
+  try {
+    const { data } = await api.patch<{ status: string; active: boolean }>(`/admin/users/${u.id}`, {
+      active: next,
+    })
+    u.is_active = data?.active ?? next
+  } catch (e) {
+    usersState.value.error = errMessage(e)
+  } finally {
+    userActionId.value = null
+  }
+}
+
+async function resetUserPassword(u: AdminUser) {
+  if (!window.confirm(`确定要重置用户「${u.username}」的密码吗？旧密码将立即失效。`)) return
+  usersState.value.error = ''
+  userActionId.value = u.id
+  try {
+    const { data } = await api.post<{ password: string }>(`/admin/users/${u.id}/reset-password`)
+    resetPassword.value = { username: u.username, password: data.password }
+  } catch (e) {
+    usersState.value.error = errMessage(e)
+  } finally {
+    userActionId.value = null
+  }
+}
+
+async function resetUser2FA(u: AdminUser) {
+  if (!window.confirm(`确定要重置用户「${u.username}」的两步验证吗？`)) return
+  usersState.value.error = ''
+  userActionId.value = u.id
+  try {
+    await api.post(`/admin/users/${u.id}/reset-2fa`)
+    u.totp_enabled = false
+  } catch (e) {
+    usersState.value.error = errMessage(e)
+  } finally {
+    userActionId.value = null
+  }
+}
+
+async function loadRepos() {
+  reposState.value.loading = true
+  reposState.value.error = ''
+  try {
+    const params: Record<string, string> = {}
+    const q = reposQuery.value.trim()
+    if (q) params.q = q
+    const { data } = await api.get<AdminRepo[]>('/admin/repos', { params })
+    reposState.value.items = data ?? []
+    reposState.value.loaded = true
+  } catch (e) {
+    reposState.value.error = errMessage(e)
+    reposState.value.items = []
+  } finally {
+    reposState.value.loading = false
+  }
+}
+
+async function toggleRepoArchive(rp: AdminRepo) {
+  const next = !rp.archived
+  if (!window.confirm(`确定要${next ? '归档' : '解除归档'}仓库「${rp.name}」吗？`)) return
+  reposState.value.error = ''
+  reposActionId.value = rp.id
+  try {
+    const { data } = await api.post<{ status: string; archived: boolean }>(
+      `/admin/repos/${rp.id}/archive`,
+      { archived: next },
+    )
+    rp.archived = data?.archived ?? next
+  } catch (e) {
+    reposState.value.error = errMessage(e)
+  } finally {
+    reposActionId.value = null
+  }
+}
+
+async function loadOrgs() {
+  orgsState.value.loading = true
+  orgsState.value.error = ''
+  try {
+    const { data } = await api.get<AdminOrg[]>('/admin/orgs')
+    orgsState.value.items = data ?? []
+    orgsState.value.loaded = true
+  } catch (e) {
+    orgsState.value.error = errMessage(e)
+    orgsState.value.items = []
+  } finally {
+    orgsState.value.loading = false
+  }
+}
+
+async function loadSystem() {
+  systemLoading.value = true
+  systemError.value = ''
+  try {
+    const { data } = await api.get<SystemInfo>('/admin/system')
+    systemInfo.value = data
+  } catch (e) {
+    systemError.value = errMessage(e)
+  } finally {
+    systemLoading.value = false
+  }
+}
+
+function formatSize(kb: number | undefined): string {
+  if (kb == null) return '-'
+  if (kb < 1024) return `${kb} KB`
+  const mb = kb / 1024
+  if (mb < 1024) return `${mb.toFixed(1)} MB`
+  return `${(mb / 1024).toFixed(2)} GB`
+}
+
+const systemCards = computed(() => {
+  const s = systemInfo.value
+  if (!s) return []
+  const disk =
+    s.disk_total_mb != null && s.disk_free_mb != null
+      ? `${s.disk_free_mb} / ${s.disk_total_mb} MB`
+      : '-'
+  return [
+    { label: 'Go 版本', value: s.go_version ?? '-', mono: true },
+    { label: 'Goroutines', value: s.goroutines ?? '-', mono: false },
+    { label: '堆内存 (Heap)', value: s.heap_alloc_mb != null ? `${s.heap_alloc_mb} MB` : '-', mono: false },
+    { label: '系统内存 (Sys)', value: s.sys_mb != null ? `${s.sys_mb} MB` : '-', mono: false },
+    { label: 'CPU 核心', value: s.num_cpu ?? '-', mono: false },
+    {
+      label: 'DB 连接池 (open/in-use/idle)',
+      value: `${s.db_open ?? '-'} / ${s.db_in_use ?? '-'} / ${s.db_idle ?? '-'}`,
+      mono: false,
+    },
+    { label: 'DB 等待次数', value: s.db_wait_count ?? '-', mono: false },
+    { label: '磁盘 (free / total)', value: disk, mono: false },
+    { label: 'Git 二进制', value: s.git_binary ?? '-', mono: true },
+  ]
+})
 
 interface Runner {
   id: number
@@ -615,7 +845,13 @@ async function loadStats() {
 
 function selectTab(key: TabKey) {
   active.value = key
-  if (key === 'system' && !stats.value && !loadingStats.value) loadStats()
+  if (key === 'system') {
+    if (!stats.value && !loadingStats.value) loadStats()
+    if (!systemInfo.value && !systemLoading.value) loadSystem()
+  }
+  if (key === 'users' && !usersState.value.loaded && !usersState.value.loading) loadUsers()
+  if (key === 'repos' && !reposState.value.loaded && !reposState.value.loading) loadRepos()
+  if (key === 'orgs' && !orgsState.value.loaded && !orgsState.value.loading) loadOrgs()
   if (key === 'audit') {
     if (!auditLoaded.value && !loadingAudit.value) loadAudit()
     if (!auditStats.value && !loadingAuditStats.value) loadAuditStats()
@@ -626,6 +862,8 @@ function selectTab(key: TabKey) {
 
 onMounted(() => {
   loadStats()
+  if (active.value === 'users') loadUsers()
+  if (active.value === 'system' && !systemInfo.value && !systemLoading.value) loadSystem()
 })
 </script>
 
@@ -651,7 +889,218 @@ onMounted(() => {
           </button>
         </nav>
 
-        <section v-if="active === 'system'" class="panel">
+        <section v-if="active === 'users'" class="panel">
+          <form class="filters" @submit.prevent="loadUsers">
+            <label class="filter search-field">
+              <span>搜索用户</span>
+              <input v-model="usersQuery" type="search" placeholder="用户名或邮箱" />
+            </label>
+            <div class="filter filter-actions">
+              <button class="btn primary" type="submit">搜索</button>
+              <button class="btn" type="button" @click="loadUsers">刷新</button>
+            </div>
+          </form>
+
+          <p v-if="resetPassword" class="notice password-box">
+            <span>
+              用户「{{ resetPassword.username }}」的新密码（仅显示一次，请立即保存）：
+              <code class="mono">{{ resetPassword.password }}</code>
+            </span>
+            <button class="link-btn" type="button" @click="copyText(resetPassword.password, 'password')">
+              {{ copiedKey === 'password' ? '已复制' : '复制' }}
+            </button>
+            <button class="link-btn" type="button" @click="resetPassword = null">关闭</button>
+          </p>
+
+          <p v-if="usersState.error" class="error">{{ usersState.error }}</p>
+          <p v-if="usersState.loading" class="muted">加载中…</p>
+          <div v-else-if="usersState.items.length" class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>用户名</th>
+                  <th>邮箱</th>
+                  <th>管理员</th>
+                  <th>状态</th>
+                  <th>2FA</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in usersState.items" :key="u.id">
+                  <td>{{ u.id }}</td>
+                  <td class="mono">{{ u.username }}</td>
+                  <td>{{ u.email || '-' }}</td>
+                  <td>
+                    <span class="status" :class="u.is_admin ? 'status-active' : 'status-offline'">
+                      {{ u.is_admin ? '是' : '否' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status" :class="u.is_active ? 'status-active' : 'status-disabled'">
+                      {{ u.is_active ? '启用' : '已禁用' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status" :class="u.totp_enabled ? 'status-active' : 'status-offline'">
+                      {{ u.totp_enabled ? '已启用' : '未启用' }}
+                    </span>
+                  </td>
+                  <td>{{ formatTime(u.created_at) }}</td>
+                  <td class="row-actions">
+                    <button
+                      class="link-btn"
+                      type="button"
+                      :disabled="userActionId === u.id"
+                      @click="toggleUserActive(u)"
+                    >
+                      {{ u.is_active ? '禁用' : '启用' }}
+                    </button>
+                    <button
+                      class="link-btn"
+                      type="button"
+                      :disabled="userActionId === u.id"
+                      @click="resetUserPassword(u)"
+                    >
+                      重置密码
+                    </button>
+                    <button
+                      class="link-btn"
+                      type="button"
+                      :disabled="userActionId === u.id || !u.totp_enabled"
+                      @click="resetUser2FA(u)"
+                    >
+                      重置 2FA
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else-if="!usersState.error" class="muted">暂无用户</p>
+          <p class="cli-hint">
+            彻底删除用户请使用 CLI：<code>gitli admin user delete &lt;username&gt; --purge</code>
+          </p>
+        </section>
+
+        <section v-else-if="active === 'repos'" class="panel">
+          <form class="filters" @submit.prevent="loadRepos">
+            <label class="filter search-field">
+              <span>搜索仓库</span>
+              <input v-model="reposQuery" type="search" placeholder="仓库名称" />
+            </label>
+            <div class="filter filter-actions">
+              <button class="btn primary" type="submit">搜索</button>
+              <button class="btn" type="button" @click="loadRepos">刷新</button>
+            </div>
+          </form>
+
+          <p v-if="reposState.error" class="error">{{ reposState.error }}</p>
+          <p v-if="reposState.loading" class="muted">加载中…</p>
+          <div v-else-if="reposState.items.length" class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>名称</th>
+                  <th>所有者 ID</th>
+                  <th>私有</th>
+                  <th>已归档</th>
+                  <th>已删除</th>
+                  <th>大小</th>
+                  <th>默认分支</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="rp in reposState.items" :key="rp.id">
+                  <td>{{ rp.id }}</td>
+                  <td class="mono">{{ rp.name }}</td>
+                  <td>{{ rp.owner_id }}</td>
+                  <td>{{ rp.is_private ? '是' : '否' }}</td>
+                  <td>
+                    <span class="status" :class="rp.archived ? 'status-disabled' : 'status-offline'">
+                      {{ rp.archived ? '已归档' : '否' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status" :class="rp.deleted ? 'status-disabled' : 'status-offline'">
+                      {{ rp.deleted ? '是' : '否' }}
+                    </span>
+                  </td>
+                  <td>{{ formatSize(rp.size_kb) }}</td>
+                  <td class="mono">{{ rp.default_branch || '-' }}</td>
+                  <td class="row-actions">
+                    <button
+                      class="link-btn"
+                      type="button"
+                      :disabled="reposActionId === rp.id"
+                      @click="toggleRepoArchive(rp)"
+                    >
+                      {{ rp.archived ? '解除归档' : '归档' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else-if="!reposState.error" class="muted">暂无仓库</p>
+          <div class="subsection">
+            <h3 class="panel-title">永久删除仓库</h3>
+            <p class="muted">
+              按仓库 ID 永久删除仓库及其数据，<strong class="danger-text">此操作不可恢复</strong>（CLI 专属操作）。
+            </p>
+            <p v-if="purgeError" class="error">{{ purgeError }}</p>
+            <p v-if="purgeOk" class="notice">{{ purgeOk }}</p>
+            <form class="purge-form" @submit.prevent="purgeRepo">
+              <label class="filter">
+                <span>仓库 ID</span>
+                <input v-model="purgeRepoId" type="number" min="1" step="1" placeholder="仓库 ID" />
+              </label>
+              <div class="filter filter-actions">
+                <button class="btn primary" type="submit" :disabled="purging">
+                  {{ purging ? '删除中…' : '永久删除' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section v-else-if="active === 'orgs'" class="panel">
+          <div class="panel-toolbar">
+            <button class="btn" type="button" @click="loadOrgs">刷新</button>
+          </div>
+          <p v-if="orgsState.error" class="error">{{ orgsState.error }}</p>
+          <p v-if="orgsState.loading" class="muted">加载中…</p>
+          <div v-else-if="orgsState.items.length" class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>名称</th>
+                  <th>显示名称</th>
+                  <th>所有者 ID</th>
+                  <th>描述</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="o in orgsState.items" :key="o.ID">
+                  <td>{{ o.ID }}</td>
+                  <td class="mono">{{ o.Name }}</td>
+                  <td>{{ o.DisplayName || '-' }}</td>
+                  <td>{{ o.OwnerID }}</td>
+                  <td class="desc-cell">{{ o.Description || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else-if="!orgsState.error" class="muted">暂无组织</p>
+        </section>
+
+        <section v-else-if="active === 'system'" class="panel">
+          <h3 class="panel-title">概览</h3>
           <p v-if="statsError" class="error">{{ statsError }}</p>
           <p v-if="loadingStats" class="muted">加载中…</p>
           <template v-else-if="stats">
@@ -664,26 +1113,24 @@ onMounted(() => {
             <p class="uptime">运行时间：{{ formatUptime(stats.uptime_seconds) }}</p>
           </template>
           <p v-else-if="!statsError" class="muted">暂无数据</p>
-        </section>
 
-        <section v-else-if="active === 'repos'" class="panel">
-          <h3 class="panel-title">永久删除仓库</h3>
-          <p class="muted">
-            按仓库 ID 永久删除仓库及其数据，<strong class="danger-text">此操作不可恢复</strong>。
-          </p>
-          <p v-if="purgeError" class="error">{{ purgeError }}</p>
-          <p v-if="purgeOk" class="notice">{{ purgeOk }}</p>
-          <form class="purge-form" @submit.prevent="purgeRepo">
-            <label class="filter">
-              <span>仓库 ID</span>
-              <input v-model="purgeRepoId" type="number" min="1" step="1" placeholder="仓库 ID" />
-            </label>
-            <div class="filter filter-actions">
-              <button class="btn primary" type="submit" :disabled="purging">
-                {{ purging ? '删除中…' : '永久删除' }}
+          <div class="subsection">
+            <div class="panel-toolbar system-toolbar">
+              <h3>系统运行状态</h3>
+              <button class="btn" type="button" :disabled="systemLoading" @click="loadSystem">
+                {{ systemLoading ? '刷新中…' : '刷新' }}
               </button>
             </div>
-          </form>
+            <p v-if="systemError" class="error">{{ systemError }}</p>
+            <p v-if="systemLoading && !systemInfo" class="muted">加载中…</p>
+            <div v-else-if="systemInfo" class="cards">
+              <div v-for="c in systemCards" :key="c.label" class="stat-card">
+                <span class="stat-value" :class="{ 'mono': c.mono, 'stat-value-sm': c.mono }">{{ c.value }}</span>
+                <span class="stat-label">{{ c.label }}</span>
+              </div>
+            </div>
+            <p v-else-if="!systemError" class="muted">暂无数据</p>
+          </div>
         </section>
 
         <section v-else-if="active === 'runner'" class="panel">
@@ -1631,12 +2078,64 @@ tbody tr:last-child td {
   border-radius: 10px;
   background: var(--card);
 }
+.search-field input {
+  min-width: 240px;
+}
+.password-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.password-box code {
+  word-break: break-all;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--color-bg);
+}
+.password-box .link-btn {
+  color: var(--color-fg);
+}
+.cli-hint {
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.cli-hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--color-bg);
+}
+.desc-cell {
+  white-space: normal;
+  max-width: 420px;
+}
+.system-toolbar {
+  align-items: center;
+}
+.system-toolbar h3 {
+  margin: 0;
+}
+.stat-value-sm {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 @media (max-width: 768px) {
   .body {
     flex-direction: column;
   }
   .detail-values {
     grid-template-columns: 1fr;
+  }
+  .search-field input {
+    min-width: 0;
   }
 }
 </style>
