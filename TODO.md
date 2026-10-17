@@ -49,7 +49,7 @@
 
 ### 批次 5：体验提升
 - [x] 5.1 讨论（Discussions）：分类（Announcements/General/Ideas/Q&A）、评论、Q&A 标记答案、API
-- [ ] 5.2 项目看板（Projects）：`projects`/`project_columns`/`project_cards`、拖拽、筛选
+- [x] 5.2 项目看板（Projects）：默认三列、卡片关联 Issue/PR、移动/删除、API
 - [ ] 5.3 命令面板 + 快捷键：Ctrl+K、`g i`/`g p`/`c`/`/`
 - [ ] 5.4 多语言（i18n）：Vue i18n 中英文、后端 Accept-Language
 - [ ] 5.5 邮件摘要：每日/每周聚合、通知频率设置

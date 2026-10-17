@@ -52,6 +52,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pathperm"
 	"github.com/LiStudioorg/gitli/internal/service/pkgsvc"
+	"github.com/LiStudioorg/gitli/internal/service/project"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
 	"github.com/LiStudioorg/gitli/internal/service/reaction"
@@ -209,6 +210,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		SAML:          samlSvc,
 		Deps:          deps.New(st),
 		Discussions:   discussion.New(st),
+		Projects:      project.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

@@ -43,6 +43,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/pat"
 	"github.com/LiStudioorg/gitli/internal/service/pathperm"
 	"github.com/LiStudioorg/gitli/internal/service/pkgsvc"
+	"github.com/LiStudioorg/gitli/internal/service/project"
 	"github.com/LiStudioorg/gitli/internal/service/pull"
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
 	"github.com/LiStudioorg/gitli/internal/service/reaction"
@@ -128,6 +129,7 @@ type Deps struct {
 	SAML         *samlauth.Service
 	Deps         *deps.Service
 	Discussions  *discussion.Service
+	Projects     *project.Service
 	RefreshDeps  func(ctx context.Context, repoID int64, repoPath, ref string) (int, error)
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
