@@ -45,7 +45,7 @@ const cloneInfo = ref<CloneInfo | null>(null)
 const branches = ref<string[]>([])
 const selectedBranch = ref('')
 
-const tabs = ['代码', '工单', '合并请求', '工作流', '依赖', '项目', '发布', '百科', '活动', '设置', '更多']
+const tabs = ['代码', '工单', '合并请求', '工作流', '依赖', '项目', '讨论', '发布', '百科', '活动', '设置']
 const activeTab = ref('代码')
 const initialTab = route.query.tab
 if (typeof initialTab === 'string' && tabs.includes(initialTab)) {
@@ -383,6 +383,362 @@ function onRepoUpdated(payload: { name?: string; archived?: boolean }) {
   }
 }
 
+interface Project {
+  id: number
+  name: string
+  description: string
+}
+
+interface ProjectCard {
+  id: number
+  column_id: number
+  issue_id: number | null
+  pull_id: number | null
+  title: string
+  position: number
+}
+
+interface ProjectColumn {
+  id: number
+  project_id: number
+  name: string
+  position: number
+  cards: ProjectCard[]
+}
+
+interface ProjectBoard {
+  project: Project
+  columns: ProjectColumn[]
+}
+
+interface DiscussionCategory {
+  id: number
+  name: string
+  description: string
+  is_answerable: boolean
+}
+
+interface Discussion {
+  id: number
+  repo_id: number
+  category_id: number
+  title: string
+  body: string
+  author_id: number
+  is_answered: boolean
+  created_at: string
+}
+
+interface DiscussionComment {
+  id: number
+  discussion_id: number
+  author_id: number
+  body: string
+  is_answer: boolean
+  created_at: string
+}
+
+interface DiscussionDetail {
+  discussion: Discussion
+  comments: DiscussionComment[] | null
+}
+
+const projects = ref<Project[]>([])
+const projectsLoading = ref(false)
+const projectsLoaded = ref(false)
+const projectsError = ref('')
+const projectForm = ref({ name: '', description: '' })
+const projectCreating = ref(false)
+const projectFormError = ref('')
+
+const board = ref<ProjectBoard | null>(null)
+const boardLoading = ref(false)
+const boardError = ref('')
+const selectedProjectId = ref<number | null>(null)
+const cardDrafts = ref<Record<number, string>>({})
+const cardAdding = ref<number | null>(null)
+const dragCardId = ref<number | null>(null)
+
+async function loadProjects() {
+  projectsLoading.value = true
+  projectsError.value = ''
+  try {
+    const { data } = await api.get<Project[]>(`/repos/${owner}/${name}/projects`)
+    projects.value = data ?? []
+    projectsLoaded.value = true
+    if (!selectedProjectId.value && projects.value.length) {
+      await selectProject(projects.value[0].id)
+    }
+  } catch {
+    projectsError.value = '加载项目失败'
+    projects.value = []
+  } finally {
+    projectsLoading.value = false
+  }
+}
+
+async function createProject() {
+  projectFormError.value = ''
+  if (!projectForm.value.name.trim()) {
+    projectFormError.value = '名称不能为空'
+    return
+  }
+  projectCreating.value = true
+  try {
+    await api.post(`/repos/${owner}/${name}/projects`, {
+      name: projectForm.value.name,
+      description: projectForm.value.description,
+    })
+    projectForm.value = { name: '', description: '' }
+    projectsLoaded.value = false
+    await loadProjects()
+  } catch {
+    projectFormError.value = '创建项目失败'
+  } finally {
+    projectCreating.value = false
+  }
+}
+
+async function selectProject(id: number) {
+  selectedProjectId.value = id
+  boardLoading.value = true
+  boardError.value = ''
+  try {
+    const { data } = await api.get<ProjectBoard>(`/repos/${owner}/${name}/projects/${id}`)
+    board.value = data
+    cardDrafts.value = {}
+  } catch {
+    boardError.value = '加载看板失败'
+    board.value = null
+  } finally {
+    boardLoading.value = false
+  }
+}
+
+function cardsOf(col: ProjectColumn): ProjectCard[] {
+  return [...(col.cards ?? [])].sort((a, b) => a.position - b.position)
+}
+
+async function addCard(col: ProjectColumn) {
+  if (!board.value) return
+  const title = (cardDrafts.value[col.id] ?? '').trim()
+  if (!title) return
+  cardAdding.value = col.id
+  boardError.value = ''
+  try {
+    await api.post(`/repos/${owner}/${name}/projects/${board.value.project.id}/cards`, {
+      column_id: col.id,
+      title,
+    })
+    cardDrafts.value[col.id] = ''
+    await selectProject(board.value.project.id)
+  } catch {
+    boardError.value = '添加卡片失败'
+  } finally {
+    cardAdding.value = null
+  }
+}
+
+async function deleteCard(card: ProjectCard) {
+  if (!board.value) return
+  if (!window.confirm(`确定删除卡片「${card.title}」吗？`)) return
+  boardError.value = ''
+  try {
+    await api.delete(`/repos/${owner}/${name}/projects/${board.value.project.id}/cards/${card.id}`)
+    await selectProject(board.value.project.id)
+  } catch {
+    boardError.value = '删除卡片失败'
+  }
+}
+
+function onDragStart(card: ProjectCard) {
+  dragCardId.value = card.id
+}
+
+function onDrop(col: ProjectColumn) {
+  const id = dragCardId.value
+  dragCardId.value = null
+  if (!board.value || id == null) return
+  const target = cardsOf(col)
+  const index = target.findIndex((c) => c.id === id)
+  const position = index >= 0 ? index : target.length
+  moveCard(id, col.id, position)
+}
+
+async function moveCard(cardId: number, columnId: number, position: number) {
+  if (!board.value) return
+  boardError.value = ''
+  try {
+    await api.patch(`/repos/${owner}/${name}/projects/${board.value.project.id}/cards/${cardId}`, {
+      column_id: columnId,
+      position,
+    })
+    await selectProject(board.value.project.id)
+  } catch {
+    boardError.value = '移动卡片失败'
+  }
+}
+
+const discussions = ref<Discussion[]>([])
+const discussionsLoading = ref(false)
+const discussionsLoaded = ref(false)
+const discussionsError = ref('')
+const discussionCategories = ref<DiscussionCategory[]>([])
+const categoriesLoaded = ref(false)
+const selectedCategory = ref<number | ''>('')
+const discussionForm = ref({ title: '', body: '', category_id: '' as number | '' })
+const discussionCreating = ref(false)
+const discussionFormError = ref('')
+
+const discussionDetail = ref<DiscussionDetail | null>(null)
+const discussionDetailLoading = ref(false)
+const discussionDetailError = ref('')
+const selectedDiscussionId = ref<number | null>(null)
+const commentBody = ref('')
+const commentAdding = ref(false)
+const answerBusy = ref<number | null>(null)
+
+function fmtDate(v: string): string {
+  if (!v) return '-'
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleString()
+}
+
+async function loadCategories() {
+  if (categoriesLoaded.value) return
+  try {
+    const { data } = await api.get<DiscussionCategory[]>(
+      `/repos/${owner}/${name}/discussions/categories`,
+    )
+    discussionCategories.value = data ?? []
+    categoriesLoaded.value = true
+    if (!discussionForm.value.category_id && discussionCategories.value.length) {
+      discussionForm.value.category_id = discussionCategories.value[0].id
+    }
+  } catch {
+    discussionCategories.value = []
+    categoriesLoaded.value = true
+  }
+}
+
+async function loadDiscussions() {
+  discussionsLoading.value = true
+  discussionsError.value = ''
+  try {
+    const { data } = await api.get<Discussion[]>(`/repos/${owner}/${name}/discussions`, {
+      params: selectedCategory.value === '' ? {} : { category_id: selectedCategory.value },
+    })
+    discussions.value = data ?? []
+    discussionsLoaded.value = true
+  } catch {
+    discussionsError.value = '加载讨论失败'
+    discussions.value = []
+  } finally {
+    discussionsLoading.value = false
+  }
+}
+
+function filterCategory(id: number | '') {
+  selectedCategory.value = id
+  loadDiscussions()
+}
+
+function categoryLabel(id: number): string {
+  return discussionCategories.value.find((c) => c.id === id)?.name ?? `#${id}`
+}
+
+function isAnswerable(d: Discussion): boolean {
+  return discussionCategories.value.find((c) => c.id === d.category_id)?.is_answerable ?? false
+}
+
+async function createDiscussion() {
+  discussionFormError.value = ''
+  if (!discussionForm.value.title.trim()) {
+    discussionFormError.value = '标题不能为空'
+    return
+  }
+  if (discussionForm.value.category_id === '') {
+    discussionFormError.value = '请选择分类'
+    return
+  }
+  discussionCreating.value = true
+  try {
+    await api.post(`/repos/${owner}/${name}/discussions`, {
+      title: discussionForm.value.title,
+      body: discussionForm.value.body,
+      category_id: discussionForm.value.category_id,
+    })
+    discussionForm.value.title = ''
+    discussionForm.value.body = ''
+    await loadDiscussions()
+  } catch {
+    discussionFormError.value = '创建讨论失败'
+  } finally {
+    discussionCreating.value = false
+  }
+}
+
+async function openDiscussion(d: Discussion) {
+  selectedDiscussionId.value = d.id
+  discussionDetailLoading.value = true
+  discussionDetailError.value = ''
+  commentBody.value = ''
+  try {
+    const { data } = await api.get<DiscussionDetail>(
+      `/repos/${owner}/${name}/discussions/${d.id}`,
+    )
+    discussionDetail.value = data
+  } catch {
+    discussionDetailError.value = '加载讨论详情失败'
+    discussionDetail.value = null
+  } finally {
+    discussionDetailLoading.value = false
+  }
+}
+
+function closeDiscussion() {
+  selectedDiscussionId.value = null
+  discussionDetail.value = null
+  discussionDetailError.value = ''
+}
+
+async function addComment() {
+  if (!discussionDetail.value) return
+  const body = commentBody.value.trim()
+  if (!body) return
+  commentAdding.value = true
+  discussionDetailError.value = ''
+  try {
+    await api.post(
+      `/repos/${owner}/${name}/discussions/${discussionDetail.value.discussion.id}/comments`,
+      { body },
+    )
+    commentBody.value = ''
+    await openDiscussion(discussionDetail.value.discussion)
+  } catch {
+    discussionDetailError.value = '发表评论失败'
+  } finally {
+    commentAdding.value = false
+  }
+}
+
+async function markAnswer(comment: DiscussionComment) {
+  if (!discussionDetail.value) return
+  answerBusy.value = comment.id
+  discussionDetailError.value = ''
+  try {
+    await api.post(
+      `/repos/${owner}/${name}/discussions/${discussionDetail.value.discussion.id}/answer`,
+      { comment_id: comment.id },
+    )
+    await openDiscussion(discussionDetail.value.discussion)
+  } catch {
+    discussionDetailError.value = '标记答案失败'
+  } finally {
+    answerBusy.value = null
+  }
+}
+
 function selectTab(tab: string) {
   activeTab.value = tab
   if (tab === '工单') {
@@ -395,6 +751,11 @@ function selectTab(tab: string) {
   }
   if (tab === '工作流' && !workflowsLoaded.value && !workflowsLoading.value) loadWorkflows()
   if (tab === '依赖' && !dependenciesLoaded.value && !dependenciesLoading.value) loadDependencies()
+  if (tab === '项目' && !projectsLoaded.value && !projectsLoading.value) loadProjects()
+  if (tab === '讨论') {
+    loadCategories()
+    if (!discussionsLoaded.value && !discussionsLoading.value) loadDiscussions()
+  }
   if (tab !== '工作流') closeLog()
 }
 
@@ -687,6 +1048,207 @@ onUnmounted(() => {
       <p v-else-if="!dependenciesError" class="empty">
         未发现依赖清单（支持 go.mod / package.json / pom.xml / requirements.txt）
       </p>
+    </div>
+
+    <div v-else-if="activeTab === '项目'" class="tab-panel">
+      <div class="panel-head">
+        <h3>项目</h3>
+        <button class="chip" type="button" :disabled="projectsLoading" @click="loadProjects">
+          刷新
+        </button>
+      </div>
+
+      <p v-if="projectsError" class="error">{{ projectsError }}</p>
+
+      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createProject">
+        <h4>新建项目</h4>
+        <input v-model="projectForm.name" type="text" placeholder="项目名称" class="form-input" />
+        <input v-model="projectForm.description" type="text" placeholder="描述（可选）" class="form-input" />
+        <p v-if="projectFormError" class="error">{{ projectFormError }}</p>
+        <button class="chip primary" type="submit" :disabled="projectCreating">
+          {{ projectCreating ? '创建中...' : '创建项目' }}
+        </button>
+      </form>
+
+      <div v-if="projectsLoading" class="empty">加载中…</div>
+      <template v-else>
+        <div v-if="projects.length" class="project-picker">
+          <span class="muted-label">选择项目：</span>
+          <button
+            v-for="p in projects"
+            :key="p.id"
+            type="button"
+            class="chip"
+            :class="{ 'chip-active': p.id === selectedProjectId }"
+            @click="selectProject(p.id)"
+          >
+            {{ p.name }}
+          </button>
+        </div>
+
+        <p v-if="boardError" class="error">{{ boardError }}</p>
+        <div v-if="boardLoading" class="empty">加载看板中…</div>
+        <div v-else-if="board" class="kanban">
+          <section v-for="col in board.columns" :key="col.id" class="kanban-col">
+            <header class="kanban-col-head">
+              <strong>{{ col.name }}</strong>
+              <span class="dep-count">{{ cardsOf(col).length }}</span>
+            </header>
+            <ul
+              class="kanban-cards"
+              @dragover.prevent
+              @drop="onDrop(col)"
+            >
+              <li
+                v-for="card in cardsOf(col)"
+                :key="card.id"
+                class="kanban-card"
+                draggable="true"
+                @dragstart="onDragStart(card)"
+              >
+                <span class="kanban-card-title">{{ card.title }}</span>
+                <button
+                  class="card-del"
+                  type="button"
+                  title="删除卡片"
+                  @click="deleteCard(card)"
+                >
+                  ×
+                </button>
+              </li>
+              <li v-if="!cardsOf(col).length" class="kanban-empty">拖拽卡片到这里</li>
+            </ul>
+            <form class="kanban-add" @submit.prevent="addCard(col)">
+              <input
+                v-model="cardDrafts[col.id]"
+                type="text"
+                placeholder="新增卡片标题"
+                class="form-input"
+              />
+              <button class="chip primary" type="submit" :disabled="cardAdding === col.id">
+                添加
+              </button>
+            </form>
+          </section>
+        </div>
+        <p v-else-if="!projects.length && !projectsError" class="empty">
+          暂无项目，请先创建
+        </p>
+      </template>
+    </div>
+
+    <div v-else-if="activeTab === '讨论'" class="tab-panel">
+      <div class="panel-head">
+        <h3>讨论</h3>
+        <button class="chip" type="button" :disabled="discussionsLoading" @click="loadDiscussions">
+          刷新
+        </button>
+      </div>
+
+      <div class="cat-chips">
+        <button
+          type="button"
+          class="chip"
+          :class="{ 'chip-active': selectedCategory === '' }"
+          @click="filterCategory('')"
+        >
+          全部
+        </button>
+        <button
+          v-for="c in discussionCategories"
+          :key="c.id"
+          type="button"
+          class="chip"
+          :class="{ 'chip-active': selectedCategory === c.id }"
+          :title="c.description"
+          @click="filterCategory(c.id)"
+        >
+          {{ c.name }}
+        </button>
+      </div>
+
+      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createDiscussion">
+        <h4>发起讨论</h4>
+        <input v-model="discussionForm.title" type="text" placeholder="标题" class="form-input" />
+        <select v-model="discussionForm.category_id" class="form-input">
+          <option v-if="!discussionCategories.length" :value="''" disabled>暂无分类</option>
+          <option v-for="c in discussionCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+        <textarea v-model="discussionForm.body" rows="3" placeholder="内容（可选）" class="form-input" />
+        <p v-if="discussionFormError" class="error">{{ discussionFormError }}</p>
+        <button class="chip primary" type="submit" :disabled="discussionCreating">
+          {{ discussionCreating ? '提交中...' : '创建讨论' }}
+        </button>
+      </form>
+
+      <p v-if="discussionsError" class="error">{{ discussionsError }}</p>
+      <div v-if="discussionsLoading" class="empty">加载中…</div>
+      <ul v-else-if="discussions.length" class="item-list">
+        <li
+          v-for="d in discussions"
+          :key="d.id"
+          class="item-row disc-row"
+          :class="{ selected: selectedDiscussionId === d.id }"
+          @click="openDiscussion(d)"
+        >
+          <span class="tag">{{ categoryLabel(d.category_id) }}</span>
+          <span class="item-title">{{ d.title }}</span>
+          <span v-if="d.is_answered" class="state answered">已回答</span>
+          <span class="when">{{ fmtDate(d.created_at) }}</span>
+        </li>
+      </ul>
+      <p v-else-if="!discussionsError" class="empty">暂无讨论</p>
+
+      <div v-if="selectedDiscussionId !== null" class="discussion-detail">
+        <p v-if="discussionDetailError" class="error">{{ discussionDetailError }}</p>
+        <div v-if="discussionDetailLoading" class="empty">加载详情中…</div>
+        <template v-else-if="discussionDetail">
+          <div class="disc-head">
+            <h4>{{ discussionDetail.discussion.title }}</h4>
+            <span class="tag">{{ categoryLabel(discussionDetail.discussion.category_id) }}</span>
+            <span v-if="discussionDetail.discussion.is_answered" class="state answered">已回答</span>
+            <button class="chip" type="button" @click="closeDiscussion">关闭</button>
+          </div>
+          <div class="disc-body">{{ discussionDetail.discussion.body || '（无内容）' }}</div>
+
+          <h5 class="disc-comments-title">评论</h5>
+          <ul
+            v-if="(discussionDetail.comments ?? []).length"
+            class="comment-list"
+          >
+            <li
+              v-for="c in discussionDetail.comments ?? []"
+              :key="c.id"
+              class="comment"
+              :class="{ answer: c.is_answer }"
+            >
+              <div class="comment-head">
+                <span class="mono">用户 #{{ c.author_id }}</span>
+                <span class="when">{{ fmtDate(c.created_at) }}</span>
+                <span v-if="c.is_answer" class="state answered">答案</span>
+                <button
+                  v-if="isAnswerable(discussionDetail.discussion) && !c.is_answer && auth.isLoggedIn"
+                  class="chip"
+                  type="button"
+                  :disabled="answerBusy === c.id"
+                  @click="markAnswer(c)"
+                >
+                  标记为答案
+                </button>
+              </div>
+              <p class="comment-body">{{ c.body }}</p>
+            </li>
+          </ul>
+          <p v-else class="empty">暂无评论</p>
+
+          <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="addComment">
+            <textarea v-model="commentBody" rows="3" placeholder="写下你的评论..." class="form-input" />
+            <button class="chip primary" type="submit" :disabled="commentAdding || !commentBody.trim()">
+              {{ commentAdding ? '提交中...' : '发表评论' }}
+            </button>
+          </form>
+        </template>
+      </div>
     </div>
 
     <div v-else-if="activeTab === '设置'" class="tab-panel">
@@ -1143,6 +1705,182 @@ onUnmounted(() => {
 .log-status {
   color: var(--muted);
   font-size: 0.82rem;
+}
+.chip-active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.project-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.muted-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.kanban {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  align-items: flex-start;
+  padding-bottom: 0.5rem;
+}
+.kanban-col {
+  flex: 0 0 260px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+}
+.kanban-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--hover-bg);
+}
+.kanban-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.kanban-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  cursor: grab;
+  font-size: 0.9rem;
+}
+.kanban-card:active {
+  cursor: grabbing;
+}
+.kanban-card-title {
+  flex: 1;
+  word-break: break-word;
+}
+.card-del {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+}
+.card-del:hover {
+  color: var(--accent);
+}
+.kanban-empty {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 0.5rem 0;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.kanban-add {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+.kanban-add .form-input {
+  flex: 1;
+  min-width: 0;
+}
+.cat-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.disc-row {
+  cursor: pointer;
+}
+.disc-row.selected {
+  background: var(--hover-bg);
+}
+.state.answered {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-soft);
+}
+.discussion-detail {
+  margin-top: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  background: var(--card);
+}
+.disc-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.disc-head h4 {
+  margin: 0;
+  flex: 1;
+}
+.disc-body {
+  white-space: pre-wrap;
+  margin: 0.9rem 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+.disc-comments-title {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.comment-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.comment {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  background: var(--color-bg);
+}
+.comment.answer {
+  border-color: var(--success);
+}
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.comment-head .chip {
+  margin-left: auto;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+}
+.comment-body {
+  margin: 0.4rem 0 0;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
 }
 .log-view {
   margin: 0;

@@ -147,6 +147,52 @@ function changeLocale(v: string) {
   setLocale(v)
   selectedLocale.value = v
 }
+
+type NotificationFrequency = 'realtime' | 'daily' | 'weekly' | 'off'
+
+const notificationFrequencyOptions: { value: NotificationFrequency; label: string }[] = [
+  { value: 'realtime', label: '实时' },
+  { value: 'daily', label: '每日' },
+  { value: 'weekly', label: '每周' },
+  { value: 'off', label: '关闭' },
+]
+const notificationFrequency = ref<NotificationFrequency>('realtime')
+const notifLoading = ref(false)
+const notifSaving = ref(false)
+const notifError = ref('')
+const notifOk = ref('')
+const notifLoaded = ref(false)
+
+async function loadNotificationFrequency() {
+  if (notifLoading.value) return
+  notifLoading.value = true
+  notifError.value = ''
+  try {
+    const { data } = await api.get<{ frequency: NotificationFrequency }>(
+      '/user/notification-frequency',
+    )
+    if (data?.frequency) notificationFrequency.value = data.frequency
+    notifLoaded.value = true
+  } catch (e) {
+    notifError.value = errMessage(e)
+  } finally {
+    notifLoading.value = false
+  }
+}
+
+async function saveNotificationFrequency() {
+  notifSaving.value = true
+  notifError.value = ''
+  notifOk.value = ''
+  try {
+    await api.put('/user/notification-frequency', { frequency: notificationFrequency.value })
+    notifOk.value = '通知频率已保存'
+  } catch (e) {
+    notifError.value = errMessage(e)
+  } finally {
+    notifSaving.value = false
+  }
+}
 const active = ref<TabKey>('profile')
 
 function errMessage(e: unknown): string {
@@ -860,6 +906,10 @@ function selectTab(key: TabKey) {
     if (logs.value.length === 0 && !logsLoading.value) loadLogs()
     if (sessions.value.length === 0 && !sessionsLoading.value) loadSessions()
   }
+  if (key === 'general' && !notifLoaded.value && !notifLoading.value) {
+    notifOk.value = ''
+    loadNotificationFrequency()
+  }
 }
 
 onMounted(async () => {
@@ -1252,6 +1302,24 @@ onMounted(async () => {
             </select>
           </label>
           <p class="hint">切换后立即生效并保存。</p>
+          <label class="field">
+            通知频率
+            <select v-model="notificationFrequency" :disabled="notifLoading">
+              <option
+                v-for="o in notificationFrequencyOptions"
+                :key="o.value"
+                :value="o.value"
+              >
+                {{ o.label }}
+              </option>
+            </select>
+          </label>
+          <p v-if="notifLoading" class="muted">加载中…</p>
+          <p v-if="notifError" class="error">{{ notifError }}</p>
+          <p v-if="notifOk" class="ok">{{ notifOk }}</p>
+          <button class="primary" :disabled="notifSaving || notifLoading" @click="saveNotificationFrequency">
+            {{ notifSaving ? '保存中…' : '保存通知频率' }}
+          </button>
         </section>
         <section v-else class="card">
           <h3>我的活动</h3>
