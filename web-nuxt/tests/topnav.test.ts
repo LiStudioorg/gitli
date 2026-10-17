@@ -18,9 +18,16 @@ function makeRouter() {
       { path: '/login', component: Stub },
       { path: '/register', component: Stub },
       { path: '/dashboard', component: Stub },
+      { path: '/explore', component: Stub },
+      { path: '/search', component: Stub },
       { path: '/settings', component: Stub },
       { path: '/admin', component: Stub },
-      { path: '/search', component: Stub },
+      { path: '/new/repo', component: Stub },
+      { path: '/new/org', component: Stub },
+      { path: '/new/import', component: Stub },
+      // 兜底：TopNav 里的 RouterLink 覆盖了更多目标，缺路由会产生
+      // VUE_ROUTER_R0004 噪音，掩盖真正的断言失败信号。
+      { path: '/:pathMatch(.*)*', component: Stub },
     ],
   })
 }

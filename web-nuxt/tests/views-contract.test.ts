@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// 这些用例首次导入 SFC 时要经过 vite 的 Vue 插件编译，冷缓存下单文件可达 1.8s，
+// 累计超过 vitest 默认 5000ms 的 testTimeout，于是「先跑挂、后跑过」。显式放宽，
+// 避免门禁变成靠缓存热度的随机通过。
+vi.setConfig({ testTimeout: 60_000 })
 
 // 视图「能否在 Nuxt 目录结构下被正确导入」是迁移里最容易被静默破坏的一环：
 // 相对路径深度、组件名、组合式函数引用都会在构建期才暴露。这里做静态契约校验，
