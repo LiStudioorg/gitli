@@ -4,7 +4,7 @@
 
 ## 当前进度
 
-**阶段**：批次 1 完成（deploy keys / CODEOWNERS / 重命名重定向 / 软删除恢复 / SPDX 许可证 / Issue-PR 模板 / 归档）。已完成：SSH key 双用途 + GPG 签名密钥；企业级审计系统（表扩展/异步写入/查询导出统计/归档/告警/前端）。功能批次 1-5 与阶段 A-C 见 TODO.md。
+**阶段**：批次 2 完成；批次 1 完成（deploy keys / CODEOWNERS / 重命名重定向 / 软删除恢复 / SPDX 许可证 / Issue-PR 模板 / 归档）。已完成：SSH key 双用途 + GPG 签名密钥；企业级审计系统（表扩展/异步写入/查询导出统计/归档/告警/前端）。功能批次 1-5 与阶段 A-C 见 TODO.md。
 **HEAD**：`0bd3ca4`（main）
 **发布**：`v0.1.2`（29 附件 + ghcr.io 多架构镜像），`v0.1.1`（29 附件）。v0.1.0 首次 CD 因需 svft/syft 失败（未创建 Release），已用后续版本替代。
 **最近更新**：修复 CD（去掉 sboms、Dockerfile 基础镜像升级）；发布流水线全绿。
