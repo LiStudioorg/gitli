@@ -35,7 +35,7 @@
 - [x] 2.4 探索页 + 趋势 + 话题：`/explore`、`/topics/{topic}`、`trending_cache`、每日聚合
 
 ### 批次 3：企业安全
-- [ ] 3.1 OAuth2 应用（Provider）：`oauth_apps`/`oauth_authorizations`、授权/Token/用户信息端点、管理页
+- [x] 3.1 OAuth2 应用（Provider）：`oauth_apps`/`oauth_authorizations`/`oauth_codes`/`oauth_tokens`、授权码流程、Token/用户信息端点（后端）
 - [ ] 3.2 会话管理 UI：列表/单个注销/全部注销，显示 IP/UA/时间
 - [ ] 3.3 IP 允许列表：`ip_allowlist` 表、中间件、组织设置
 - [ ] 3.4 审计日志导出：CSV/JSON 流式导出

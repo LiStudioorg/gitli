@@ -92,6 +92,8 @@ func (s *Server) Router() http.Handler {
 
 	api.Get("/version", s.handleVersion)
 	api.Get("/search", s.handleGlobalSearch)
+	api.Get("/oauth/authorize-info", s.handleOAuthAuthorizeInfo)
+	api.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/oauth/approve", s.handleOAuthApprove)
 
 	api.Route("/admin", func(ar chi.Router) {
 		ar.Get("/stats", s.handleAdminStats)
@@ -143,6 +145,11 @@ func (s *Server) Router() http.Handler {
 		ur.Get("/me/tokens", s.handleListTokens)
 		ur.Get("/activity", s.handleMyActivity)
 		ur.Get("/deleted-repos", s.handleListDeletedRepos)
+		ur.Get("/oauth-apps", s.handleListOAuthApps)
+		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/oauth-apps", s.handleCreateOAuthApp)
+		ur.Delete("/oauth-apps/{id}", s.handleDeleteOAuthApp)
+		ur.Get("/oauth-authorizations", s.handleListOAuthAuthorizations)
+		ur.Delete("/oauth-authorizations/{appId}", s.handleRevokeOAuthAuthorization)
 		ur.Get("/saved-replies", s.handleListSavedReplies)
 		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/saved-replies", s.handleCreateSavedReply)
 		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Patch("/saved-replies/{id}", s.handleUpdateSavedReply)
@@ -338,6 +345,8 @@ func (s *Server) Router() http.Handler {
 	r.Get("/badges/{owner}/{repo}/status.svg", s.handleBadge)
 	r.Get("/feed/{owner}/{repo}.xml", s.handleRSS)
 	r.Get("/feed/{owner}/{repo}.atom", s.handleAtom)
+	r.Post("/oauth/token", s.handleOAuthToken)
+	r.Get("/oauth/userinfo", s.handleOAuthUserInfo)
 	r.Get("/api/v1/explore/repos", s.handleExploreRepos)
 	r.Get("/api/v1/explore/trending", s.handleTrending)
 	r.Get("/api/v1/explore/topics", s.handleTopTopics)

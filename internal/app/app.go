@@ -40,6 +40,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/mirror"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
 	"github.com/LiStudioorg/gitli/internal/service/notifpref"
+	"github.com/LiStudioorg/gitli/internal/service/oauth"
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	"github.com/LiStudioorg/gitli/internal/service/org2fa"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
@@ -196,6 +197,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		GlobalSearch:  globalsearch.New(st),
 		Follows:       follow.New(st),
 		Explore:       explore.New(st),
+		OAuth:         oauth.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

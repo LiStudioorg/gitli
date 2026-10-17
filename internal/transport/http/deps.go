@@ -32,6 +32,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/mirror"
 	"github.com/LiStudioorg/gitli/internal/service/notification"
 	"github.com/LiStudioorg/gitli/internal/service/notifpref"
+	"github.com/LiStudioorg/gitli/internal/service/oauth"
 	"github.com/LiStudioorg/gitli/internal/service/org"
 	"github.com/LiStudioorg/gitli/internal/service/org2fa"
 	pkgstore "github.com/LiStudioorg/gitli/internal/service/package"
@@ -118,6 +119,7 @@ type Deps struct {
 	GlobalSearch *globalsearch.Service
 	Follows      *follow.Service
 	Explore      *explore.Service
+	OAuth        *oauth.Service
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
 	// layer to avoid an import cycle.
