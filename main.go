@@ -50,6 +50,9 @@ func run(args []string) error {
 		if err := refuseRoot(cfg); err != nil {
 			return err
 		}
+		if err := checkWeakSecrets(cfg); err != nil {
+			return err
+		}
 		return runServe(context.Background(), cfg, *configPath)
 	}
 	cmd := args[0]
@@ -110,6 +113,9 @@ func run(args []string) error {
 
 	switch cmd {
 	case "serve", "server":
+		if err := checkWeakSecrets(cfg); err != nil {
+			return err
+		}
 		return runServe(ctx, cfg, *configPath)
 	case "migrate":
 		return runMigrate(ctx, cfg, *configPath)

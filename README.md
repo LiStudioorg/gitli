@@ -545,8 +545,8 @@ User=gitli
 Group=gitli
 WorkingDirectory=/var/lib/gitli
 ExecStart=/usr/local/bin/gitli serve --config /etc/gitli/config.toml
-Environment=GITLI_PEPPER=change-me
-Environment=GITLI_CRYPTO_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# 密钥从环境文件读取，切勿写死在 unit 中
+EnvironmentFile=-/etc/gitli/gitli.env
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65535
@@ -554,6 +554,23 @@ LimitNOFILE=65535
 [Install]
 WantedBy=multi-user.target
 ```
+
+> ⚠️ **安全警告（升级用户必读）**
+>
+> 旧版 `gitli.service` 与文档中硬编码了公开的 `GITLI_CRYPTO_KEY` 与 `GITLI_PEPPER`。
+> 如果你的部署曾使用过这些值，**请立刻重新生成密钥**，并重置所有 2FA 与 CI Secrets：
+>
+> ```bash
+> sudo install -d -m 0750 -o gitli -g gitli /etc/gitli
+> sudo -u gitli sh -c 'umask 077; {
+>   echo "GITLI_PEPPER=$(gitli admin generate-secret)"
+>   echo "GITLI_CRYPTO_KEY=$(gitli admin generate-secret)"
+> } > /etc/gitli/gitli.env'
+> sudo chmod 0600 /etc/gitli/gitli.env
+> sudo systemctl restart gitli
+> ```
+>
+> 之后所有用户需要重新绑定两步验证，CI Secrets 需要重新录入。
 
 ```bash
 sudo systemctl daemon-reload

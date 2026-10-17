@@ -115,7 +115,8 @@ func (s *Server) handleListPipelineArtifacts(w http.ResponseWriter, r *http.Requ
 }
 
 func (s *Server) handleDeleteArtifact(w http.ResponseWriter, r *http.Request) {
-	if requireUser(w, r) == nil {
+	u := requireUser(w, r)
+	if u == nil {
 		return
 	}
 	id, err := pathInt(r, "id")
@@ -123,10 +124,32 @@ func (s *Server) handleDeleteArtifact(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "无效的构建产物 ID")
 		return
 	}
+	// H-08: the route carries no owner/repo, so resolve the owning repository
+	// from artifact -> job -> pipeline and require write access to it.
+	repoID, err := s.deps.CI.ArtifactRepoID(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "构建产物不存在")
+		return
+	}
+	rp, err := s.deps.Repos.ByID(r.Context(), repoID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "构建产物不存在")
+		return
+	}
+	perm, err := s.deps.Repos.PermissionFor(r.Context(), rp, u.ID, u.IsAdmin, s.deps.Orgs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if perm < domain.PermWrite {
+		writeError(w, http.StatusForbidden, "权限不足")
+		return
+	}
 	if err := s.deps.CI.DeleteArtifact(r.Context(), id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	s.auditAction(r, u.ID, "ci.artifact_delete", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
 

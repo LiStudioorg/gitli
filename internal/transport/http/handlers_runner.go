@@ -177,9 +177,21 @@ func (s *Server) handleRunnerJobResult(w http.ResponseWriter, r *http.Request) {
 
 // handleRunnerJobLogStream streams stored logs via SSE for the web UI.
 func (s *Server) handleRunnerJobLogStream(w http.ResponseWriter, r *http.Request) {
+	// H-02: logs may contain secrets, so require read access to THIS repo and
+	// verify the job actually belongs to it. Without these checks any visitor
+	// could enumerate job IDs and read the whole instance's CI output.
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermRead)
+	if !ok {
+		return
+	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的任务 ID")
+		return
+	}
+	job, err := s.deps.Runners.JobByID(r.Context(), jobID)
+	if err != nil || job.RepoID != rp.ID {
+		writeError(w, http.StatusNotFound, "任务不存在")
 		return
 	}
 	flusher, ok := w.(http.Flusher)

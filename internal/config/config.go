@@ -151,6 +151,9 @@ type ServerConfig struct {
 	AllowRoot       bool     `toml:"allow_root"`
 	EnablePprof     bool     `toml:"pprof"`
 	MemoryLimitMB   int      `toml:"memory_limit_mb"`
+	// TrustedProxies lists CIDRs whose X-Forwarded-For header is honoured.
+	// Empty means XFF is ignored entirely (the safe default).
+	TrustedProxies []string `toml:"trusted_proxies"`
 
 	// Deprecated single-address fields, accepted for backward compatibility.
 	HTTP        string `toml:"http"`

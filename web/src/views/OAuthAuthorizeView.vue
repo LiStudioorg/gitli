@@ -71,7 +71,13 @@ async function approve() {
       scopes: info.value.scopes ?? [],
       state: info.value.state ?? state,
     })
-    window.location.href = data.redirect
+    // H-07：只允许跳转到 http(s) 地址，杜绝 javascript: 伪协议 XSS。
+    if (isSafeRedirect(data.redirect)) {
+      window.location.href = data.redirect
+    } else {
+      error.value = '服务器返回了不安全的回调地址，已阻止跳转'
+      busy.value = false
+    }
   } catch (e) {
     if (axios.isAxiosError(e) && e.response?.status === 401) {
       redirectToLogin()
@@ -82,8 +88,22 @@ async function approve() {
   }
 }
 
+function isSafeRedirect(raw: string | undefined | null): raw is string {
+  if (!raw) return false
+  try {
+    const u = new URL(raw, window.location.origin)
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function deny() {
   const target = new URL(info.value?.redirect_uri || redirectUri, window.location.origin)
+  if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+    error.value = '回调地址协议不安全，已阻止跳转'
+    return
+  }
   target.searchParams.set('error', 'access_denied')
   const st = info.value?.state ?? state
   if (st) target.searchParams.set('state', st)

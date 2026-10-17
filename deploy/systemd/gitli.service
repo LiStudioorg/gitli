@@ -8,11 +8,19 @@ User=gitli
 Group=gitli
 WorkingDirectory=/var/lib/gitli
 ExecStart=/usr/local/bin/gitli serve --config /etc/gitli/config.toml
-Environment=GITLI_PEPPER=change-me
-Environment=GITLI_CRYPTO_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# Secrets come from an environment file, never from this unit. Create it with:
+#   sudo gitli admin generate-secret   (run twice: one value per variable)
+#   sudo install -m 0600 /dev/null /etc/gitli/gitli.env
+# then add:
+#   GITLI_PEPPER=<random>
+#   GITLI_CRYPTO_KEY=<64 hex chars>
+EnvironmentFile=-/etc/gitli/gitli.env
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
 
 [Install]
 WantedBy=multi-user.target

@@ -79,3 +79,18 @@ func (s *Service) DeleteArtifact(ctx context.Context, id int64) error {
 	}
 	return nil
 }
+
+// ArtifactRepoID resolves the repository that owns an artifact by walking
+// artifact -> job -> pipeline. It returns sql.ErrNoRows when the artifact is
+// unknown, which callers must treat as "not found" rather than "forbidden".
+func (s *Service) ArtifactRepoID(ctx context.Context, artifactID int64) (int64, error) {
+	q := s.st.Rebind(`SELECT p.repo_id FROM ci_artifacts a
+		JOIN ci_jobs j ON j.id = a.job_id
+		JOIN ci_pipelines p ON p.id = j.pipeline_id
+		WHERE a.id = ?`)
+	var repoID int64
+	if err := s.st.DB.QueryRowContext(ctx, q, artifactID).Scan(&repoID); err != nil {
+		return 0, err
+	}
+	return repoID, nil
+}
