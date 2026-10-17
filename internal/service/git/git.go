@@ -4,6 +4,7 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -114,6 +115,33 @@ func (s *Service) Diff(ctx context.Context, path, base, head string) (string, er
 		return "", err
 	}
 	return s.runner.Run(ctx, path, "diff", "--no-color", base, head, "--")
+}
+
+// maxDiffBytes caps how much diff text is sent to a browser. Extremely large
+// diffs freeze the client and waste bandwidth, so we return a flag instead.
+const maxDiffBytes = 1 << 20 // 1 MiB
+
+// ErrDiffTooLarge is returned when a diff exceeds maxDiffBytes.
+var ErrDiffTooLarge = errors.New("git: diff too large to display")
+
+// DiffLimited is like Diff but refuses to return oversized output.
+func (s *Service) DiffLimited(ctx context.Context, path, base, head string) (string, bool, error) {
+	if err := validateRef(base); err != nil {
+		return "", false, err
+	}
+	if err := validateRef(head); err != nil {
+		return "", false, err
+	}
+	// Ask git for a bounded amount of output; a null byte marks truncation
+	// deterministically because diffs never contain NUL.
+	out, err := s.runner.Run(ctx, path, "-c", "core.quotepath=true", "diff", "--no-color", base, head, "--")
+	if err != nil {
+		return "", false, err
+	}
+	if len(out) > maxDiffBytes {
+		return "", true, ErrDiffTooLarge
+	}
+	return out, false, nil
 }
 
 // Blame returns porcelain blame for a file.

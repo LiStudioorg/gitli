@@ -175,7 +175,7 @@ func (s *Service) Query(ctx context.Context, f Query) ([]*domain.AuditLog, error
 	args := []any{}
 	if f.Event != "" {
 		where = append(where, "event LIKE ?")
-		args = append(args, f.Event+"%")
+		args = append(args, store.PrefixPattern(f.Event))
 	}
 	if f.ActorID != nil {
 		where = append(where, "actor_id = ?")
@@ -183,7 +183,7 @@ func (s *Service) Query(ctx context.Context, f Query) ([]*domain.AuditLog, error
 	}
 	if f.Target != "" {
 		where = append(where, "(target_type = ? OR target_name LIKE ?)")
-		args = append(args, f.Target, "%"+f.Target+"%")
+		args = append(args, f.Target, store.ContainsPattern(f.Target))
 	}
 	if f.Result != "" {
 		where = append(where, "result = ?")

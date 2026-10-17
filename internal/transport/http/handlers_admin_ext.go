@@ -77,7 +77,15 @@ func (s *Server) handleAdminSetActive(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.auditAction(r, u.ID, "admin.user.disable", "success")
+	// A deactivated account must not keep working through the credential cache.
+	if !*req.Active && s.gitAuth != nil {
+		s.gitAuth.invalidateUser(id)
+	}
+	if *req.Active {
+		s.auditAction(r, u.ID, "admin.user.enable", "success")
+	} else {
+		s.auditAction(r, u.ID, "admin.user.disable", "success")
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "active": *req.Active})
 }
 
@@ -102,7 +110,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if s.gitAuth != nil {
-		s.gitAuth.invalidate()
+		s.gitAuth.invalidateUser(u.ID)
 	}
 	s.auditAction(r, u.ID, "admin.user.reset_password", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"password": tmp})
@@ -126,6 +134,9 @@ func (s *Server) handleAdminReset2FA(w http.ResponseWriter, r *http.Request) {
 	if err := s.deps.Users.ResetTOTP(r.Context(), id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	if s.gitAuth != nil {
+		s.gitAuth.invalidateUser(id)
 	}
 	s.auditAction(r, u.ID, "admin.user.reset_2fa", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})

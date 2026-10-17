@@ -106,7 +106,15 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "必须提供 base 与 head 参数")
 		return
 	}
-	diff, err := s.deps.Git.Diff(r.Context(), path, base, head)
+	diff, tooLarge, err := s.deps.Git.DiffLimited(r.Context(), path, base, head)
+	if tooLarge {
+		// Do not stream a huge diff into the browser: it would freeze the tab.
+		writeJSON(w, http.StatusOK, map[string]any{
+			"too_large": true,
+			"message":   "变更内容过大，请在本地查看或下载",
+		})
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

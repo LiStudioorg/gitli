@@ -150,6 +150,7 @@ type ServerConfig struct {
 	SSHExternal     string   `toml:"ssh_external"`
 	AllowRoot       bool     `toml:"allow_root"`
 	EnablePprof     bool     `toml:"pprof"`
+	MemoryLimitMB   int      `toml:"memory_limit_mb"`
 
 	// Deprecated single-address fields, accepted for backward compatibility.
 	HTTP        string `toml:"http"`

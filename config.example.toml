@@ -145,7 +145,7 @@ salt_length = 16
 key_length = 32
 
 # 密码最小长度。默认：12。低于该长度拒绝注册/改密。
-min_length = 12
+min_length = 8
 
 # 是否启用 HaveIBeenPwned k-匿名弱密码检测（会向 api.pwnedpasswords.com 发起请求）。
 # 可选值：true / false。默认：false

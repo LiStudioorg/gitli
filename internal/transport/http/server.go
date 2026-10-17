@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/LiStudioorg/gitli/internal/platform"
 	"github.com/LiStudioorg/gitli/internal/transport/http/middleware"
 	"github.com/LiStudioorg/gitli/internal/version"
 	"github.com/LiStudioorg/gitli/web"
@@ -39,9 +40,11 @@ func (s *Server) Router() http.Handler {
 	r.Use(middleware.Recover(d.Log))
 	r.Use(middleware.SecurityHeaders(d.HTTPSecure()))
 	r.Use(middleware.CORS(d.ExternalBase()))
+	r.Use(middleware.Compress())
 	r.Use(s.usernameRedirect)
 
 	r.Get("/healthz", s.handleHealth)
+	r.Get("/readyz", s.handleReady)
 	r.Get("/metrics", s.handleMetrics)
 	if d.Cfg.Server.EnablePprof {
 		r.Mount("/debug/pprof", http.DefaultServeMux)
@@ -410,6 +413,49 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// handleReady is the readiness probe: it reports whether the instance can
+// actually serve traffic (database reachable, git available, disk writable).
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	checks := map[string]any{}
+	ready := true
+
+	if err := s.deps.DB.PingContext(ctx); err != nil {
+		checks["database"] = "error: " + err.Error()
+		ready = false
+	} else {
+		checks["database"] = "ok"
+	}
+
+	if s.deps.GitCmd != nil {
+		if _, err := s.deps.GitCmd.Run(ctx, "", "--version"); err != nil {
+			checks["git"] = "error: " + err.Error()
+			ready = false
+		} else {
+			checks["git"] = "ok"
+		}
+	}
+
+	diskRoot := s.deps.Cfg.Storage.Repos
+	if total, free, err := platform.DiskUsage(diskRoot); err != nil {
+		checks["disk"] = "unknown"
+	} else {
+		checks["disk"] = map[string]any{"total_mb": total >> 20, "free_mb": free >> 20}
+		if total > 0 && free*100/total < 2 {
+			checks["disk_status"] = "low"
+		}
+	}
+
+	status := http.StatusOK
+	state := "ready"
+	if !ready {
+		status = http.StatusServiceUnavailable
+		state = "not_ready"
+	}
+	writeJSON(w, status, map[string]any{"status": state, "checks": checks})
 }
 
 func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {

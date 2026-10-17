@@ -2,6 +2,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
@@ -38,8 +39,19 @@ func AdminOnly(next http.Handler) http.Handler {
 	})
 }
 
-// countAll runs a parameter-free COUNT(*) query and returns the total.
+// countableTables is the allowlist for countAll. Table names can never be
+// parameterised, so any dynamic table name must be validated against this set
+// rather than interpolated blindly.
+var countableTables = map[string]struct{}{
+	"users": {}, "repos": {}, "orgs": {}, "issues": {}, "pulls": {},
+	"gists": {}, "releases": {}, "webhooks": {}, "access_tokens": {},
+}
+
+// countAll runs a COUNT(*) for an allowlisted table.
 func (s *Server) countAll(r *http.Request, table string) (int64, error) {
+	if _, ok := countableTables[table]; !ok {
+		return 0, fmt.Errorf("countAll: table %q is not allowlisted", table)
+	}
 	q := s.deps.DB.Rebind(`SELECT COUNT(*) FROM ` + table)
 	var n int64
 	err := s.deps.DB.QueryRowContext(r.Context(), q).Scan(&n)

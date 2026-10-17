@@ -46,6 +46,18 @@ const auth = useAuthStore()
 const username = computed(() => route.params.username as string)
 
 const profile = ref<ProfileResponse | null>(null)
+
+// Only http(s) links are rendered as anchors; anything else (notably
+// javascript:) is shown as plain text so a profile cannot execute script.
+function safeWebsite(url: string | undefined): string {
+  if (!url) return ''
+  try {
+    const parsed = new URL(url, window.location.origin)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : ''
+  } catch {
+    return ''
+  }
+}
 const loading = ref(false)
 const error = ref('')
 
@@ -151,7 +163,8 @@ void loadProfile()
             <ul class="facts">
               <li v-if="profile.user.location">📍 {{ profile.user.location }}</li>
               <li v-if="profile.user.website">
-                <a :href="profile.user.website" target="_blank" rel="noopener">🔗 {{ profile.user.website }}</a>
+                <a v-if="safeWebsite(profile.user.website)" :href="safeWebsite(profile.user.website)" target="_blank" rel="noopener noreferrer">🔗 {{ profile.user.website }}</a>
+                <span v-else>🔗 {{ profile.user.website }}</span>
               </li>
             </ul>
           </div>

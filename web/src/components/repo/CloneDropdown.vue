@@ -34,7 +34,7 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
 
 <template>
   <div class="clone-dropdown">
-    <button class="code-btn" @click="toggle">
+    <button class="code-btn" type="button" aria-label="获取克隆地址" aria-expanded="false" @click="toggle">
       <span class="angle">&lt;&gt;</span> 代码
       <span class="caret">▾</span>
     </button>

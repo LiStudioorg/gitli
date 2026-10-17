@@ -32,7 +32,7 @@ func Defaults() *Config {
 				Parallelism: 2,
 				SaltLength:  16,
 				KeyLength:   32,
-				MinLength:   12,
+				MinLength:   8,
 			},
 			Login: LoginConfig{
 				MaxAttempts:    5,

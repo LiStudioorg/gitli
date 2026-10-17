@@ -30,6 +30,23 @@ func TestGitAuthCacheHitAndInvalidate(t *testing.T) {
 	}
 }
 
+func TestGitAuthCacheInvalidateUserOnly(t *testing.T) {
+	c := newGitAuthCache()
+	alice := &domain.User{ID: 1, Username: "alice"}
+	bob := &domain.User{ID: 2, Username: "bob"}
+	c.put("alice", "pw", alice)
+	c.put("bob", "pw", bob)
+
+	c.invalidateUser(alice.ID)
+
+	if _, ok := c.get("alice", "pw"); ok {
+		t.Fatal("alice's cached credential must be revoked")
+	}
+	if _, ok := c.get("bob", "pw"); !ok {
+		t.Fatal("bob's cached credential must survive")
+	}
+}
+
 func TestGitAuthCacheExpires(t *testing.T) {
 	c := newGitAuthCache()
 	c.put("bob", "pw", &domain.User{ID: 1})

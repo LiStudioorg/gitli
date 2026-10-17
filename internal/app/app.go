@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	runtime_debug "runtime/debug"
 
 	"github.com/LiStudioorg/gitli/internal/config"
 	"github.com/LiStudioorg/gitli/internal/db"
@@ -85,6 +86,10 @@ type App struct {
 // New builds an App from configuration, opening the database and wiring services.
 func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, error) {
 	log := NewLogger(cfg.Log)
+	if cfg.Server.MemoryLimitMB > 0 {
+		runtime_debug.SetMemoryLimit(int64(cfg.Server.MemoryLimitMB) << 20)
+		log.Info("memory limit configured", "mb", cfg.Server.MemoryLimitMB)
+	}
 
 	if err := ensureDirs(cfg); err != nil {
 		return nil, err

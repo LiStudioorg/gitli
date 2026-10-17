@@ -32,9 +32,27 @@
 - **解压即用**：启动自动建库/建表/补齐迁移，全部成功后才监听；迁移逐版本事务化。
   新增 `TestStartupCreatesDatabaseFromScratch` 与 `TestUpgradeFromPartialSchema`（旧库升级不丢数据）。
 
+### 安全红线审查（rc4 前完成）
+
+- **SQL 注入**：全库扫描无 `Sprintf`/`+` 拼接 SQL；所有查询参数化。`LIKE` 统一经
+  `store.EscapeLike` 转义 `%`、`_`、`\`；动态表名 `countAll` 改为白名单。
+  端到端注入测试（`' OR 1=1 --`、`'; DROP TABLE users;--`、`%`、`_`）返回 200 且数据完好。
+- **XSS**：Markdown `html: false` + `validateLink` 仅允许 http(s)/mailto/相对路径；
+  用户网站链接校验协议（拒绝 `javascript:`）；CSP `default-src 'self'`。
+- **SSRF**：Webhook 阻断回环/私网/链路本地/元数据地址且禁止重定向；导入改为
+  `secutil.ValidateOutboundURL` 强校验；镜像保留内网（合法用途）。
+- **认证缓存**：Argon2 并发上限 2，Git Basic 认证缓存 60s，改密/重置 2FA/停用/删除
+  均按用户立即失效（私有仓库实测旧密码返回 401）。
+
 ### 待办
-- B6 发布 `v0.9.0-rc2`（含自动迁移升级测试与文档净化）。
+- B6 发布 `v0.9.0-rc4`（预发布）。
 - B1 压测脚本已就绪，待在有足够内存的机器上跑完整 50 并发并记录结果。
+
+### rc4 新增
+- 零配置：自动生成 config.toml、data 目录、随机密钥；自动迁移；初始化向导。
+- 性能：gzip 压缩、静态资源 immutable 缓存、SQLite WAL/busy_timeout、`memory_limit_mb`。
+- 运维：`/readyz`、`gitli install`（systemd）、`gitli admin backup`、JSON 日志。
+- 体验：骨架屏、Toast、PWA、GFM 任务列表、A11y、大 Diff 保护。
 
 ## 已完成功能总览
 

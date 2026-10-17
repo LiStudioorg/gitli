@@ -18,7 +18,7 @@ go build -o gitli # 成功
 
 ## 1. 项目定位
 
-gitli 是一个**轻量级、自研的 Git 服务平台**，目标是在单台低配服务器上提供 GitHub / GitLab / Gitea / Forgejo 级别的核心能力：
+gitli 是一个**轻量级、自研的 Git 服务平台**，目标是在单台低配服务器上提供 自托管 Git 服务平台的核心能力：
 
 - Git 托管（HTTP + SSH，clone/push/pull）
 - 用户 / 组织 / 团队 / 权限

@@ -9,14 +9,14 @@ import (
 	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 )
 
-// Supported import sources.
+// Supported import sources. They are distinguished only by how the remote is
+// fetched (hosting API vs. plain git), never by a specific product.
 const (
-	SourceGitHub  = "github"
-	SourceGitLab  = "gitlab"
-	SourceGitea   = "gitea"
+	SourceHosted  = "hosted"
 	SourceGeneric = "generic"
 )
 
@@ -49,14 +49,21 @@ func New(st *store.Store, runner *gitcmd.Runner) *Service {
 }
 
 var validSources = map[string]bool{
-	SourceGitHub:  true,
-	SourceGitLab:  true,
-	SourceGitea:   true,
+	SourceHosted:  true,
 	SourceGeneric: true,
+}
+
+// legacySourceAliases maps historical source values to the current set so
+// existing databases keep working after the rename.
+var legacySourceAliases = map[string]string{
+	"github": SourceHosted,
 }
 
 // Create validates and inserts a new import job in the pending state.
 func (s *Service) Create(ctx context.Context, repoID int64, source, sourceURL string) (*Job, error) {
+	if alias, ok := legacySourceAliases[source]; ok {
+		source = alias
+	}
 	if !validSources[source] {
 		return nil, fmt.Errorf("invalid import source: %q", source)
 	}
@@ -147,6 +154,12 @@ func (s *Service) setStatus(ctx context.Context, jobID int64, status, message st
 // validateSourceURL rejects import URLs with unsupported schemes or no host.
 func validateSourceURL(raw string) error {
 	if strings.HasPrefix(raw, "git@") {
+		// scp-style remotes are dialled directly by git over SSH; the target
+		// host still cannot be a loopback or metadata address.
+		host := strings.SplitN(strings.SplitN(raw, "@", 2)[1], ":", 2)[0]
+		if secutil.BlockedHost(host) {
+			return fmt.Errorf("拒绝对内部地址发起导入：%s", host)
+		}
 		return nil
 	}
 	u, err := url.Parse(raw)
@@ -154,7 +167,18 @@ func validateSourceURL(raw string) error {
 		return fmt.Errorf("invalid source url: %w", err)
 	}
 	switch u.Scheme {
-	case "http", "https", "git", "ssh":
+	case "http", "https", "git":
+		// These are fetched by the server itself, so private targets are SSRF.
+		if err := secutil.ValidateOutboundURL(raw, true); err != nil {
+			return err
+		}
+	case "ssh":
+		if u.Hostname() == "" {
+			return fmt.Errorf("source url missing host")
+		}
+		if secutil.BlockedHost(u.Hostname()) {
+			return fmt.Errorf("拒绝对内部地址发起导入：%s", u.Hostname())
+		}
 	default:
 		return fmt.Errorf("unsupported source url scheme %q", u.Scheme)
 	}

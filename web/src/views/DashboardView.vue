@@ -6,6 +6,7 @@ import Sidebar from '../components/layout/Sidebar.vue'
 import ActivityItem from '../components/common/ActivityItem.vue'
 import ContributionGraph from '../components/common/ContributionGraph.vue'
 import RepoSidebarCard from '../components/common/RepoSidebarCard.vue'
+import SkeletonBlock from '../components/common/SkeletonBlock.vue'
 import { useAuthStore, useNotificationStore, useRepoStore } from '../stores'
 import type { Repo } from '../stores'
 import { useSSE } from '../composables/useSSE'
@@ -15,6 +16,7 @@ const repos = useRepoStore()
 const notifications = useNotificationStore()
 const router = useRouter()
 const removing = ref<number | null>(null)
+const loading = ref(true)
 const removeError = ref('')
 
 useSSE({
@@ -27,11 +29,15 @@ onMounted(async () => {
     await router.replace({ path: '/login', query: { redirect: '/dashboard' } })
     return
   }
-  await Promise.all([
-    repos.fetchMyRepos().catch(() => undefined),
-    repos.fetchActivities().catch(() => undefined),
-    notifications.fetchAll().catch(() => undefined),
-  ])
+  try {
+    await Promise.all([
+      repos.fetchMyRepos().catch(() => undefined),
+      repos.fetchActivities().catch(() => undefined),
+      notifications.fetchAll().catch(() => undefined),
+    ])
+  } finally {
+    loading.value = false
+  }
 })
 
 const hasActivities = computed(() => repos.activities.length > 0)
@@ -71,7 +77,12 @@ async function removeRepo(repo: Repo) {
               <span class="muted">你最近的仓库活动</span>
             </header>
 
-            <div v-if="hasActivities" class="feed">
+            <div v-if="loading" class="feed">
+              <div v-for="i in 4" :key="i" class="skeleton-card">
+                <SkeletonBlock :lines="3" />
+              </div>
+            </div>
+            <div v-else-if="hasActivities" class="feed">
               <ActivityItem v-for="a in repos.activities" :key="a.id" :activity="a" />
             </div>
             <div v-else class="empty-state">
@@ -141,6 +152,12 @@ async function removeRepo(repo: Repo) {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+}
+.skeleton-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  background: var(--card);
 }
 .side-col {
   display: flex;

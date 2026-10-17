@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '../../api/client'
 import MarkdownView from '../common/MarkdownView.vue'
+import SkeletonBlock from '../common/SkeletonBlock.vue'
 
 const props = defineProps<{
   owner: string
@@ -142,7 +143,7 @@ onMounted(() => void loadTree())
 <template>
   <section class="browser">
     <div class="toolbar">
-      <select class="branch-select" :value="branch" @change="changeBranch">
+      <select class="branch-select" :value="branch" aria-label="选择分支" title="选择分支" @change="changeBranch">
         <option v-for="b in branches.length ? branches : [branch]" :key="b" :value="b">{{ b }}</option>
       </select>
       <nav class="breadcrumb">
@@ -152,11 +153,13 @@ onMounted(() => void loadTree())
           <button type="button" class="crumb" @click="jumpTo(i + 1)">{{ p }}</button>
         </template>
       </nav>
-      <button type="button" class="chip" @click="copyPath">复制路径</button>
+      <button type="button" class="chip" aria-label="复制当前路径" title="复制当前路径" @click="copyPath">复制路径</button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-else-if="loading" class="muted">正在加载…</p>
+    <div v-else-if="loading" class="skeleton-list">
+      <SkeletonBlock v-for="i in 5" :key="i" :lines="1" height="1.4rem" />
+    </div>
 
     <template v-else>
       <div v-if="latestCommit" class="commit-bar">
@@ -356,6 +359,14 @@ onMounted(() => void loadTree())
 }
 .readme :deep(.markdown-body) {
   padding: 1rem 1.1rem;
+}
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
 }
 .error {
   color: #d1242f;

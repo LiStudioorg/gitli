@@ -49,6 +49,11 @@ const options: Options = {
 
 const md = new MarkdownIt(options)
 
+// Defence in depth: even with html:false, reject dangerous URL schemes that a
+// user could put in a Markdown link or an autolinked string.
+const safeLink = /^(https?:|mailto:|\/|#|\.{0,2}\/)/i
+md.validateLink = (url: string): boolean => safeLink.test(url.trim())
+
 const html = computed(() => md.render(props.source || ''))
 </script>
 

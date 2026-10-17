@@ -21,6 +21,7 @@ const gitAuthMaxEntries = 4096
 type gitAuthEntry struct {
 	user    *domain.User
 	expires time.Time
+	userID  int64
 }
 
 type gitAuthCache struct {
@@ -67,10 +68,23 @@ func (c *gitAuthCache) put(username, password string, user *domain.User) {
 			c.entries = make(map[string]gitAuthEntry)
 		}
 	}
-	c.entries[key] = gitAuthEntry{user: user, expires: time.Now().Add(gitAuthTTL)}
+	c.entries[key] = gitAuthEntry{user: user, expires: time.Now().Add(gitAuthTTL), userID: user.ID}
 }
 
-// invalidate drops every cached credential, used after password changes.
+// invalidateUser drops every cached credential belonging to userID. Call it on
+// password changes, 2FA resets, deactivation and deletion so a revoked
+// credential stops working immediately instead of lingering for gitAuthTTL.
+func (c *gitAuthCache) invalidateUser(userID int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for k, v := range c.entries {
+		if v.userID == userID {
+			delete(c.entries, k)
+		}
+	}
+}
+
+// invalidate drops every cached credential.
 func (c *gitAuthCache) invalidate() {
 	c.mu.Lock()
 	c.entries = make(map[string]gitAuthEntry)

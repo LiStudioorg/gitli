@@ -242,5 +242,5 @@ func termsLike(terms []string) string {
 	if len(terms) == 0 {
 		return ""
 	}
-	return "%" + strings.Join(terms, " ") + "%"
+	return store.ContainsPattern(strings.Join(terms, " "))
 }

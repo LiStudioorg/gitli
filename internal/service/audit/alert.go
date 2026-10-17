@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/LiStudioorg/gitli/internal/service/store"
 )
 
 // AlertRule triggers when an event exceeds a threshold within a window.
@@ -151,7 +153,7 @@ func (s *Service) EvaluateAlerts(ctx context.Context) ([]AlertFiring, error) {
 		since := time.Now().Add(-time.Duration(r.WindowSec) * time.Second)
 		q := s.st.Rebind(`SELECT COUNT(*) FROM audit_logs WHERE event LIKE ? AND created_at >= ?`)
 		var n int
-		if err := s.st.DB.QueryRowContext(ctx, q, r.Event+"%", dbTime(since)).Scan(&n); err != nil {
+		if err := s.st.DB.QueryRowContext(ctx, q, store.PrefixPattern(r.Event), dbTime(since)).Scan(&n); err != nil {
 			return nil, err
 		}
 		if n >= r.Threshold {

@@ -884,7 +884,7 @@ onMounted(() => {
           <form class="filters" @submit.prevent="loadUsers">
             <label class="filter search-field">
               <span>搜索用户</span>
-              <input v-model="usersQuery" type="search" placeholder="用户名或邮箱" />
+              <input v-model="usersQuery" type="search" placeholder="用户名或邮箱" aria-label="搜索用户" />
             </label>
             <div class="filter filter-actions">
               <button class="btn primary" type="submit">搜索</button>
@@ -980,7 +980,7 @@ onMounted(() => {
           <form class="filters" @submit.prevent="loadRepos">
             <label class="filter search-field">
               <span>搜索仓库</span>
-              <input v-model="reposQuery" type="search" placeholder="仓库名称" />
+              <input v-model="reposQuery" type="search" placeholder="仓库名称" aria-label="搜索仓库" />
             </label>
             <div class="filter filter-actions">
               <button class="btn primary" type="submit">搜索</button>
