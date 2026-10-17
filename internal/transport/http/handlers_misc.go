@@ -20,7 +20,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	q := r.URL.Query().Get("q")
 	if strings.TrimSpace(q) == "" {
-		writeError(w, http.StatusBadRequest, "q query param required")
+		writeError(w, http.StatusBadRequest, "必须提供 q 参数")
 		return
 	}
 	path, err := s.repoPath(r, rp)
@@ -64,7 +64,7 @@ func (s *Server) handleLFSBatch(w http.ResponseWriter, r *http.Request) {
 	out := make([]lfsBatchObject, 0, len(req.Objects))
 	for _, obj := range req.Objects {
 		if !s.deps.LFS.VerifyOID(obj.Oid) {
-			writeError(w, http.StatusBadRequest, "invalid oid")
+			writeError(w, http.StatusBadRequest, "无效的对象 ID")
 			return
 		}
 		action := "upload"
@@ -89,7 +89,7 @@ func (s *Server) handleLFSUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	oid := urlParam(r, "oid")
 	if !s.deps.LFS.VerifyOID(oid) {
-		writeError(w, http.StatusBadRequest, "invalid oid")
+		writeError(w, http.StatusBadRequest, "无效的对象 ID")
 		return
 	}
 	size := r.ContentLength
@@ -113,7 +113,7 @@ func (s *Server) handleLFSDownload(w http.ResponseWriter, r *http.Request) {
 	rc, _, err := s.deps.LFS.Get(r.Context(), rp.ID, oid)
 	if err != nil {
 		if errors.Is(err, lfs.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "object not found")
+			writeError(w, http.StatusNotFound, "对象不存在")
 			return
 		}
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -156,11 +156,11 @@ func (s *Server) writeFeed(w http.ResponseWriter, r *http.Request, atom bool) {
 	owner := urlParam(r, "owner")
 	repoName := urlParam(r, "repo")
 	if err := validateName("owner", owner); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid owner")
+		writeError(w, http.StatusBadRequest, "无效的所有者")
 		return
 	}
 	if err := validateName("repo", repoName); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid repo")
+		writeError(w, http.StatusBadRequest, "无效的仓库")
 		return
 	}
 	title := owner + "/" + repoName

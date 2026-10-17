@@ -15,7 +15,7 @@ import (
 func (s *Server) handleGitInfoRefs(w http.ResponseWriter, r *http.Request) {
 	service := r.URL.Query().Get("service")
 	if !git.IsSmartService(service) {
-		writeError(w, http.StatusBadRequest, "unsupported service")
+		writeError(w, http.StatusBadRequest, "不支持的服务")
 		return
 	}
 	need := domain.PermRead
@@ -44,7 +44,7 @@ func (s *Server) handleGitInfoRefs(w http.ResponseWriter, r *http.Request) {
 // handleGitService handles the upload-pack / receive-pack POST phase.
 func (s *Server) handleGitService(w http.ResponseWriter, r *http.Request, service string) {
 	if !git.IsSmartService(service) {
-		writeError(w, http.StatusBadRequest, "unsupported service")
+		writeError(w, http.StatusBadRequest, "不支持的服务")
 		return
 	}
 	need := domain.PermRead
@@ -64,7 +64,7 @@ func (s *Server) handleGitService(w http.ResponseWriter, r *http.Request, servic
 	if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 		gz, err := gzip.NewReader(r.Body)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid gzip body")
+			writeError(w, http.StatusBadRequest, "无效的 gzip 请求体")
 			return
 		}
 		defer func() { _ = gz.Close() }()
@@ -92,11 +92,11 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 	name := urlParam(r, "repo")
 	name = strings.TrimSuffix(name, ".git")
 	if err := validateName("owner", owner); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid owner")
+		writeError(w, http.StatusBadRequest, "无效的所有者")
 		return nil, nil, false
 	}
 	if err := validateName("repo", name); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid repo")
+		writeError(w, http.StatusBadRequest, "无效的仓库")
 		return nil, nil, false
 	}
 
@@ -109,7 +109,7 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 
 	ownerUser, err := s.deps.Users.ByUsername(r.Context(), owner)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, nil, false
 	}
 	rp, err := s.deps.Repos.ByOwnerName(r.Context(), ownerUser.ID, name)
@@ -122,7 +122,7 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 				return nil, nil, false
 			}
 		}
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, nil, false
 	}
 	var userID int64
@@ -148,7 +148,7 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 		if u == nil {
 			s.gitAuthChallenge(w)
 		} else {
-			writeError(w, http.StatusForbidden, "insufficient permissions")
+			writeError(w, http.StatusForbidden, "权限不足")
 		}
 		return nil, nil, false
 	}
@@ -158,7 +158,7 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 // gitAuthChallenge asks the git client for Basic credentials.
 func (s *Server) gitAuthChallenge(w http.ResponseWriter) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="gitli"`)
-	writeError(w, http.StatusUnauthorized, "authentication required")
+	writeError(w, http.StatusUnauthorized, "需要登录")
 }
 
 // authenticateGitBasic validates HTTP Basic auth against PATs and user passwords.

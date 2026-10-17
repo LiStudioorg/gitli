@@ -14,7 +14,7 @@ import (
 // runnerAuth validates the Bearer token + X-Runner-ID pair.
 func (s *Server) runnerAuth(w http.ResponseWriter, r *http.Request) (*runner.Runner, bool) {
 	if s.deps.Runners == nil {
-		writeError(w, http.StatusNotFound, "runner subsystem disabled")
+		writeError(w, http.StatusNotFound, "Runner 子系统未启用")
 		return nil, false
 	}
 	auth := r.Header.Get("Authorization")
@@ -27,12 +27,12 @@ func (s *Server) runnerAuth(w http.ResponseWriter, r *http.Request) (*runner.Run
 		runnerID = r.URL.Query().Get("runner_id")
 	}
 	if token == "" || runnerID == "" {
-		writeError(w, http.StatusUnauthorized, "missing runner credentials")
+		writeError(w, http.StatusUnauthorized, "缺少 Runner 凭据")
 		return nil, false
 	}
 	rr, err := s.deps.Runners.Authenticate(r.Context(), runnerID, token)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "invalid runner credentials")
+		writeError(w, http.StatusUnauthorized, "Runner 凭据无效")
 		return nil, false
 	}
 	return rr, true
@@ -87,7 +87,7 @@ func (s *Server) handleRunnerNextJob(w http.ResponseWriter, r *http.Request) {
 	}
 	repo, err := s.deps.Repos.ByID(r.Context(), job.RepoID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "repository missing")
+		writeError(w, http.StatusInternalServerError, "仓库不存在")
 		return
 	}
 	ext := s.deps.External
@@ -111,7 +111,7 @@ func (s *Server) handleRunnerJobLogs(w http.ResponseWriter, r *http.Request) {
 	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid job id")
+		writeError(w, http.StatusBadRequest, "无效的任务 ID")
 		return
 	}
 	// Stream the request body in bounded chunks to avoid unbounded memory.
@@ -133,7 +133,7 @@ func (s *Server) handleRunnerJobLogs(w http.ResponseWriter, r *http.Request) {
 			if rerr == io.EOF {
 				break
 			}
-			writeError(w, http.StatusBadRequest, "read body failed")
+			writeError(w, http.StatusBadRequest, "读取请求体失败")
 			return
 		}
 	}
@@ -158,7 +158,7 @@ func (s *Server) handleRunnerJobResult(w http.ResponseWriter, r *http.Request) {
 	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid job id")
+		writeError(w, http.StatusBadRequest, "无效的任务 ID")
 		return
 	}
 	var req runnerResultReq
@@ -179,12 +179,12 @@ func (s *Server) handleRunnerJobResult(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRunnerJobLogStream(w http.ResponseWriter, r *http.Request) {
 	jobID, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid job id")
+		writeError(w, http.StatusBadRequest, "无效的任务 ID")
 		return
 	}
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		writeError(w, http.StatusInternalServerError, "streaming unsupported")
+		writeError(w, http.StatusInternalServerError, "不支持流式传输")
 		return
 	}
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -248,12 +248,12 @@ func (s *Server) handleCancelWorkflowJob(w http.ResponseWriter, r *http.Request)
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	job, err := s.deps.Runners.JobByID(r.Context(), id)
 	if err != nil || job.RepoID != rp.ID {
-		writeError(w, http.StatusNotFound, "job not found")
+		writeError(w, http.StatusNotFound, "任务不存在")
 		return
 	}
 	if err := s.deps.Runners.CancelJob(r.Context(), id); err != nil {

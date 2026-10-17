@@ -28,7 +28,7 @@ func (s *Server) handleBlockUser(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	if err := s.deps.Blocks.Block(r.Context(), u.ID, target.ID); err != nil {
@@ -46,7 +46,7 @@ func (s *Server) handleUnblockUser(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	if err := s.deps.Blocks.Unblock(r.Context(), u.ID, target.ID); err != nil {
@@ -103,7 +103,7 @@ func (s *Server) handleSetNotifPref(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Key == "" {
-		writeError(w, http.StatusBadRequest, "key required")
+		writeError(w, http.StatusBadRequest, "必须提供密钥")
 		return
 	}
 	if err := s.deps.NotifPrefs.Set(r.Context(), u.ID, req.Key, req.Value); err != nil {
@@ -121,11 +121,11 @@ func (s *Server) orgAdmin(w http.ResponseWriter, r *http.Request) (int64, bool) 
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return 0, false
 	}
 	if o.OwnerID != u.ID && !u.IsAdmin {
-		writeError(w, http.StatusForbidden, "insufficient permissions")
+		writeError(w, http.StatusForbidden, "权限不足")
 		return 0, false
 	}
 	return o.ID, true

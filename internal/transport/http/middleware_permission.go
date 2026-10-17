@@ -22,14 +22,14 @@ func (s *Server) RequirePermission(resource, action string) func(http.Handler) h
 			}
 			rp, ok := s.repoFromURL(r.Context(), urlParam(r, "owner"), trimGitSuffix(urlParam(r, "repo")))
 			if !ok {
-				writeError(w, http.StatusNotFound, "repository not found")
+				writeError(w, http.StatusNotFound, "仓库不存在")
 				return
 			}
 			if !s.deps.RBAC.Check(r.Context(), u.ID, u.IsAdmin, rbac.Requirement{
 				Resource: resource, Action: action, RepoID: rp.ID,
 			}) {
 				s.auditPermissionDenied(r, u.ID, resource, action, rp.ID)
-				writeError(w, http.StatusForbidden, "insufficient permissions")
+				writeError(w, http.StatusForbidden, "权限不足")
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -52,14 +52,14 @@ func (s *Server) RequireOrgPermission(resource, action string) func(http.Handler
 			}
 			o, err := s.deps.Orgs.ByName(r.Context(), orgName)
 			if err != nil {
-				writeError(w, http.StatusNotFound, "organization not found")
+				writeError(w, http.StatusNotFound, "组织不存在")
 				return
 			}
 			if s.deps.IPAllow != nil && !u.IsAdmin && !strings.Contains(r.URL.Path, "/ip-allowlist") {
 				ok, ierr := s.deps.IPAllow.Check(r.Context(), o.ID, clientIP(r))
 				if ierr == nil && !ok {
 					s.auditAction(r, u.ID, "org.ip_allowlist_denied", "denied")
-					writeError(w, http.StatusForbidden, "your IP is not allowed for this organization")
+					writeError(w, http.StatusForbidden, "你的 IP 不在该组织白名单内")
 					return
 				}
 			}
@@ -67,7 +67,7 @@ func (s *Server) RequireOrgPermission(resource, action string) func(http.Handler
 				Resource: resource, Action: action, OrgID: o.ID,
 			}) {
 				s.auditPermissionDenied(r, u.ID, resource, action, 0)
-				writeError(w, http.StatusForbidden, "insufficient permissions")
+				writeError(w, http.StatusForbidden, "权限不足")
 				return
 			}
 			next.ServeHTTP(w, r)

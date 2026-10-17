@@ -22,13 +22,13 @@ func SetupGuard(isInitialized func(context.Context) (bool, error), allow []strin
 			}
 			initd, err := isInitialized(r.Context())
 			if err != nil {
-				http.Error(w, "setup state unavailable", http.StatusInternalServerError)
+				http.Error(w, "无法读取初始化状态", http.StatusInternalServerError)
 				return
 			}
 			if !initd {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusPreconditionFailed)
-				_, _ = w.Write([]byte(`{"error":"instance not initialized","code":"setup_required"}`))
+				_, _ = w.Write([]byte(`{"error":"实例尚未初始化","code":"setup_required"}`))
 				return
 			}
 			next.ServeHTTP(w, r)

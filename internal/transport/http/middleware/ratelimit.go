@@ -78,7 +78,7 @@ func (r *RateLimiter) Middleware(clientKey func(*http.Request) string) func(http
 				next.ServeHTTP(w, req)
 				return
 			}
-			http.Error(w, "too many requests", http.StatusTooManyRequests)
+			http.Error(w, "请求过于频繁，请稍后再试", http.StatusTooManyRequests)
 		})
 	}
 }

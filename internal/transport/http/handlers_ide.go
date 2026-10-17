@@ -38,7 +38,7 @@ func (s *Server) handleIDEFile(w http.ResponseWriter, r *http.Request) {
 	}
 	filePath := r.URL.Query().Get("path")
 	if filePath == "" {
-		writeError(w, http.StatusBadRequest, "path is required")
+		writeError(w, http.StatusBadRequest, "必须提供路径")
 		return
 	}
 	path, err := s.repoPath(r, rp)

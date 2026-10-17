@@ -63,10 +63,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.auditLogin(r, nil, "login", false)
 		if errors.Is(err, auth.ErrTOTPRequired) {
-			writeError(w, http.StatusUnauthorized, "totp_required")
+			writeError(w, http.StatusUnauthorized, "需要两步验证码")
 			return
 		}
-		writeError(w, http.StatusUnauthorized, "invalid credentials")
+		writeError(w, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
 	s.auditLogin(r, &res.User.ID, "login", true)

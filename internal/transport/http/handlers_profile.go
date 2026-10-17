@@ -7,12 +7,12 @@ import "net/http"
 func (s *Server) handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	name := urlParam(r, "username")
 	if err := validateName("username", name); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid username")
+		writeError(w, http.StatusBadRequest, "无效的用户名")
 		return
 	}
 	user, err := s.deps.Users.ByUsername(r.Context(), name)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	repos, _ := s.deps.Repos.ListByOwner(r.Context(), user.ID, 30, 0)
@@ -37,7 +37,7 @@ func (s *Server) handleFollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	if err := s.deps.Follows.Follow(r.Context(), u.ID, target.ID); err != nil {
@@ -54,7 +54,7 @@ func (s *Server) handleUnfollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	if err := s.deps.Follows.Unfollow(r.Context(), u.ID, target.ID); err != nil {
@@ -75,7 +75,7 @@ func (s *Server) handleListFollowing(w http.ResponseWriter, r *http.Request) {
 func (s *Server) listFollowUsers(w http.ResponseWriter, r *http.Request, followers bool) {
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	var ids []int64

@@ -46,7 +46,7 @@ func (s *Server) handleCreateRepo(w http.ResponseWriter, r *http.Request) {
 	if req.Org != "" {
 		o, err := s.deps.Orgs.ByName(r.Context(), req.Org)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "org not found")
+			writeError(w, http.StatusBadRequest, "组织不存在")
 			return
 		}
 		params.OwnerType = domain.OwnerOrg
@@ -56,7 +56,7 @@ func (s *Server) handleCreateRepo(w http.ResponseWriter, r *http.Request) {
 	rp, err := s.deps.Repos.Create(r.Context(), params)
 	if err != nil {
 		if errors.Is(err, repo.ErrExists) {
-			writeError(w, http.StatusConflict, "repository already exists")
+			writeError(w, http.StatusConflict, "仓库已存在")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -81,16 +81,16 @@ func (s *Server) loadRepoAndPerm(w http.ResponseWriter, r *http.Request, need do
 	}
 	ownerUser, err := s.deps.Users.ByUsername(r.Context(), owner)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, nil, false
 	}
 	rp, err := s.deps.Repos.ByOwnerName(r.Context(), ownerUser.ID, name)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, nil, false
 	}
 	if deleted, derr := s.deps.Repos.IsDeleted(r.Context(), rp.ID); derr == nil && deleted {
-		writeError(w, http.StatusGone, "repository deleted")
+		writeError(w, http.StatusGone, "仓库已删除")
 		return nil, nil, false
 	}
 	u := userFrom(r.Context())
@@ -113,11 +113,11 @@ func (s *Server) loadRepoAndPerm(w http.ResponseWriter, r *http.Request, need do
 		return nil, nil, false
 	}
 	if rp.IsPrivate && perm < domain.PermRead {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, nil, false
 	}
 	if perm < need {
-		writeError(w, http.StatusForbidden, "insufficient permissions")
+		writeError(w, http.StatusForbidden, "权限不足")
 		return nil, nil, false
 	}
 	return rp, u, true
@@ -258,16 +258,16 @@ func (s *Server) handleRestoreRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	rp, err := s.deps.Repos.ByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
 	if rp.OwnerID != u.ID && !u.IsAdmin {
-		writeError(w, http.StatusForbidden, "not your repository")
+		writeError(w, http.StatusForbidden, "这不是你的仓库")
 		return
 	}
 	if err := s.deps.Repos.Restore(r.Context(), id); err != nil {
@@ -299,7 +299,7 @@ func (s *Server) handlePurgeDeletedRepo(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Repos.Purge(r.Context(), id); err != nil {
@@ -324,7 +324,7 @@ func (s *Server) handleTransferRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), req.NewOwner)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "target user not found")
+		writeError(w, http.StatusBadRequest, "目标用户不存在")
 		return
 	}
 	if err := s.deps.Repos.Transfer(r.Context(), rp.ID, target.ID, domain.OwnerUser, nil); err != nil {
@@ -436,7 +436,7 @@ func (s *Server) handleAddCollaborator(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	perm := domain.ParsePerm(req.Permission)
@@ -470,7 +470,7 @@ func (s *Server) handleRenameRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.deps.Repos.Rename(r.Context(), rp.ID, req.Name); err != nil {
 		if errors.Is(err, repo.ErrExists) {
-			writeError(w, http.StatusConflict, "repository name already exists")
+			writeError(w, http.StatusConflict, "仓库名已被占用")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())

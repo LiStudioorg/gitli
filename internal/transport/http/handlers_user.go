@@ -60,7 +60,7 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	if !s.reauth(r, u, req.CurrentPassword, req.TOTPCode) {
 		s.auditAction(r, u.ID, "user.password_change", "failure")
-		writeError(w, http.StatusUnauthorized, "re-authentication failed")
+		writeError(w, http.StatusUnauthorized, "二次认证失败")
 		return
 	}
 	if err := s.deps.Auth.UpdatePassword(r.Context(), u, req.NewPassword); err != nil {
@@ -93,7 +93,7 @@ func (s *Server) handleRename(w http.ResponseWriter, r *http.Request) {
 	}
 	if !s.reauth(r, u, req.Password, req.TOTPCode) {
 		s.auditAction(r, u.ID, "user.rename", "failure")
-		writeError(w, http.StatusUnauthorized, "re-authentication failed")
+		writeError(w, http.StatusUnauthorized, "二次认证失败")
 		return
 	}
 	if err := s.deps.Users.Rename(r.Context(), u.ID, req.NewUsername); err != nil {
@@ -152,7 +152,7 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 	}
 	if !s.reauth(r, u, req.Password, req.Code) {
 		s.auditAction(r, u.ID, "user.totp_disable", "failure")
-		writeError(w, http.StatusUnauthorized, "re-authentication failed")
+		writeError(w, http.StatusUnauthorized, "二次认证失败")
 		return
 	}
 	if err := s.deps.Auth.DisableTOTP(r.Context(), u, req.Code); err != nil {
@@ -222,7 +222,7 @@ func (s *Server) handleUpdateSSHKey(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req updateKeyReq
@@ -245,7 +245,7 @@ func (s *Server) handleDeleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Users.DeleteSSHKey(r.Context(), u.ID, id); err != nil {
@@ -302,7 +302,7 @@ func (s *Server) handleDeleteSigningKey(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Users.DeleteSigningKey(r.Context(), u.ID, id); err != nil {
@@ -383,7 +383,7 @@ func (s *Server) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Tokens.Revoke(r.Context(), u.ID, id); err != nil {
@@ -465,7 +465,7 @@ func (s *Server) handleRevokeSession(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Auth.RevokeSession(r.Context(), u.ID, id); err != nil {

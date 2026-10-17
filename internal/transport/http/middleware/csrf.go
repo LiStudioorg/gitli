@@ -22,7 +22,7 @@ func CSRF() func(http.Handler) http.Handler {
 				return
 			}
 			if r.Header.Get(csrfHeaderName) != token {
-				http.Error(w, "invalid csrf token", http.StatusForbidden)
+				http.Error(w, "CSRF 校验失败，请刷新页面后重试", http.StatusForbidden)
 				return
 			}
 			next.ServeHTTP(w, r)

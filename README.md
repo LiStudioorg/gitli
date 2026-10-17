@@ -13,9 +13,11 @@
 
 ## 发布状态
 
-**最新发布：[`v0.1.2`](https://github.com/LiStudioorg/gitli/releases)**（早期 Alpha）
+**请下载 [`v0.2.0-beta`](https://github.com/LiStudioorg/gitli/releases/tag/v0.2.0-beta) 或更新的版本。**
 
-> ⚠️ v0.1.x 为**早期 Alpha 版本**：后端核心功能已就绪，前端页面仍在完善中，请勿用于生产环境。
+> ⚠️ **下载提醒**：`v0.1.x` 为早期留档版本，存在已知问题（启动不自动建表、Android/SIGSYS 崩溃、动态流空白等），**请勿使用**。最新版本已修复上述问题。
+
+> ⚠️ `v0.2.0-beta` 仍为 Beta：核心功能可用，欢迎试用与反馈，请勿直接用于生产的唯一副本。
 
 - 二进制：Linux（amd64/arm64/armv7/386）、macOS（amd64/arm64）、Windows（amd64/arm64/386）、FreeBSD（amd64/arm64/386/arm）、OpenBSD（amd64/arm64）、NetBSD（amd64）的 `tar.gz`/`zip`。
 - 系统包：Linux `deb` / `rpm` / `apk`（amd64/arm64/armv7/386）。
@@ -355,14 +357,41 @@ cp config.example.toml config.toml
 # 按需编辑 config.toml
 ```
 
-### 3. 迁移数据库并启动
+### 3. 启动
+
+```bash
+./gitli serve        # 或 ./gitli server，或直接 ./gitli
+```
+
+**服务启动时会自动执行数据库迁移**（包括 RBAC 种子数据），首次运行无需手动建表。
+迁移失败会打印错误并安全退出，不会带着残缺的数据库继续运行。
+
+默认 HTTP 监听 `:8080`，SSH 监听 `:2222`。
+
+首次打开浏览器会进入 **初始化向导**，创建第一个管理员账号后即可使用。
+高级用户在升级后可手动强制同步结构：
 
 ```bash
 ./gitli migrate
-./gitli serve
 ```
 
-默认 HTTP 监听 `:8080`，SSH 监听 `:2222`。
+### 4. Android / Termux
+
+gitli 可在 Android 的 Termux 中运行：
+
+```bash
+pkg install git
+```
+
+Android 的 seccomp 策略会拦截 `faccessat2`，因此 gitli **不会调用 `os/exec.LookPath`**。
+请显式配置 Git 路径：
+
+```toml
+[git]
+bin = "/data/data/com.termux/files/usr/bin/git"
+```
+
+未配置时 gitli 会自动探测该路径；若仍找不到，会给出中文错误提示而不会崩溃。
 
 > **安全基线：禁止以 root 运行。** gitli 在 Linux/Unix 下检测到 `os.Getuid() == 0` 时默认拒绝启动并退出（退出码 1）。请创建专用用户运行；确需强制时在 `[server]` 设置 `allow_root = true`（强烈不建议）。
 

@@ -29,7 +29,7 @@ func runAdmin(args []string) error {
 		return nil
 	}
 	fs := flag.NewFlagSet("admin "+group, flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
 	// group-specific flags are parsed by subhandlers; parse global flags here.
 	if err := fs.Parse(rest); err != nil {
 		return err
@@ -87,24 +87,24 @@ func runAdmin(args []string) error {
 		return nil
 	default:
 		adminUsage()
-		return fmt.Errorf("unknown admin group %q", group)
+		return fmt.Errorf("未知的管理分组 %q", group)
 	}
 }
 
 func adminUser(ctx context.Context, a *app.App, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("admin user: missing subcommand")
+		return fmt.Errorf("admin user：缺少子命令")
 	}
 	sub := args[0]
 	rest := args[1:]
 	switch sub {
 	case "create":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin user create <username> <email> [--password <pwd>] [--admin]")
+			return fmt.Errorf("用法：gitli admin user create <username> <email> [--password <pwd>] [--admin]")
 		}
 		fs := flag.NewFlagSet("user create", flag.ContinueOnError)
-		pwd := fs.String("password", "", "password (omit to generate)")
-		admin := fs.Bool("admin", false, "grant administrator rights")
+		pwd := fs.String("password", "", "密码（留空则自动生成）")
+		admin := fs.Bool("admin", false, "授予管理员权限")
 		if err := fs.Parse(rest[2:]); err != nil {
 			return err
 		}
@@ -138,7 +138,7 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "info":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user info <username>")
+			return fmt.Errorf("用法：gitli admin user info <username>")
 		}
 		u, err := a.Deps.Users.ByUsername(ctx, rest[0])
 		if err != nil {
@@ -149,7 +149,7 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "set-admin":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user set-admin <username> [--revoke]")
+			return fmt.Errorf("用法：gitli admin user set-admin <username> [--revoke]")
 		}
 		revoke := false
 		for _, r := range rest[1:] {
@@ -160,17 +160,17 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 		return a.CLIUserSetAdmin(ctx, rest[0], !revoke)
 	case "disable":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user disable <username>")
+			return fmt.Errorf("用法：gitli admin user disable <username>")
 		}
 		return a.CLIUserDisable(ctx, rest[0])
 	case "enable":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user enable <username>")
+			return fmt.Errorf("用法：gitli admin user enable <username>")
 		}
 		return a.CLIUserEnable(ctx, rest[0])
 	case "change-password":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user change-password <username>")
+			return fmt.Errorf("用法：gitli admin user change-password <username>")
 		}
 		pw, err := promptPassword("New password: ")
 		if err != nil {
@@ -183,12 +183,12 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "change-email":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin user change-email <username> <new_email>")
+			return fmt.Errorf("用法：gitli admin user change-email <username> <new_email>")
 		}
 		return a.CLIUserChangeEmail(ctx, rest[0], rest[1])
 	case "reset-2fa":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user reset-2fa <username>")
+			return fmt.Errorf("用法：gitli admin user reset-2fa <username>")
 		}
 		if err := a.CLIUserResetTOTP(ctx, rest[0]); err != nil {
 			return err
@@ -197,7 +197,7 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "ssh-keys":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user ssh-keys <username>")
+			return fmt.Errorf("用法：gitli admin user ssh-keys <username>")
 		}
 		keys, err := a.CLIUserSSHKeys(ctx, rest[0])
 		if err != nil {
@@ -209,16 +209,16 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "revoke-ssh-key":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin user revoke-ssh-key <username> <key_id>")
+			return fmt.Errorf("用法：gitli admin user revoke-ssh-key <username> <key_id>")
 		}
 		var id int64
 		if _, err := fmt.Sscanf(rest[1], "%d", &id); err != nil {
-			return fmt.Errorf("invalid key id")
+			return fmt.Errorf("无效的密钥 ID")
 		}
 		return a.CLIUserRevokeSSHKey(ctx, rest[0], id)
 	case "delete":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin user delete <username> --purge")
+			return fmt.Errorf("用法：gitli admin user delete <username> --purge")
 		}
 		purge := false
 		for _, r := range rest[1:] {
@@ -227,20 +227,20 @@ func adminUser(ctx context.Context, a *app.App, args []string) error {
 			}
 		}
 		if !purge {
-			return fmt.Errorf("refusing: pass --purge to permanently delete a user")
+			return fmt.Errorf("已拒绝：彻底删除用户需显式传入 --purge")
 		}
 		if !confirm("Type the username to confirm permanent deletion: ", rest[0]) {
-			return fmt.Errorf("aborted")
+			return fmt.Errorf("已取消")
 		}
 		return a.CLIUserPurge(ctx, rest[0])
 	default:
-		return fmt.Errorf("unknown user subcommand %q", sub)
+		return fmt.Errorf("未知的 user 子命令 %q", sub)
 	}
 }
 
 func adminRepo(ctx context.Context, a *app.App, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("admin repo: missing subcommand")
+		return fmt.Errorf("admin repo：缺少子命令")
 	}
 	sub := args[0]
 	rest := args[1:]
@@ -262,7 +262,7 @@ func adminRepo(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "info":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin repo info <owner>/<repo>")
+			return fmt.Errorf("用法：gitli admin repo info <owner>/<repo>")
 		}
 		r, err := a.CLIRepoResolve(ctx, rest[0])
 		if err != nil {
@@ -273,7 +273,7 @@ func adminRepo(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "delete":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin repo delete <owner>/<repo> --purge")
+			return fmt.Errorf("用法：gitli admin repo delete <owner>/<repo> --purge")
 		}
 		purge := false
 		for _, r := range rest[1:] {
@@ -282,30 +282,30 @@ func adminRepo(ctx context.Context, a *app.App, args []string) error {
 			}
 		}
 		if !purge {
-			return fmt.Errorf("refusing: pass --purge to permanently delete a repository")
+			return fmt.Errorf("已拒绝：彻底删除仓库需显式传入 --purge")
 		}
 		if !confirm("Type the repository (owner/repo) to confirm deletion: ", rest[0]) {
-			return fmt.Errorf("aborted")
+			return fmt.Errorf("已取消")
 		}
 		return a.CLIRepoPurge(ctx, rest[0])
 	case "transfer":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin repo transfer <owner>/<repo> <new_owner>")
+			return fmt.Errorf("用法：gitli admin repo transfer <owner>/<repo> <new_owner>")
 		}
 		return a.CLIRepoTransfer(ctx, rest[0], rest[1])
 	case "archive":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin repo archive <owner>/<repo>")
+			return fmt.Errorf("用法：gitli admin repo archive <owner>/<repo>")
 		}
 		return a.CLIRepoArchive(ctx, rest[0], true)
 	case "unarchive":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin repo unarchive <owner>/<repo>")
+			return fmt.Errorf("用法：gitli admin repo unarchive <owner>/<repo>")
 		}
 		return a.CLIRepoArchive(ctx, rest[0], false)
 	case "recalc-size":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin repo recalc-size <owner>/<repo>")
+			return fmt.Errorf("用法：gitli admin repo recalc-size <owner>/<repo>")
 		}
 		kb, err := a.CLIRepoRecalcSize(ctx, rest[0])
 		if err != nil {
@@ -314,13 +314,13 @@ func adminRepo(ctx context.Context, a *app.App, args []string) error {
 		fmt.Printf("size: %d KB\n", kb)
 		return nil
 	default:
-		return fmt.Errorf("unknown repo subcommand %q", sub)
+		return fmt.Errorf("未知的 repo 子命令 %q", sub)
 	}
 }
 
 func adminOrg(ctx context.Context, a *app.App, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("admin org: missing subcommand")
+		return fmt.Errorf("admin org：缺少子命令")
 	}
 	sub := args[0]
 	rest := args[1:]
@@ -336,7 +336,7 @@ func adminOrg(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "create":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin org create <org_name> <admin_username>")
+			return fmt.Errorf("用法：gitli admin org create <org_name> <admin_username>")
 		}
 		o, err := a.CLIOrgCreate(ctx, rest[0], rest[1])
 		if err != nil {
@@ -346,15 +346,15 @@ func adminOrg(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "delete":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin org delete <org_name>")
+			return fmt.Errorf("用法：gitli admin org delete <org_name>")
 		}
 		if !confirm("Type the org name to confirm deletion: ", rest[0]) {
-			return fmt.Errorf("aborted")
+			return fmt.Errorf("已取消")
 		}
 		return a.CLIOrgDelete(ctx, rest[0])
 	case "add-member":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin org add-member <org_name> <username> [--role <role_name>]")
+			return fmt.Errorf("用法：gitli admin org add-member <org_name> <username> [--role <role_name>]")
 		}
 		role := ""
 		for i := 2; i < len(rest); i++ {
@@ -365,17 +365,17 @@ func adminOrg(ctx context.Context, a *app.App, args []string) error {
 		return a.CLIOrgAddMember(ctx, rest[0], rest[1], role)
 	case "remove-member":
 		if len(rest) < 2 {
-			return fmt.Errorf("usage: gitli admin org remove-member <org_name> <username>")
+			return fmt.Errorf("用法：gitli admin org remove-member <org_name> <username>")
 		}
 		return a.CLIOrgRemoveMember(ctx, rest[0], rest[1])
 	default:
-		return fmt.Errorf("unknown org subcommand %q", sub)
+		return fmt.Errorf("未知的 org 子命令 %q", sub)
 	}
 }
 
 func adminRunner(ctx context.Context, a *app.App, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("admin runner: missing subcommand")
+		return fmt.Errorf("admin runner：缺少子命令")
 	}
 	sub := args[0]
 	rest := args[1:]
@@ -391,7 +391,7 @@ func adminRunner(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "create":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin runner create <name> [--labels \"linux,amd64\"]")
+			return fmt.Errorf("用法：gitli admin runner create <name> [--labels \"linux,amd64\"]")
 		}
 		labels := "[]"
 		for i := 1; i < len(rest); i++ {
@@ -410,7 +410,7 @@ func adminRunner(ctx context.Context, a *app.App, args []string) error {
 		return nil
 	case "delete":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin runner delete <runner_id>")
+			return fmt.Errorf("用法：gitli admin runner delete <runner_id>")
 		}
 		r, err := a.Deps.Runners.ByRunnerID(ctx, rest[0])
 		if err != nil {
@@ -419,7 +419,7 @@ func adminRunner(ctx context.Context, a *app.App, args []string) error {
 		return a.Deps.Runners.Delete(ctx, r.ID)
 	case "reset-token":
 		if len(rest) < 1 {
-			return fmt.Errorf("usage: gitli admin runner reset-token <runner_id>")
+			return fmt.Errorf("用法：gitli admin runner reset-token <runner_id>")
 		}
 		r, err := a.Deps.Runners.ByRunnerID(ctx, rest[0])
 		if err != nil {
@@ -432,13 +432,13 @@ func adminRunner(ctx context.Context, a *app.App, args []string) error {
 		fmt.Println(token)
 		return nil
 	default:
-		return fmt.Errorf("unknown runner subcommand %q", sub)
+		return fmt.Errorf("未知的 runner 子命令 %q", sub)
 	}
 }
 
 func adminAudit(ctx context.Context, a *app.App, args []string) error {
 	if len(args) > 0 && args[0] != "list" {
-		return fmt.Errorf("usage: gitli admin audit list")
+		return fmt.Errorf("用法：gitli admin audit list")
 	}
 	logs, err := a.Deps.Audit.Query(ctx, auditQuery())
 	if err != nil {
@@ -485,18 +485,27 @@ func confirm(prompt, expected string) bool {
 func adminUsage() {
 	fmt.Fprint(os.Stderr, `gitli admin — 最高权限管理命令（Web 后台仅为其子集）
 
-Usage: gitli admin <group> <subcommand> [args] [--config path]
+用法：
+  gitli admin <分组> <子命令> [参数] [--config 配置文件]
 
-Groups:
-  user    create|list|info|set-admin|disable|enable|change-password|change-email|reset-2fa|ssh-keys|revoke-ssh-key|delete --purge
-  repo    list|info|delete --purge|transfer|archive|unarchive|recalc-size
-  org     list|create|delete|add-member|remove-member
-  runner  list|create|delete|reset-token
+分组：
+  user     create|list|info|set-admin|disable|enable|change-password|change-email|reset-2fa|ssh-keys|revoke-ssh-key|delete --purge
+  repo     list|info|delete --purge|transfer|archive|unarchive|recalc-size
+  org      list|create|delete|add-member|remove-member
+  runner   list|create|delete|reset-token
   generate-secret   生成随机密钥
   doctor            环境自检
   gc                清理过期数据
   reindex           重建搜索索引（当前为按需 grep）
   audit list        查看审计日志
+
+示例：
+  gitli admin user create alice alice@example.com --admin
+  gitli admin repo list
+  gitli admin doctor
+
+提示：
+  毁灭性操作（delete --purge、gc）仅 CLI 提供，且需要二次确认。
 `)
 }
 

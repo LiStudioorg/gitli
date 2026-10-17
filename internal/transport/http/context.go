@@ -19,7 +19,7 @@ func userFrom(ctx context.Context) *domain.User {
 func requireUser(w http.ResponseWriter, r *http.Request) *domain.User {
 	u := userFrom(r.Context())
 	if u == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
+		writeError(w, http.StatusUnauthorized, "需要登录")
 		return nil
 	}
 	return u

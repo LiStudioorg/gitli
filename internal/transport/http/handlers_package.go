@@ -28,12 +28,12 @@ func (s *Server) handleListPackageVersions(w http.ResponseWriter, r *http.Reques
 	}
 	typ := urlParam(r, "type")
 	if !packageTypeValid(typ) {
-		writeError(w, http.StatusBadRequest, "unsupported package type")
+		writeError(w, http.StatusBadRequest, "不支持的包类型")
 		return
 	}
 	name := r.URL.Query().Get("name")
 	if name == "" {
-		writeError(w, http.StatusBadRequest, "name query parameter is required")
+		writeError(w, http.StatusBadRequest, "必须提供 name 参数")
 		return
 	}
 	versions, err := s.deps.PkgSvc.ListVersions(r.Context(), rp.ID, typ, name)
@@ -53,12 +53,12 @@ func (s *Server) handlePublishPackageVersion(w http.ResponseWriter, r *http.Requ
 	}
 	typ := urlParam(r, "type")
 	if !packageTypeValid(typ) {
-		writeError(w, http.StatusBadRequest, "unsupported package type")
+		writeError(w, http.StatusBadRequest, "不支持的包类型")
 		return
 	}
 	name := urlParam(r, "name")
 	if name == "" {
-		writeError(w, http.StatusBadRequest, "package name is required")
+		writeError(w, http.StatusBadRequest, "必须提供包名")
 		return
 	}
 	version := urlParam(r, "version")
@@ -68,7 +68,7 @@ func (s *Server) handlePublishPackageVersion(w http.ResponseWriter, r *http.Requ
 	}
 	filename := r.URL.Query().Get("filename")
 	if filename == "" {
-		writeError(w, http.StatusBadRequest, "filename query parameter is required")
+		writeError(w, http.StatusBadRequest, "必须提供 filename 参数")
 		return
 	}
 	id, err := s.deps.PkgSvc.PublishVersion(r.Context(), rp.ID, typ, name, version, "")
@@ -93,7 +93,7 @@ func (s *Server) handleDownloadPackageFile(w http.ResponseWriter, r *http.Reques
 	}
 	typ := urlParam(r, "type")
 	if !packageTypeValid(typ) {
-		writeError(w, http.StatusBadRequest, "unsupported package type")
+		writeError(w, http.StatusBadRequest, "不支持的包类型")
 		return
 	}
 	name := urlParam(r, "name")
@@ -102,7 +102,7 @@ func (s *Server) handleDownloadPackageFile(w http.ResponseWriter, r *http.Reques
 	v, err := s.deps.PkgSvc.GetVersion(r.Context(), rp.ID, typ, name, version)
 	if err != nil {
 		if errors.Is(err, pkgsvc.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "version not found")
+			writeError(w, http.StatusNotFound, "版本不存在")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -111,7 +111,7 @@ func (s *Server) handleDownloadPackageFile(w http.ResponseWriter, r *http.Reques
 	rc, _, err := s.deps.PkgSvc.OpenFile(r.Context(), v.ID, filename)
 	if err != nil {
 		if errors.Is(err, pkgsvc.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "file not found")
+			writeError(w, http.StatusNotFound, "文件不存在")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())

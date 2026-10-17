@@ -48,7 +48,7 @@ func (s *Server) handleListReactions(w http.ResponseWriter, r *http.Request) {
 	targetType := r.URL.Query().Get("target_type")
 	targetID, err := strconv.ParseInt(r.URL.Query().Get("target_id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid target_id")
+		writeError(w, http.StatusBadRequest, "无效的 target_id")
 		return
 	}
 	counts, err := s.deps.Reactions.List(r.Context(), targetType, targetID)
@@ -112,7 +112,7 @@ func (s *Server) handleGetSubscription(w http.ResponseWriter, r *http.Request) {
 	targetType := r.URL.Query().Get("target_type")
 	targetID, err := strconv.ParseInt(r.URL.Query().Get("target_id"), 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid target_id")
+		writeError(w, http.StatusBadRequest, "无效的 target_id")
 		return
 	}
 	subscribed := false

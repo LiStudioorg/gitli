@@ -58,12 +58,12 @@ func (s *Server) handleDeleteUserWebhook(w http.ResponseWriter, r *http.Request)
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.UserWebhooks.Delete(r.Context(), u.ID, id); err != nil {
 		if errors.Is(err, userwebhook.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "webhook not found")
+			writeError(w, http.StatusNotFound, "Webhook 不存在")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -79,7 +79,7 @@ func (s *Server) handleUpdateUserWebhook(w http.ResponseWriter, r *http.Request)
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req updateUserWebhookReq
@@ -88,7 +88,7 @@ func (s *Server) handleUpdateUserWebhook(w http.ResponseWriter, r *http.Request)
 	}
 	if err := s.deps.UserWebhooks.SetActive(r.Context(), u.ID, id, req.Active); err != nil {
 		if errors.Is(err, userwebhook.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "webhook not found")
+			writeError(w, http.StatusNotFound, "Webhook 不存在")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())

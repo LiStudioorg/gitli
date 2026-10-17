@@ -53,12 +53,12 @@ func (s *Server) handleGetProject(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	p, cols, err := s.deps.Projects.Board(r.Context(), id)
 	if err != nil || (p.RepoID != nil && *p.RepoID != rp.ID) {
-		writeError(w, http.StatusNotFound, "project not found")
+		writeError(w, http.StatusNotFound, "项目不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"project": p, "columns": cols})
@@ -104,7 +104,7 @@ func (s *Server) handleMoveProjectCard(w http.ResponseWriter, r *http.Request) {
 	}
 	cardID, err := pathInt(r, "cardId")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid card id")
+		writeError(w, http.StatusBadRequest, "无效的卡片 ID")
 		return
 	}
 	var req moveCardReq
@@ -112,7 +112,7 @@ func (s *Server) handleMoveProjectCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Projects.MoveCard(r.Context(), cardID, req.ColumnID, req.Position); err != nil {
-		writeError(w, http.StatusNotFound, "card not found")
+		writeError(w, http.StatusNotFound, "卡片不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
@@ -127,7 +127,7 @@ func (s *Server) handleDeleteProjectCard(w http.ResponseWriter, r *http.Request)
 	}
 	cardID, err := pathInt(r, "cardId")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid card id")
+		writeError(w, http.StatusBadRequest, "无效的卡片 ID")
 		return
 	}
 	if err := s.deps.Projects.DeleteCard(r.Context(), cardID); err != nil {
@@ -150,7 +150,7 @@ func (s *Server) handleAddProjectColumn(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req addColumnReq

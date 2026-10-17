@@ -24,7 +24,7 @@ func (s *Server) handleCreatePipeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.CommitSHA == "" {
-		writeError(w, http.StatusBadRequest, "commit_sha is required")
+		writeError(w, http.StatusBadRequest, "必须提供 commit_sha")
 		return
 	}
 	p, err := s.deps.CI.CreatePipeline(r.Context(), rp.ID, req.CommitSHA, req.Ref)
@@ -74,7 +74,7 @@ func (s *Server) handleDeleteCache(w http.ResponseWriter, r *http.Request) {
 	}
 	key := urlParam(r, "key")
 	if key == "" {
-		writeError(w, http.StatusBadRequest, "key is required")
+		writeError(w, http.StatusBadRequest, "必须提供 key")
 		return
 	}
 	if err := s.deps.CI.DeleteCache(r.Context(), rp.ID, key); err != nil {
@@ -91,16 +91,16 @@ func (s *Server) handleListPipelineArtifacts(w http.ResponseWriter, r *http.Requ
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid pipeline id")
+		writeError(w, http.StatusBadRequest, "无效的流水线 ID")
 		return
 	}
 	repoID, err := s.deps.CI.PipelineRepoID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "pipeline not found")
+		writeError(w, http.StatusNotFound, "流水线不存在")
 		return
 	}
 	if !s.deps.RBAC.Check(r.Context(), u.ID, u.IsAdmin, rbac.Requirement{Resource: "actions", Action: "read", RepoID: repoID}) {
-		writeError(w, http.StatusForbidden, "insufficient permissions")
+		writeError(w, http.StatusForbidden, "权限不足")
 		return
 	}
 	arts, err := s.deps.CI.ListArtifactsByPipeline(r.Context(), id)
@@ -120,7 +120,7 @@ func (s *Server) handleDeleteArtifact(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid artifact id")
+		writeError(w, http.StatusBadRequest, "无效的构建产物 ID")
 		return
 	}
 	if err := s.deps.CI.DeleteArtifact(r.Context(), id); err != nil {
@@ -178,7 +178,7 @@ func (s *Server) handleUpdateCIRunner(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req updateCIRunnerReq
@@ -198,7 +198,7 @@ func (s *Server) handleDeleteCIRunner(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.CI.DeleteRunner(r.Context(), id); err != nil {
@@ -215,16 +215,16 @@ func (s *Server) handleListPipelineJobs(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid pipeline id")
+		writeError(w, http.StatusBadRequest, "无效的流水线 ID")
 		return
 	}
 	repoID, err := s.deps.CI.PipelineRepoID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "pipeline not found")
+		writeError(w, http.StatusNotFound, "流水线不存在")
 		return
 	}
 	if !s.deps.RBAC.Check(r.Context(), u.ID, u.IsAdmin, rbac.Requirement{Resource: "actions", Action: "read", RepoID: repoID}) {
-		writeError(w, http.StatusForbidden, "insufficient permissions")
+		writeError(w, http.StatusForbidden, "权限不足")
 		return
 	}
 	jobs, err := s.deps.CI.ListJobs(r.Context(), id)

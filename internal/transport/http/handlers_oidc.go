@@ -13,17 +13,17 @@ import (
 // handleOIDCLogin redirects the user to the identity provider.
 func (s *Server) handleOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	if s.deps.OIDC == nil || !s.deps.OIDC.Enabled() {
-		writeError(w, http.StatusNotFound, "oidc disabled")
+		writeError(w, http.StatusNotFound, "OIDC 未启用")
 		return
 	}
 	state, err := oidc.RandomState()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "state generation failed")
+		writeError(w, http.StatusInternalServerError, "状态生成失败")
 		return
 	}
 	verifier, err := oidc.GenerateVerifier()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "pkce generation failed")
+		writeError(w, http.StatusInternalServerError, "PKCE 生成失败")
 		return
 	}
 	nonce, _ := oidc.RandomState()
@@ -43,32 +43,32 @@ func (s *Server) handleOIDCLogin(w http.ResponseWriter, r *http.Request) {
 // handleOIDCCallback completes the authorization-code flow.
 func (s *Server) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 	if s.deps.OIDC == nil || !s.deps.OIDC.Enabled() {
-		writeError(w, http.StatusNotFound, "oidc disabled")
+		writeError(w, http.StatusNotFound, "OIDC 未启用")
 		return
 	}
 	stateCookie, err := r.Cookie("gitli_oidc_state")
 	if err != nil || stateCookie.Value != r.URL.Query().Get("state") {
-		writeError(w, http.StatusBadRequest, "invalid state")
+		writeError(w, http.StatusBadRequest, "无效的状态参数")
 		return
 	}
 	verifierCookie, err := r.Cookie("gitli_oidc_verifier")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "missing pkce verifier")
+		writeError(w, http.StatusBadRequest, "缺少 PKCE 校验串")
 		return
 	}
 	code := r.URL.Query().Get("code")
 	if code == "" {
-		writeError(w, http.StatusBadRequest, "missing code")
+		writeError(w, http.StatusBadRequest, "缺少授权码")
 		return
 	}
 	tok, err := s.deps.OIDC.Exchange(r.Context(), code, verifierCookie.Value)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "token exchange failed")
+		writeError(w, http.StatusBadGateway, "令牌交换失败")
 		return
 	}
 	info, err := s.deps.OIDC.UserInfo(r.Context(), tok.AccessToken)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "userinfo failed")
+		writeError(w, http.StatusBadGateway, "获取用户信息失败")
 		return
 	}
 	u, err := s.upsertOIDCUser(r, info)

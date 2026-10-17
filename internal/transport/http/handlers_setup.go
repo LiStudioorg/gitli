@@ -21,7 +21,7 @@ type setupReq struct {
 func (s *Server) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	initialized, err := s.deps.Auth.IsInitialized(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read setup state")
+		writeError(w, http.StatusInternalServerError, "无法读取初始化状态")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"initialized": initialized})
@@ -46,9 +46,9 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, auth.ErrAlreadySetUp):
-			writeError(w, http.StatusConflict, "instance already initialized")
+			writeError(w, http.StatusConflict, "实例已完成初始化")
 		case errors.Is(err, auth.ErrWeakPassword):
-			writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
+			writeError(w, http.StatusBadRequest, "密码至少 8 位")
 		default:
 			writeError(w, http.StatusBadRequest, err.Error())
 		}

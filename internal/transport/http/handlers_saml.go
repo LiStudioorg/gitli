@@ -10,7 +10,7 @@ import (
 // handleSAMLLogin redirects to the IdP (SP-initiated).
 func (s *Server) handleSAMLLogin(w http.ResponseWriter, r *http.Request) {
 	if s.deps.SAML == nil || !s.deps.SAML.Enabled() {
-		writeError(w, http.StatusNotFound, "saml disabled")
+		writeError(w, http.StatusNotFound, "SAML 未启用")
 		return
 	}
 	u, err := s.deps.SAML.LoginURL()
@@ -24,16 +24,16 @@ func (s *Server) handleSAMLLogin(w http.ResponseWriter, r *http.Request) {
 // handleSAMLACS consumes the SAML assertion and establishes a session.
 func (s *Server) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 	if s.deps.SAML == nil || !s.deps.SAML.Enabled() {
-		writeError(w, http.StatusNotFound, "saml disabled")
+		writeError(w, http.StatusNotFound, "SAML 未启用")
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid form")
+		writeError(w, http.StatusBadRequest, "无效的表单")
 		return
 	}
 	name, email, err := s.deps.SAML.ParseResponse(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "saml assertion invalid")
+		writeError(w, http.StatusUnauthorized, "SAML 断言无效")
 		return
 	}
 	u, err := s.deps.Users.ByUsername(r.Context(), name)

@@ -42,7 +42,7 @@ func (s *Server) handleGetWikiPage(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := s.deps.Wiki.BySlug(r.Context(), rp.ID, urlParam(r, "slug"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "wiki page not found")
+		writeError(w, http.StatusNotFound, "Wiki 页面不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -85,7 +85,7 @@ func (s *Server) handleUpdateWikiPage(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := s.deps.Wiki.BySlug(r.Context(), rp.ID, urlParam(r, "slug"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "wiki page not found")
+		writeError(w, http.StatusNotFound, "Wiki 页面不存在")
 		return
 	}
 	var req wikiPageReq
@@ -116,7 +116,7 @@ func (s *Server) handleDeleteWikiPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Wiki.Delete(r.Context(), rp.ID, urlParam(r, "slug")); err != nil {
-		writeError(w, http.StatusNotFound, "wiki page not found")
+		writeError(w, http.StatusNotFound, "Wiki 页面不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "wiki.delete", "success")
@@ -166,16 +166,16 @@ func (s *Server) handleGetGist(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	g, err := s.deps.Gists.ByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "gist not found")
+		writeError(w, http.StatusNotFound, "代码片段不存在")
 		return
 	}
 	if !g.IsPublic && g.UserID != u.ID && !u.IsAdmin {
-		writeError(w, http.StatusNotFound, "gist not found")
+		writeError(w, http.StatusNotFound, "代码片段不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, g)
@@ -188,11 +188,11 @@ func (s *Server) handleDeleteGist(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Gists.Delete(r.Context(), u.ID, id); err != nil {
-		writeError(w, http.StatusNotFound, "gist not found")
+		writeError(w, http.StatusNotFound, "代码片段不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "gist.delete", "success")
@@ -229,7 +229,7 @@ func (s *Server) handleGetRelease(w http.ResponseWriter, r *http.Request) {
 	}
 	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "release not found")
+		writeError(w, http.StatusNotFound, "发布不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, rel)
@@ -275,7 +275,7 @@ func (s *Server) handlePublishRelease(w http.ResponseWriter, r *http.Request) {
 	}
 	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "release not found")
+		writeError(w, http.StatusNotFound, "发布不存在")
 		return
 	}
 	if err := s.deps.Releases.Publish(r.Context(), rel.ID); err != nil {
@@ -295,7 +295,7 @@ func (s *Server) handleListReleaseAssets(w http.ResponseWriter, r *http.Request)
 	}
 	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "release not found")
+		writeError(w, http.StatusNotFound, "发布不存在")
 		return
 	}
 	assets, err := s.deps.Releases.ListAssets(r.Context(), rel.ID)
@@ -320,16 +320,16 @@ func (s *Server) handleUploadReleaseAsset(w http.ResponseWriter, r *http.Request
 	}
 	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "release not found")
+		writeError(w, http.StatusNotFound, "发布不存在")
 		return
 	}
 	name := r.URL.Query().Get("name")
 	if name == "" {
-		writeError(w, http.StatusBadRequest, "name query parameter required")
+		writeError(w, http.StatusBadRequest, "必须提供 name 参数")
 		return
 	}
 	if err := secutil.ValidateName("asset", name); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid asset name")
+		writeError(w, http.StatusBadRequest, "无效的附件名称")
 		return
 	}
 	dir := filepath.Join(s.deps.Cfg.Storage.Attachments, "releases", strconv.FormatInt(rel.ID, 10))
@@ -368,7 +368,7 @@ func (s *Server) handleDownloadReleaseAsset(w http.ResponseWriter, r *http.Reque
 	}
 	rel, err := s.deps.Releases.ByTag(r.Context(), rp.ID, urlParam(r, "tag"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "release not found")
+		writeError(w, http.StatusNotFound, "发布不存在")
 		return
 	}
 	assets, err := s.deps.Releases.ListAssets(r.Context(), rel.ID)
@@ -381,7 +381,7 @@ func (s *Server) handleDownloadReleaseAsset(w http.ResponseWriter, r *http.Reque
 		if a.Name == name {
 			f, err := os.Open(a.StoredPath)
 			if err != nil {
-				writeError(w, http.StatusNotFound, "asset file missing")
+				writeError(w, http.StatusNotFound, "附件文件缺失")
 				return
 			}
 			defer func() { _ = f.Close() }()
@@ -391,5 +391,5 @@ func (s *Server) handleDownloadReleaseAsset(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
-	writeError(w, http.StatusNotFound, "asset not found")
+	writeError(w, http.StatusNotFound, "附件不存在")
 }

@@ -11,15 +11,15 @@ import (
 // handleOAuthToken implements POST /oauth/token (authorization_code grant).
 func (s *Server) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 	if s.deps.OAuth == nil {
-		writeError(w, http.StatusNotFound, "oauth disabled")
+		writeError(w, http.StatusNotFound, "OAuth 未启用")
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid form")
+		writeError(w, http.StatusBadRequest, "无效的表单")
 		return
 	}
 	if r.Form.Get("grant_type") != "authorization_code" {
-		writeError(w, http.StatusBadRequest, "unsupported grant_type")
+		writeError(w, http.StatusBadRequest, "不支持的授权类型")
 		return
 	}
 	clientID := r.Form.Get("client_id")
@@ -39,22 +39,22 @@ func (s *Server) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 // handleOAuthUserInfo implements GET /oauth/userinfo (Bearer token).
 func (s *Server) handleOAuthUserInfo(w http.ResponseWriter, r *http.Request) {
 	if s.deps.OAuth == nil {
-		writeError(w, http.StatusNotFound, "oauth disabled")
+		writeError(w, http.StatusNotFound, "OAuth 未启用")
 		return
 	}
 	auth := r.Header.Get("Authorization")
 	if !strings.HasPrefix(auth, "Bearer ") {
-		writeError(w, http.StatusUnauthorized, "missing token")
+		writeError(w, http.StatusUnauthorized, "缺少令牌")
 		return
 	}
 	userID, scopes, err := s.deps.OAuth.TokenUser(r.Context(), strings.TrimPrefix(auth, "Bearer "))
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "invalid token")
+		writeError(w, http.StatusUnauthorized, "无效的令牌")
 		return
 	}
 	u, err := s.deps.Users.ByID(r.Context(), userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -73,17 +73,17 @@ func (s *Server) handleOAuthAuthorizeInfo(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if s.deps.OAuth == nil {
-		writeError(w, http.StatusNotFound, "oauth disabled")
+		writeError(w, http.StatusNotFound, "OAuth 未启用")
 		return
 	}
 	app, err := s.deps.OAuth.AppByClientID(r.Context(), r.URL.Query().Get("client_id"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "application not found")
+		writeError(w, http.StatusNotFound, "应用不存在")
 		return
 	}
 	redirect := r.URL.Query().Get("redirect_uri")
 	if !oauth.ValidateRedirectURI(app, redirect) {
-		writeError(w, http.StatusBadRequest, "redirect_uri not registered")
+		writeError(w, http.StatusBadRequest, "回调地址未注册")
 		return
 	}
 	scopes := oauth.FilterScopes(strings.Fields(r.URL.Query().Get("scope")))
@@ -109,7 +109,7 @@ func (s *Server) handleOAuthApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.deps.OAuth == nil {
-		writeError(w, http.StatusNotFound, "oauth disabled")
+		writeError(w, http.StatusNotFound, "OAuth 未启用")
 		return
 	}
 	var req oauthApproveReq
@@ -118,11 +118,11 @@ func (s *Server) handleOAuthApprove(w http.ResponseWriter, r *http.Request) {
 	}
 	app, err := s.deps.OAuth.AppByClientID(r.Context(), req.ClientID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "application not found")
+		writeError(w, http.StatusNotFound, "应用不存在")
 		return
 	}
 	if !oauth.ValidateRedirectURI(app, req.RedirectURI) {
-		writeError(w, http.StatusBadRequest, "redirect_uri not registered")
+		writeError(w, http.StatusBadRequest, "回调地址未注册")
 		return
 	}
 	code, err := s.deps.OAuth.IssueCode(r.Context(), oauth.AuthorizeParams{
@@ -186,7 +186,7 @@ func (s *Server) handleDeleteOAuthApp(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.OAuth.DeleteApp(r.Context(), u.ID, id); err != nil {
@@ -217,7 +217,7 @@ func (s *Server) handleRevokeOAuthAuthorization(w http.ResponseWriter, r *http.R
 	}
 	appID, err := pathInt(r, "appId")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid app id")
+		writeError(w, http.StatusBadRequest, "无效的应用 ID")
 		return
 	}
 	if err := s.deps.OAuth.RevokeAuthorization(r.Context(), u.ID, appID); err != nil {

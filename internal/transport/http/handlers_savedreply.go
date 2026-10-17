@@ -45,7 +45,7 @@ func (s *Server) handleUpdateSavedReply(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req savedReplyReq
@@ -53,7 +53,7 @@ func (s *Server) handleUpdateSavedReply(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := s.deps.SavedReplies.Update(r.Context(), u.ID, id, req.Title, req.Body); err != nil {
-		writeError(w, http.StatusNotFound, "saved reply not found")
+		writeError(w, http.StatusNotFound, "保存的回复不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
@@ -66,7 +66,7 @@ func (s *Server) handleDeleteSavedReply(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.SavedReplies.Delete(r.Context(), u.ID, id); err != nil {

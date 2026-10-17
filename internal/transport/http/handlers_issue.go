@@ -66,12 +66,12 @@ func (s *Server) handleGetIssue(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	is, err := s.deps.Issues.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "issue not found")
+		writeError(w, http.StatusNotFound, "工单不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, is)
@@ -94,12 +94,12 @@ func (s *Server) handleSetIssueState(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	is, err := s.deps.Issues.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "issue not found")
+		writeError(w, http.StatusNotFound, "工单不存在")
 		return
 	}
 	var req stateReq
@@ -122,12 +122,12 @@ func (s *Server) handleListIssueComments(w http.ResponseWriter, r *http.Request)
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	is, err := s.deps.Issues.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "issue not found")
+		writeError(w, http.StatusNotFound, "工单不存在")
 		return
 	}
 	comments, err := s.deps.Comments.ListForIssue(r.Context(), is.ID)
@@ -155,12 +155,12 @@ func (s *Server) handleCreateIssueComment(w http.ResponseWriter, r *http.Request
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	is, err := s.deps.Issues.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "issue not found")
+		writeError(w, http.StatusNotFound, "工单不存在")
 		return
 	}
 	var req commentReq
@@ -229,7 +229,7 @@ func (s *Server) handleDeleteLabel(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Issues.DeleteLabel(r.Context(), rp.ID, id); err != nil {
@@ -303,12 +303,12 @@ func (s *Server) handleUpdateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	is, err := s.deps.Issues.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "issue not found")
+		writeError(w, http.StatusNotFound, "工单不存在")
 		return
 	}
 	var req editIssueReq

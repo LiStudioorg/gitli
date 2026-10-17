@@ -10,7 +10,7 @@ import (
 func (s *Server) handleGlobalSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
-		writeError(w, http.StatusBadRequest, "q parameter required")
+		writeError(w, http.StatusBadRequest, "必须提供 q 参数")
 		return
 	}
 	limit := 30

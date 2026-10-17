@@ -77,12 +77,12 @@ func (s *Server) handleGetDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	d, err := s.deps.Discussions.ByID(r.Context(), id)
 	if err != nil || d.RepoID != rp.ID {
-		writeError(w, http.StatusNotFound, "discussion not found")
+		writeError(w, http.StatusNotFound, "讨论不存在")
 		return
 	}
 	comments, _ := s.deps.Discussions.ListComments(r.Context(), id)
@@ -104,12 +104,12 @@ func (s *Server) handleCreateDiscussionComment(w http.ResponseWriter, r *http.Re
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	d, err := s.deps.Discussions.ByID(r.Context(), id)
 	if err != nil || d.RepoID != rp.ID {
-		writeError(w, http.StatusNotFound, "discussion not found")
+		writeError(w, http.StatusNotFound, "讨论不存在")
 		return
 	}
 	var req discussionCommentReq
@@ -135,12 +135,12 @@ func (s *Server) handleMarkDiscussionAnswer(w http.ResponseWriter, r *http.Reque
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	d, err := s.deps.Discussions.ByID(r.Context(), id)
 	if err != nil || d.RepoID != rp.ID {
-		writeError(w, http.StatusNotFound, "discussion not found")
+		writeError(w, http.StatusNotFound, "讨论不存在")
 		return
 	}
 	var req struct {

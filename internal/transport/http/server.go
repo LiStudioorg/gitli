@@ -109,6 +109,7 @@ func (s *Server) Router() http.Handler {
 	api.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/oauth/approve", s.handleOAuthApprove)
 
 	api.Route("/admin", func(ar chi.Router) {
+		ar.Use(AdminOnly)
 		ar.Get("/stats", s.handleAdminStats)
 		ar.Get("/users", s.handleAdminListUsers)
 		ar.Patch("/users/{id}", s.handleAdminSetActive)

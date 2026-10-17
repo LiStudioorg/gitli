@@ -273,7 +273,7 @@ func (a *App) CLIRepoList(ctx context.Context, owner string) ([]*domain.Repo, er
 func (a *App) CLIRepoResolve(ctx context.Context, ref string) (*domain.Repo, error) {
 	owner, name, ok := strings.Cut(ref, "/")
 	if !ok || owner == "" || name == "" {
-		return nil, fmt.Errorf("invalid repository reference %q (want owner/repo)", ref)
+		return nil, fmt.Errorf("无效的仓库引用 %q（格式应为 owner/repo）", ref)
 	}
 	ownerUser, err := a.Deps.Users.ByUsername(ctx, owner)
 	if err != nil {

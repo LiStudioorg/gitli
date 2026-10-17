@@ -37,7 +37,7 @@ func (s *Server) handleForkRepo(w http.ResponseWriter, r *http.Request) {
 	if req.Org != "" {
 		o, err := s.deps.Orgs.ByName(r.Context(), req.Org)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "org not found")
+			writeError(w, http.StatusBadRequest, "组织不存在")
 			return
 		}
 		params.OwnerType = domain.OwnerOrg

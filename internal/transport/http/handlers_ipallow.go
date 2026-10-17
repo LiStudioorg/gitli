@@ -6,7 +6,7 @@ import "net/http"
 func (s *Server) handleListIPAllow(w http.ResponseWriter, r *http.Request) {
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	rules, err := s.deps.IPAllow.List(r.Context(), o.ID)
@@ -31,7 +31,7 @@ func (s *Server) handleAddIPAllow(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	var req ipAllowReq
@@ -58,12 +58,12 @@ func (s *Server) handleDeleteIPAllow(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.IPAllow.Delete(r.Context(), o.ID, id); err != nil {
@@ -85,7 +85,7 @@ func (s *Server) handleToggleIPAllow(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	var req ipAllowToggleReq

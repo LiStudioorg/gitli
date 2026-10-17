@@ -74,12 +74,12 @@ func (s *Server) handleGetPull(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	p, err := s.deps.Pulls.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "pull request not found")
+		writeError(w, http.StatusNotFound, "合并请求不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, p)
@@ -96,12 +96,12 @@ func (s *Server) handleMergePull(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	p, err := s.deps.Pulls.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "pull request not found")
+		writeError(w, http.StatusNotFound, "合并请求不存在")
 		return
 	}
 	if err := s.deps.Pulls.MarkMerged(r.Context(), p.ID, u.ID); err != nil {
@@ -122,12 +122,12 @@ func (s *Server) handleListReviews(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	p, err := s.deps.Pulls.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "pull request not found")
+		writeError(w, http.StatusNotFound, "合并请求不存在")
 		return
 	}
 	reviews, err := s.deps.Pulls.ListReviews(r.Context(), p.ID)
@@ -154,12 +154,12 @@ func (s *Server) handleCreateReview(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := pathInt(r, "number")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid number")
+		writeError(w, http.StatusBadRequest, "无效的编号")
 		return
 	}
 	p, err := s.deps.Pulls.ByNumber(r.Context(), rp.ID, int(number))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "pull request not found")
+		writeError(w, http.StatusNotFound, "合并请求不存在")
 		return
 	}
 	var req reviewReq
@@ -190,7 +190,7 @@ func (s *Server) handleListReviewComments(w http.ResponseWriter, r *http.Request
 	}
 	reviewID, err := pathInt(r, "reviewID")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid review id")
+		writeError(w, http.StatusBadRequest, "无效的评审 ID")
 		return
 	}
 	comments, err := s.deps.Pulls.ListReviewComments(r.Context(), reviewID)
@@ -212,7 +212,7 @@ func (s *Server) handleCreateReviewComment(w http.ResponseWriter, r *http.Reques
 	}
 	reviewID, err := pathInt(r, "reviewID")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid review id")
+		writeError(w, http.StatusBadRequest, "无效的评审 ID")
 		return
 	}
 	var req createReviewCommentReq

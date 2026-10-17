@@ -13,7 +13,7 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	if !u.IsAdmin {
-		writeError(w, http.StatusForbidden, "administrator privileges required")
+		writeError(w, http.StatusForbidden, "需要管理员权限")
 		return false
 	}
 	return true
@@ -90,12 +90,12 @@ func (s *Server) handleResetRunnerToken(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	token, err := s.deps.Runners.ResetToken(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "runner not found")
+		writeError(w, http.StatusNotFound, "Runner 不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"token": token})
@@ -113,7 +113,7 @@ func (s *Server) handleUpdateRunner(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req updateRunnerReq
@@ -139,7 +139,7 @@ func (s *Server) handleDeleteRunner(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Runners.Delete(r.Context(), id); err != nil {
@@ -155,12 +155,12 @@ func (s *Server) handleListRunnerJobsAdmin(w http.ResponseWriter, r *http.Reques
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	rr, err := s.deps.Runners.ByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "runner not found")
+		writeError(w, http.StatusNotFound, "Runner 不存在")
 		return
 	}
 	jobs, err := s.deps.Runners.ListJobsByRunner(r.Context(), rr.RunnerID, 50)

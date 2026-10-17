@@ -103,7 +103,7 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 	base := r.URL.Query().Get("base")
 	head := r.URL.Query().Get("head")
 	if base == "" || head == "" {
-		writeError(w, http.StatusBadRequest, "base and head query params required")
+		writeError(w, http.StatusBadRequest, "必须提供 base 与 head 参数")
 		return
 	}
 	diff, err := s.deps.Git.Diff(r.Context(), path, base, head)

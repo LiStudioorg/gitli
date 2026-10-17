@@ -14,10 +14,28 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) *domain.User {
 		return nil
 	}
 	if !u.IsAdmin {
-		writeError(w, http.StatusForbidden, "administrator privileges required")
+		writeError(w, http.StatusForbidden, "需要管理员权限")
 		return nil
 	}
 	return u
+}
+
+// AdminOnly is a defense-in-depth guard for the /admin route group. Handlers
+// still call requireAdmin, but an unauthenticated or non-admin request is
+// rejected here first so a future handler cannot accidentally omit the check.
+func AdminOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := userFrom(r.Context())
+		if u == nil {
+			writeError(w, http.StatusUnauthorized, "需要登录")
+			return
+		}
+		if !u.IsAdmin {
+			writeError(w, http.StatusForbidden, "需要管理员权限")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // countAll runs a parameter-free COUNT(*) query and returns the total.

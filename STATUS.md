@@ -24,9 +24,15 @@
 - **监控**：`/metrics` 暴露 `go_goroutines`、内存指标；`[server] pprof` 可选启用；`/healthz` 校验数据库。
 - **工具**：新增 `test/stress.sh`（并发 clone/push + API 压测，内置 RSS/Goroutine 阈值）。
 
+- **B2 安全审计**：`govulncheck` 修复 `goxmldsig` → v1.6.0；SQL 无字符串拼接、无 `sh -c` 拼接、路径穿越有 `ValidateRepoPath` 兜底；`/admin` 组新增 `AdminOnly` 纵
+深防御中间件；剩余告警均为 Go 标准库，随 CI 的 `1.27.x` 自动修复。
+- **B4 备份恢复演练**：备份 → 恢复 → 用恢复数据启动，用户/仓库/Issue/Git 对象全部校验通过。
+- **B5 文档**：新增 `docs/ADMIN.md`、`docs/USER.md`；README 更新发布状态、自动迁移、Android/Termux 说明。
+- **中文提示**：CLI 帮助、flag 说明、错误信息与 HTTP API 错误信息全部改为简体中文。
+
 ### 待办
-- B2 安全审计（govulncheck、SQL/exec 扫描、敏感 API RBAC+CSRF 复核）。
-- B4 备份恢复演练；B5 文档（`docs/ADMIN.md`、`docs/USER.md`、README）；B6 `v0.9.0-rc1`。
+- B6 发布 `v0.9.0-rc1` 并验证 CD。
+- B1 压测脚本已就绪，待在有足够内存的机器上跑完整 50 并发并记录结果。
 
 ## 已完成功能总览
 

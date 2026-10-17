@@ -48,7 +48,7 @@ func (s *Server) handleAdminSetActive(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req struct {
@@ -58,18 +58,18 @@ func (s *Server) handleAdminSetActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Active == nil {
-		writeError(w, http.StatusBadRequest, "active is required")
+		writeError(w, http.StatusBadRequest, "必须指定 active 参数")
 		return
 	}
 	u, err := s.deps.Users.ByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	if !*req.Active && u.IsAdmin {
 		admins, _ := s.deps.Users.CountAdmins(r.Context())
 		if admins <= 1 {
-			writeError(w, http.StatusBadRequest, "cannot disable the last active administrator")
+			writeError(w, http.StatusBadRequest, "不能停用最后一个活跃管理员")
 			return
 		}
 	}
@@ -88,12 +88,12 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	u, err := s.deps.Users.ByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	tmp, err := s.deps.Auth.ResetPassword(r.Context(), u)
@@ -112,12 +112,12 @@ func (s *Server) handleAdminReset2FA(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	u, err := s.deps.Users.ByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "user not found")
+		writeError(w, http.StatusNotFound, "用户不存在")
 		return
 	}
 	if err := s.deps.Users.ResetTOTP(r.Context(), id); err != nil {
@@ -166,7 +166,7 @@ func (s *Server) handleAdminArchiveRepo(w http.ResponseWriter, r *http.Request) 
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req struct {

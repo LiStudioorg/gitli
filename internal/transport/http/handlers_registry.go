@@ -30,12 +30,12 @@ func (s *Server) ociRepoAccess(w http.ResponseWriter, r *http.Request, need doma
 	}
 	ownerUser, err := s.deps.Users.ByUsername(r.Context(), owner)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, false
 	}
 	rp, err := s.deps.Repos.ByOwnerName(r.Context(), ownerUser.ID, name)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return nil, false
 	}
 	var userID int64
@@ -53,7 +53,7 @@ func (s *Server) ociRepoAccess(w http.ResponseWriter, r *http.Request, need doma
 		if u == nil {
 			s.gitAuthChallenge(w)
 		} else {
-			writeError(w, http.StatusForbidden, "insufficient permissions")
+			writeError(w, http.StatusForbidden, "权限不足")
 		}
 		return nil, false
 	}
@@ -100,17 +100,17 @@ func (s *Server) handleBlobUploadFinish(w http.ResponseWriter, r *http.Request) 
 	uuid := urlParam(r, "uuid")
 	digest := r.URL.Query().Get("digest")
 	if !s.deps.Registry.ValidateDigest(digest) {
-		writeError(w, http.StatusBadRequest, "invalid digest")
+		writeError(w, http.StatusBadRequest, "无效的摘要")
 		return
 	}
 	stagedPath, err := s.deps.Registry.StagedPath(r.Context(), rp.ID, uuid)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "upload not found")
+		writeError(w, http.StatusNotFound, "上传任务不存在")
 		return
 	}
 	f, err := os.OpenFile(stagedPath, os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "upload not found")
+		writeError(w, http.StatusNotFound, "上传任务不存在")
 		return
 	}
 	if _, err := io.Copy(f, r.Body); err != nil {
@@ -135,7 +135,7 @@ func (s *Server) handlePutManifest(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, 256<<10))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "read body failed")
+		writeError(w, http.StatusBadRequest, "读取请求体失败")
 		return
 	}
 	mediaType := r.Header.Get("Content-Type")
@@ -163,7 +163,7 @@ func (s *Server) handleGetManifest(w http.ResponseWriter, r *http.Request) {
 	}
 	content, mediaType, digest, err := s.deps.Registry.GetManifest(r.Context(), rp.ID, urlParam(r, "repo"), urlParam(r, "reference"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "manifest unknown")
+		writeError(w, http.StatusNotFound, "清单不存在")
 		return
 	}
 	if mediaType == "" {
@@ -200,7 +200,7 @@ func (s *Server) handleGetBlob(w http.ResponseWriter, r *http.Request) {
 	digest := urlParam(r, "digest")
 	rc, err := s.deps.Registry.GetBlob(digest)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "blob unknown")
+		writeError(w, http.StatusNotFound, "对象不存在")
 		return
 	}
 	defer func() { _ = rc.Close() }()

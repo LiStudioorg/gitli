@@ -53,7 +53,7 @@ func (s *Server) handleDeletePathPermission(w http.ResponseWriter, r *http.Reque
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid rule id")
+		writeError(w, http.StatusBadRequest, "无效的规则 ID")
 		return
 	}
 	if err := s.deps.PathPerms.Delete(r.Context(), rp.ID, id); err != nil {

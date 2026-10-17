@@ -111,7 +111,7 @@ func (s *Server) handleDeleteCISecret(w http.ResponseWriter, r *http.Request) {
 	name := urlParam(r, "name")
 	if err := s.deps.CISecrets.Delete(r.Context(), rp.ID, name); err != nil {
 		if errors.Is(err, cisecret.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "secret not found")
+			writeError(w, http.StatusNotFound, "密钥不存在")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())

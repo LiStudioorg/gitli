@@ -59,7 +59,7 @@ func (s *Server) handleUpdateDeployKey(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req updateDeployKeyReq
@@ -67,7 +67,7 @@ func (s *Server) handleUpdateDeployKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.DeployKeys.SetReadOnly(r.Context(), rp.ID, id, req.ReadOnly); err != nil {
-		writeError(w, http.StatusNotFound, "deploy key not found")
+		writeError(w, http.StatusNotFound, "部署密钥不存在")
 		return
 	}
 	s.auditAction(r, u.ID, "deploy_key.update", "success")
@@ -81,7 +81,7 @@ func (s *Server) handleDeleteDeployKey(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.DeployKeys.Delete(r.Context(), rp.ID, id); err != nil {

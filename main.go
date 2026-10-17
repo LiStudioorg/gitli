@@ -30,7 +30,7 @@ func run(args []string) error {
 	// Bare execution (no args, or only --config) starts the server.
 	if len(args) == 0 || args[0] == "--config" || args[0] == "-config" || strings.HasPrefix(args[0], "--config=") {
 		fs := flag.NewFlagSet("gitli", flag.ContinueOnError)
-		configPath := fs.String("config", "config.toml", "path to config.toml")
+		configPath := fs.String("config", "config.toml", "配置文件路径")
 		if err := fs.Parse(args); err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func run(args []string) error {
 	rest := args[1:]
 
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
 
 	switch cmd {
 	case "help", "-h", "--help":
@@ -97,7 +97,7 @@ func run(args []string) error {
 		return runMigrate(ctx, cfg, *configPath)
 	default:
 		usage()
-		return fmt.Errorf("unknown subcommand %q", cmd)
+		return fmt.Errorf("未知的子命令 %q", cmd)
 	}
 }
 
@@ -106,15 +106,15 @@ func run(args []string) error {
 //	gitli backup --out <file> [--source <dir>] [--encrypt] --config path
 func runBackupCommand(args []string) error {
 	fs := flag.NewFlagSet("backup", flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	out := fs.String("out", "", "output archive file (.tar.gz or .tar.gz.enc)")
-	source := fs.String("source", "", "source directory (default: data dir)")
-	encrypt := fs.Bool("encrypt", false, "encrypt the archive (key from GITLI_BACKUP_KEY)")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
+	out := fs.String("out", "", "输出归档文件（.tar.gz 或 .tar.gz.enc）")
+	source := fs.String("source", "", "源目录（默认数据目录）")
+	encrypt := fs.Bool("encrypt", false, "加密归档（密钥来自 GITLI_BACKUP_KEY）")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *out == "" {
-		return fmt.Errorf("backup: --out is required")
+		return fmt.Errorf("backup：必须指定 --out")
 	}
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -143,14 +143,14 @@ func runBackupCommand(args []string) error {
 //	gitli restore --in <file> [--dest <dir>] [--config path]
 func runRestoreCommand(args []string) error {
 	fs := flag.NewFlagSet("restore", flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	in := fs.String("in", "", "input archive file")
-	dest := fs.String("dest", "", "destination directory (default: data dir)")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
+	in := fs.String("in", "", "输入归档文件")
+	dest := fs.String("dest", "", "目标目录（默认数据目录）")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *in == "" {
-		return fmt.Errorf("restore: --in is required")
+		return fmt.Errorf("restore：必须指定 --in")
 	}
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -223,9 +223,9 @@ func runMigrate(ctx context.Context, cfg *config.Config, configPath string) erro
 // --once it runs a single pass; otherwise it loops every --interval seconds.
 func runMirror(args []string) error {
 	fs := flag.NewFlagSet("mirror", flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	once := fs.Bool("once", false, "run one synchronization pass then exit")
-	interval := fs.Int("interval", 300, "seconds between passes when not --once")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
+	once := fs.Bool("once", false, "只执行一轮同步后退出")
+	interval := fs.Int("interval", 300, "非 --once 时的轮询间隔（秒）")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -286,15 +286,15 @@ func runMirror(args []string) error {
 // runImport performs a one-shot repository import for an existing repo record.
 func runImport(args []string) error {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	repoID := fs.Int64("repo-id", 0, "existing repository id to import into")
-	source := fs.String("source", "generic", "source: github|gitlab|gitea|generic")
-	url := fs.String("url", "", "source repository URL")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
+	repoID := fs.Int64("repo-id", 0, "导入目标仓库 ID")
+	source := fs.String("source", "generic", "来源类型：github|gitlab|gitea|generic")
+	url := fs.String("url", "", "来源仓库地址")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *repoID == 0 || *url == "" {
-		return fmt.Errorf("import: --repo-id and --url are required")
+		return fmt.Errorf("import：必须指定 --repo-id 与 --url")
 	}
 	ctx := context.Background()
 	cfg, err := config.Load(*configPath)
@@ -326,10 +326,10 @@ func runImport(args []string) error {
 // host shell (gated by the configured concurrency).
 func runRunner(args []string) error {
 	fs := flag.NewFlagSet("runner", flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	runnerID := fs.Int64("id", 1, "runner id")
-	once := fs.Bool("once", false, "process one batch then exit")
-	interval := fs.Int("interval", 10, "seconds between polls")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
+	runnerID := fs.Int64("id", 1, "Runner ID")
+	once := fs.Bool("once", false, "处理一批后退出")
+	interval := fs.Int("interval", 10, "轮询间隔（秒）")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -380,7 +380,7 @@ func runRunner(args []string) error {
 
 // runSearchIndex is a no-op placeholder for the optional search index builder.
 func runSearchIndex(_ []string) error {
-	fmt.Fprintln(os.Stderr, "search-index: gitli uses on-demand `git grep`; no index is required")
+	fmt.Fprintln(os.Stderr, "search-index：gitli 使用按需 git grep，无需构建索引")
 	return nil
 }
 
@@ -389,13 +389,13 @@ func runSearchIndex(_ []string) error {
 //	gitli hook <name> --owner <owner> --repo <repo> [--config path]
 func runHookCommand(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("hook: missing hook name")
+		return fmt.Errorf("hook：缺少钩子名称")
 	}
 	name := args[0]
 	fs := flag.NewFlagSet("hook", flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "path to config.toml")
-	owner := fs.String("owner", "", "repository owner")
-	repo := fs.String("repo", "", "repository name")
+	configPath := fs.String("config", "config.toml", "配置文件路径")
+	owner := fs.String("owner", "", "仓库所有者")
+	repo := fs.String("repo", "", "仓库名称")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -412,23 +412,27 @@ func runHookCommand(args []string) error {
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `gitli - lightweight self-hosted Git service
+	fmt.Fprint(os.Stderr, `gitli — 轻量级自研 Git 服务平台
 
-Usage:
-  gitli <command> [--config path/to/config.toml]
+用法：
+  gitli [--config config.toml]          直接启动服务（等同 serve）
+  gitli <命令> [参数] [--config 路径]
 
-Commands:
-  serve, server  start HTTP + SSH service
-  migrate        apply database migrations
-  runner         CI runner
-  mirror         mirror synchronization scheduler
-  import         repository import tool
-  search-index   optional search index builder
-  admin          administrative commands
-  backup         back up data
-  restore        restore data
-  hook           run a server-side git hook (invoked by git)
-  version        print version
-  help           show this help
+命令：
+  serve, server  启动 HTTP + SSH 服务
+  migrate        手动同步数据库结构（正常启动会自动迁移）
+  runner         内置 CI Runner
+  mirror         镜像同步调度
+  import         仓库导入工具
+  search-index   搜索索引构建（按需 git grep，无索引）
+  admin          管理命令（最高权限，Web 后台仅为其子集）
+  backup         备份数据
+  restore        恢复数据
+  hook           执行服务端 Git 钩子（由 git 调用）
+  version        显示版本信息
+  help           显示本帮助
+
+提示：
+  裸执行 gitli 会直接启动服务；首次访问会进入初始化向导创建管理员。
 `)
 }

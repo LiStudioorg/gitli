@@ -15,7 +15,7 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 	}
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		writeError(w, http.StatusInternalServerError, "streaming unsupported")
+		writeError(w, http.StatusInternalServerError, "不支持流式传输")
 		return
 	}
 	w.Header().Set("Content-Type", "text/event-stream")

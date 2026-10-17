@@ -22,7 +22,7 @@ func (s *Server) handleAddOrgMember(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	var req orgMemberReq
@@ -31,7 +31,7 @@ func (s *Server) handleAddOrgMember(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	if err := s.deps.RBAC.AddOrgMember(r.Context(), u.ID, o.ID, target.ID, req.RoleID, req.Membership); err != nil {
@@ -48,12 +48,12 @@ func (s *Server) handleRemoveOrgMember(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	if err := s.deps.RBAC.RemoveOrgMember(r.Context(), u.ID, o.ID, target.ID); err != nil {
@@ -80,7 +80,7 @@ func (s *Server) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	var req teamReq
@@ -109,7 +109,7 @@ func (s *Server) handleReparentTeam(w http.ResponseWriter, r *http.Request) {
 	}
 	teamID, err := pathInt(r, "team")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid team id")
+		writeError(w, http.StatusBadRequest, "无效的团队 ID")
 		return
 	}
 	var req reparentReq
@@ -135,7 +135,7 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 	teamID, err := pathInt(r, "team")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid team id")
+		writeError(w, http.StatusBadRequest, "无效的团队 ID")
 		return
 	}
 	var req teamMemberReq
@@ -144,7 +144,7 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	if err := s.deps.RBAC.AddTeamMember(r.Context(), u.ID, teamID, target.ID, req.Role); err != nil {
@@ -161,12 +161,12 @@ func (s *Server) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request) 
 	}
 	teamID, err := pathInt(r, "team")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid team id")
+		writeError(w, http.StatusBadRequest, "无效的团队 ID")
 		return
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	if err := s.deps.RBAC.RemoveTeamMember(r.Context(), u.ID, teamID, target.ID); err != nil {
@@ -189,7 +189,7 @@ func (s *Server) handleGrantTeamRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	teamID, err := pathInt(r, "team")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid team id")
+		writeError(w, http.StatusBadRequest, "无效的团队 ID")
 		return
 	}
 	var req teamRepoReq
@@ -219,7 +219,7 @@ func (s *Server) handleCreateRole(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "organization not found")
+		writeError(w, http.StatusNotFound, "组织不存在")
 		return
 	}
 	var req roleReq
@@ -249,7 +249,7 @@ func (s *Server) handleDeleteRole(w http.ResponseWriter, r *http.Request) {
 	}
 	roleID, err := pathInt(r, "role")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid role id")
+		writeError(w, http.StatusBadRequest, "无效的角色 ID")
 		return
 	}
 	if err := s.deps.RBAC.DeleteRole(r.Context(), u.ID, roleID); err != nil {
@@ -286,7 +286,7 @@ func (s *Server) handleSetCollaborator(w http.ResponseWriter, r *http.Request) {
 	}
 	rp, ok := s.repoFromURL(r.Context(), urlParam(r, "owner"), trimGitSuffix(urlParam(r, "repo")))
 	if !ok {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
 	var req rbacCollaboratorReq
@@ -295,7 +295,7 @@ func (s *Server) handleSetCollaborator(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	if err := s.deps.RBAC.SetCollaborator(r.Context(), u.ID, rp.ID, target.ID, req.RoleID, req.Permission); err != nil {
@@ -312,12 +312,12 @@ func (s *Server) handleRemoveCollaborator(w http.ResponseWriter, r *http.Request
 	}
 	rp, ok := s.repoFromURL(r.Context(), urlParam(r, "owner"), trimGitSuffix(urlParam(r, "repo")))
 	if !ok {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "user not found")
+		writeError(w, http.StatusBadRequest, "用户不存在")
 		return
 	}
 	if err := s.deps.RBAC.RemoveCollaborator(r.Context(), u.ID, rp.ID, target.ID); err != nil {
@@ -343,7 +343,7 @@ func (s *Server) handleAddBranchRule(w http.ResponseWriter, r *http.Request) {
 	}
 	rp, ok := s.repoFromURL(r.Context(), urlParam(r, "owner"), trimGitSuffix(urlParam(r, "repo")))
 	if !ok {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
 	var req branchRuleReq
@@ -365,7 +365,7 @@ func (s *Server) handleAddBranchRule(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleListBranchRules(w http.ResponseWriter, r *http.Request) {
 	rp, ok := s.repoFromURL(r.Context(), urlParam(r, "owner"), trimGitSuffix(urlParam(r, "repo")))
 	if !ok {
-		writeError(w, http.StatusNotFound, "repository not found")
+		writeError(w, http.StatusNotFound, "仓库不存在")
 		return
 	}
 	rules, err := s.deps.RBAC.ListBranchRules(r.Context(), rp.ID)

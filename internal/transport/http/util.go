@@ -31,7 +31,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(dst); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid json body: "+err.Error())
+		writeError(w, http.StatusBadRequest, "无效的 JSON 请求体："+err.Error())
 		return false
 	}
 	return true

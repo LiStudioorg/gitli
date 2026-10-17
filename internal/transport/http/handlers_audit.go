@@ -64,12 +64,12 @@ func (s *Server) handleAuditGet(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	log, err := s.deps.Audit.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "audit log not found")
+		writeError(w, http.StatusNotFound, "审计日志不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, log)
@@ -182,7 +182,7 @@ func (s *Server) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := pathInt(r, "id")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid id")
+		writeError(w, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := s.deps.Audit.DeleteAlertRule(r.Context(), id); err != nil {
