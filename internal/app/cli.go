@@ -457,7 +457,7 @@ func (a *App) CLIGC(ctx context.Context) (map[string]int64, error) {
 	return out, nil
 }
 
-// CLIWhoAmI reports environment facts for `admin doctor`.
+// CLIDoctor reports environment facts for `admin doctor`.
 func (a *App) CLIDoctor(ctx context.Context) map[string]string {
 	res := map[string]string{}
 	res["database_driver"] = a.Cfg.Database.Driver

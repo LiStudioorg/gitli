@@ -476,7 +476,9 @@ func promptPassword(label string) (string, error) {
 func confirm(prompt, expected string) bool {
 	fmt.Fprint(os.Stderr, prompt)
 	var got string
-	fmt.Fscanln(os.Stdin, &got)
+	if _, err := fmt.Fscanln(os.Stdin, &got); err != nil {
+		return false
+	}
 	return got == expected
 }
 
