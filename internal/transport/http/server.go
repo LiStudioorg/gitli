@@ -126,6 +126,8 @@ func (s *Server) Router() http.Handler {
 		ar.Post("/logout", s.handleLogout)
 		ar.Get("/oidc/login", s.handleOIDCLogin)
 		ar.Get("/oidc/callback", s.handleOIDCCallback)
+		ar.Get("/saml/login", s.handleSAMLLogin)
+		ar.Post("/saml/acs", s.handleSAMLACS)
 	})
 
 	api.Route("/user", func(ur chi.Router) {

@@ -11,6 +11,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
 	"github.com/LiStudioorg/gitli/internal/infra/oidc"
 	"github.com/LiStudioorg/gitli/internal/infra/queue"
+	"github.com/LiStudioorg/gitli/internal/infra/samlauth"
 	"github.com/LiStudioorg/gitli/internal/service/activity"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/auth"
@@ -122,6 +123,7 @@ type Deps struct {
 	Explore      *explore.Service
 	OAuth        *oauth.Service
 	IPAllow      *ipallow.Service
+	SAML         *samlauth.Service
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
 	// layer to avoid an import cycle.

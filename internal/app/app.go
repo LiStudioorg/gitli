@@ -18,6 +18,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
 	"github.com/LiStudioorg/gitli/internal/infra/ldapauth"
 	"github.com/LiStudioorg/gitli/internal/infra/queue"
+	"github.com/LiStudioorg/gitli/internal/infra/samlauth"
 	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 	"github.com/LiStudioorg/gitli/internal/infra/weakpass"
 	"github.com/LiStudioorg/gitli/internal/service/activity"
@@ -148,6 +149,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		}
 	}
 
+	samlSvc, _ := samlauth.New(ctx, cfg.Auth.SAML)
 	sigSvc := signature.New(st, runner)
 	sigSvc.SetKeyResolver(users)
 
@@ -202,6 +204,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Explore:       explore.New(st),
 		OAuth:         oauth.New(st),
 		IPAllow:       ipallow.New(st),
+		SAML:          samlSvc,
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

@@ -552,3 +552,24 @@ group_filter = ""
 use_tls = false
 # 是否跳过 TLS 证书校验（仅测试环境）。默认：false
 skip_verify = false
+
+
+# -----------------------------------------------------------------------------
+# [auth.saml] SAML 登录（SP-initiated）
+# -----------------------------------------------------------------------------
+[auth.saml]
+# 是否启用 SAML。默认：false
+enabled = false
+
+# IdP 元数据 URL（与 idp_metadata_xml 二选一）。
+idp_metadata_url = "https://idp.example.com/metadata"
+# 内联 IdP 元数据 XML（可选，优先于 URL）。
+idp_metadata_xml = ""
+
+# SP 证书与私钥（PEM）。可用 openssl 生成自签名证书。
+sp_cert = ""
+sp_key = ""
+
+# SP 根地址，需与 IdP 注册的 ACS 一致。
+# ACS 地址为 {root_url}/api/v1/auth/saml/acs
+root_url = "https://git.example.com"
