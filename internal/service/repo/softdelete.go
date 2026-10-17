@@ -97,3 +97,16 @@ type RepoRef struct {
 	Name      string     `json:"name"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
+
+// SetLicense stores the detected SPDX license id for a repository.
+func (s *Service) SetLicense(ctx context.Context, repoID int64, spdx string) error {
+	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE repos SET license = ?, updated_at = ? WHERE id = ?`), spdx, time.Now().UTC(), repoID)
+	return err
+}
+
+// License returns the stored SPDX license id for a repository.
+func (s *Service) License(ctx context.Context, repoID int64) (string, error) {
+	var lic string
+	err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT license FROM repos WHERE id = ?`), repoID).Scan(&lic)
+	return lic, err
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
+	"github.com/LiStudioorg/gitli/internal/service/license"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 )
 
@@ -144,10 +145,33 @@ func (s *Server) handleGetRepo(w http.ResponseWriter, r *http.Request) {
 	if langs == nil {
 		langs = []repo.LanguageStat{}
 	}
+	// License detection (lazy, cached in repos.license).
+	lic, _ := s.deps.Repos.License(r.Context(), rp.ID)
+	if lic == "" {
+		if path, err := s.repoPath(r, rp); err == nil {
+			lic = s.detectLicense(r, rp.ID, path)
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"repo":      rp,
 		"languages": langs,
+		"license":   lic,
 	})
+}
+
+// detectLicense runs SPDX detection against the repo's LICENSE file.
+func (s *Server) detectLicense(r *http.Request, repoID int64, repoPath string) string {
+	for _, p := range license.CandidatePaths {
+		data, ok := s.deps.Git.ShowFile(r.Context(), repoPath, "HEAD", p)
+		if !ok || len(data) < 16 {
+			continue
+		}
+		if id, ok := license.Detect(data); ok {
+			_ = s.deps.Repos.SetLicense(r.Context(), repoID, id)
+			return id
+		}
+	}
+	return ""
 }
 
 // handleCloneInfo returns clone URLs for the repo based on configuration.
