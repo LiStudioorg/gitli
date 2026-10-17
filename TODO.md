@@ -38,7 +38,7 @@
 - [x] 3.1 OAuth2 应用（Provider）：`oauth_apps`/`oauth_authorizations`/`oauth_codes`/`oauth_tokens`、授权码流程、Token/用户信息端点（后端）
 - [x] 3.2 会话管理 UI：列表/单个注销/全部注销，显示 IP/UA/创建/最后活跃/过期时间
 - [x] 3.3 IP 允许列表：`ip_allowlist` 表、CIDR 校验、org 中间件、组织设置 API
-- [ ] 3.4 审计日志导出：CSV/JSON 流式导出
+- [x] 3.4 审计日志导出：CSV/JSON 流式导出（支持 from/to 多格式时间）
 - [ ] 3.5 API 文档（OpenAPI）：swaggo 生成 + Swagger UI `/api/docs`
 
 ### 批次 4：企业集成

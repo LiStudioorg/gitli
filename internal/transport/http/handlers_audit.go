@@ -32,12 +32,12 @@ func parseAuditQuery(r *http.Request) audit.Query {
 		}
 	}
 	if v := r.URL.Query().Get("from"); v != "" {
-		if t, err := time.Parse(time.RFC3339, v); err == nil {
+		if t, ok := parseTimeParam(v); ok {
 			q.From = &t
 		}
 	}
 	if v := r.URL.Query().Get("to"); v != "" {
-		if t, err := time.Parse(time.RFC3339, v); err == nil {
+		if t, ok := parseTimeParam(v); ok {
 			q.To = &t
 		}
 	}
@@ -207,4 +207,15 @@ func (s *Server) handleMyActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"logs": logs})
+}
+
+// parseTimeParam accepts RFC3339, "2006-01-02T15:04" (datetime-local) and
+// "2006-01-02" date-only formats.
+func parseTimeParam(v string) (time.Time, bool) {
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04", "2006-01-02"} {
+		if t, err := time.Parse(layout, v); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
 }
