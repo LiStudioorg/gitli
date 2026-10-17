@@ -50,6 +50,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/release"
 	"github.com/LiStudioorg/gitli/internal/service/repo"
 	runnersvc "github.com/LiStudioorg/gitli/internal/service/runner"
+	"github.com/LiStudioorg/gitli/internal/service/savedreply"
 	"github.com/LiStudioorg/gitli/internal/service/search"
 	"github.com/LiStudioorg/gitli/internal/service/signature"
 	"github.com/LiStudioorg/gitli/internal/service/store"
@@ -188,6 +189,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		CISecrets:     cisecret.New(st, cipher),
 		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),
 		DeployKeys:    deploykey.New(st),
+		SavedReplies:  savedreply.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),
