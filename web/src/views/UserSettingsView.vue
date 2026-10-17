@@ -63,6 +63,12 @@ interface AccessToken {
   created_at?: string
 }
 
+interface DeletedRepo {
+  id: number
+  name: string
+  deleted_at: string
+}
+
 interface ActivityLog {
   id: number
   event: string
@@ -83,7 +89,7 @@ interface Session {
   current?: boolean
 }
 
-type TabKey = 'profile' | 'password' | 'keys' | 'tokens' | 'totp' | 'security'
+type TabKey = 'profile' | 'password' | 'keys' | 'tokens' | 'totp' | 'deleted' | 'security'
 
 interface Tab {
   key: TabKey
@@ -96,6 +102,7 @@ const tabs: Tab[] = [
   { key: 'keys', label: 'SSH / GPG 密钥' },
   { key: 'tokens', label: '访问令牌' },
   { key: 'totp', label: '两步验证' },
+  { key: 'deleted', label: '已删除的仓库' },
   { key: 'security', label: '安全活动' },
 ]
 
@@ -519,6 +526,43 @@ async function totpDisable() {
   }
 }
 
+// --- deleted repos ---
+const deletedRepos = ref<DeletedRepo[]>([])
+const deletedLoading = ref(false)
+const deletedError = ref('')
+const deletedOk = ref('')
+const restoringId = ref<number | null>(null)
+
+async function loadDeletedRepos() {
+  deletedLoading.value = true
+  deletedError.value = ''
+  try {
+    const { data } = await api.get<DeletedRepo[]>('/user/deleted-repos')
+    deletedRepos.value = data ?? []
+  } catch (e) {
+    deletedError.value = errMessage(e)
+    deletedRepos.value = []
+  } finally {
+    deletedLoading.value = false
+  }
+}
+
+async function restoreRepo(r: DeletedRepo) {
+  if (!window.confirm(`确定要恢复仓库「${r.name}」吗？`)) return
+  restoringId.value = r.id
+  deletedError.value = ''
+  deletedOk.value = ''
+  try {
+    await api.post(`/user/deleted-repos/${r.id}/restore`)
+    deletedOk.value = `已恢复「${r.name}」`
+    await loadDeletedRepos()
+  } catch (e) {
+    deletedError.value = errMessage(e)
+  } finally {
+    restoringId.value = null
+  }
+}
+
 // --- security activity ---
 const ACTIVITY_LIMIT = 25
 const activityResultOptions: { value: string; label: string }[] = [
@@ -649,6 +693,9 @@ function selectTab(key: TabKey) {
     if (gpgKeys.value.length === 0 && !gpgLoading.value) loadGpg()
   }
   if (key === 'tokens' && tokens.value.length === 0 && !tokensLoading.value) loadTokens()
+  if (key === 'deleted' && deletedRepos.value.length === 0 && !deletedLoading.value) {
+    loadDeletedRepos()
+  }
   if (key === 'security') {
     if (logs.value.length === 0 && !logsLoading.value) loadLogs()
     if (sessions.value.length === 0 && !sessionsLoading.value) loadSessions()
@@ -883,6 +930,44 @@ onMounted(async () => {
               <li v-for="c in totpRecoveryCodes" :key="c"><code>{{ c }}</code></li>
             </ul>
           </div>
+        </section>
+
+        <!-- 已删除的仓库 -->
+        <section v-else-if="active === 'deleted'" class="card">
+          <h3>已删除的仓库</h3>
+          <span class="deleted-hint">已删除的仓库处于「已删除」状态，可在此恢复。</span>
+          <p v-if="deletedError" class="error">{{ deletedError }}</p>
+          <p v-if="deletedOk" class="ok">{{ deletedOk }}</p>
+          <p v-if="deletedLoading" class="muted">加载中…</p>
+          <template v-else-if="deletedRepos.length">
+            <table class="key-table">
+              <thead>
+                <tr>
+                  <th>仓库名称</th>
+                  <th>删除时间</th>
+                  <th class="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in deletedRepos" :key="r.id">
+                  <td>{{ r.name }}</td>
+                  <td class="muted nowrap">{{ fmtTime(r.deleted_at) }}</td>
+                  <td class="center nowrap">
+                    <span class="badge badge-deleted">已删除</span>
+                    <button
+                      class="ghost"
+                      type="button"
+                      :disabled="restoringId === r.id"
+                      @click="restoreRepo(r)"
+                    >
+                      {{ restoringId === r.id ? '恢复中…' : '恢复' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+          <p v-else class="muted">暂无已删除的仓库</p>
         </section>
 
         <!-- 安全活动 -->
@@ -1343,6 +1428,16 @@ label.inline {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--muted);
+}
+.badge-deleted {
+  background: rgba(209, 36, 47, 0.12);
+  border: 1px solid rgba(209, 36, 47, 0.5);
+  color: #d1242f;
+  margin-right: 0.4rem;
+}
+.deleted-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 .pager {
   display: flex;

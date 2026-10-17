@@ -287,6 +287,42 @@ function errMessage(e: unknown): string {
   return e instanceof Error ? e.message : '未知错误'
 }
 
+const purgeRepoId = ref('')
+const purging = ref(false)
+const purgeError = ref('')
+const purgeOk = ref('')
+
+async function purgeRepo() {
+  purgeError.value = ''
+  purgeOk.value = ''
+  const id = Number(purgeRepoId.value)
+  if (!Number.isInteger(id) || id <= 0) {
+    purgeError.value = '请输入有效的仓库 ID'
+    return
+  }
+  if (
+    !window.confirm(
+      `确定要永久删除仓库 #${id} 吗？此操作不可恢复，仓库及其数据将被彻底清除。`,
+    )
+  ) {
+    return
+  }
+  purging.value = true
+  try {
+    const { data } = await api.delete<{ status: string; purged: boolean }>(
+      `/admin/repos/${id}/purge`,
+    )
+    purgeOk.value = data?.purged
+      ? `仓库 #${id} 已永久删除`
+      : `请求已完成（仓库 #${id} 未删除）`
+    purgeRepoId.value = ''
+  } catch (e) {
+    purgeError.value = errMessage(e)
+  } finally {
+    purging.value = false
+  }
+}
+
 const PAGE_SIZE = 50
 
 interface AuditFilters {
@@ -628,6 +664,26 @@ onMounted(() => {
             <p class="uptime">运行时间：{{ formatUptime(stats.uptime_seconds) }}</p>
           </template>
           <p v-else-if="!statsError" class="muted">暂无数据</p>
+        </section>
+
+        <section v-else-if="active === 'repos'" class="panel">
+          <h3 class="panel-title">永久删除仓库</h3>
+          <p class="muted">
+            按仓库 ID 永久删除仓库及其数据，<strong class="danger-text">此操作不可恢复</strong>。
+          </p>
+          <p v-if="purgeError" class="error">{{ purgeError }}</p>
+          <p v-if="purgeOk" class="notice">{{ purgeOk }}</p>
+          <form class="purge-form" @submit.prevent="purgeRepo">
+            <label class="filter">
+              <span>仓库 ID</span>
+              <input v-model="purgeRepoId" type="number" min="1" step="1" placeholder="仓库 ID" />
+            </label>
+            <div class="filter filter-actions">
+              <button class="btn primary" type="submit" :disabled="purging">
+                {{ purging ? '删除中…' : '永久删除' }}
+              </button>
+            </div>
+          </form>
         </section>
 
         <section v-else-if="active === 'runner'" class="panel">
@@ -1555,6 +1611,23 @@ tbody tr:last-child td {
   margin-top: 1rem;
   padding: 1rem;
   border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.panel-title {
+  margin: 0 0 0.5rem;
+}
+.danger-text {
+  color: #d1242f;
+}
+.purge-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(209, 36, 47, 0.5);
   border-radius: 10px;
   background: var(--card);
 }

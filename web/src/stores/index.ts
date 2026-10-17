@@ -20,6 +20,8 @@ export interface Repo {
   description: string
   default_branch: string
   is_private: boolean
+  archived: boolean
+  archived_at: string | null
   updated_at: string
 }
 

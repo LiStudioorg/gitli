@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
 import DeployKeys from '../components/repo/DeployKeys.vue'
+import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
@@ -12,6 +13,21 @@ import type { CloneInfo, Issue, LanguageStat, Pull, Repo } from '../stores'
 interface RepoResponse {
   repo: Repo
   languages: LanguageStat[]
+  license: string
+}
+
+interface IssueTemplate {
+  name: string
+  about: string
+  title: string
+  labels: string[]
+  assignees: string[]
+  body: string
+  path: string
+}
+
+interface PrTemplate {
+  body: string
 }
 
 const route = useRoute()
@@ -20,6 +36,7 @@ const owner = route.params.owner as string
 const name = route.params.repo as string
 
 const repo = ref<Repo | null>(null)
+const license = ref('')
 const languages = ref<LanguageStat[]>([])
 const cloneInfo = ref<CloneInfo | null>(null)
 const branches = ref<string[]>([])
@@ -39,6 +56,15 @@ const newTitle = ref('')
 const newBody = ref('')
 const createError = ref('')
 const creating = ref(false)
+
+const issueTemplates = ref<IssueTemplate[]>([])
+const selectedTemplate = ref('')
+const templatesLoading = ref(false)
+const templatesLoaded = ref(false)
+
+const prBody = ref('')
+const prTemplateLoading = ref(false)
+const prTemplateLoaded = ref(false)
 
 interface WorkflowJob {
   id: number
@@ -212,10 +238,64 @@ async function createIssue() {
   }
 }
 
+async function loadIssueTemplates() {
+  if (templatesLoaded.value || templatesLoading.value) return
+  templatesLoading.value = true
+  try {
+    const { data } = await api.get<IssueTemplate[]>(`/repos/${owner}/${name}/issue-templates`)
+    issueTemplates.value = data ?? []
+    templatesLoaded.value = true
+    if (issueTemplates.value.length === 1) {
+      applyTemplate(issueTemplates.value[0])
+    }
+  } catch {
+    issueTemplates.value = []
+    templatesLoaded.value = true
+  } finally {
+    templatesLoading.value = false
+  }
+}
+
+function applyTemplate(tpl: IssueTemplate) {
+  if (tpl.title) newTitle.value = tpl.title
+  if (tpl.body) newBody.value = tpl.body
+}
+
+function onTemplateChange() {
+  const tpl = issueTemplates.value.find((t) => t.name === selectedTemplate.value)
+  if (tpl) applyTemplate(tpl)
+}
+
+async function loadPrTemplate() {
+  if (prTemplateLoaded.value || prTemplateLoading.value) return
+  prTemplateLoading.value = true
+  try {
+    const { data } = await api.get<PrTemplate>(`/repos/${owner}/${name}/pr-template`)
+    prBody.value = data?.body ?? ''
+  } catch {
+    prBody.value = ''
+  } finally {
+    prTemplateLoading.value = false
+    prTemplateLoaded.value = true
+  }
+}
+
+function onRepoUpdated(payload: { name?: string; archived?: boolean }) {
+  if (repo.value) {
+    if (typeof payload.archived === 'boolean') repo.value.archived = payload.archived
+  }
+}
+
 function selectTab(tab: string) {
   activeTab.value = tab
-  if (tab === '工单' && !issues.value.length && !issuesLoading.value) loadIssues()
-  if (tab === '合并请求' && !pulls.value.length && !pullsLoading.value) loadPulls()
+  if (tab === '工单') {
+    if (!issues.value.length && !issuesLoading.value) loadIssues()
+    loadIssueTemplates()
+  }
+  if (tab === '合并请求') {
+    if (!pulls.value.length && !pullsLoading.value) loadPulls()
+    loadPrTemplate()
+  }
   if (tab === '工作流' && !workflowsLoaded.value && !workflowsLoading.value) loadWorkflows()
   if (tab !== '工作流') closeLog()
 }
@@ -225,6 +305,7 @@ onMounted(async () => {
     const { data } = await api.get<RepoResponse>(`/repos/${owner}/${name}`)
     repo.value = data.repo
     languages.value = data.languages ?? []
+    license.value = data.license ?? ''
     selectedBranch.value = data.repo.default_branch || 'main'
   } catch {
     repo.value = null
@@ -257,12 +338,14 @@ onUnmounted(() => {
         <span class="repo-icon">&lt;/&gt;</span>
         <h2>{{ owner }} / {{ name }}</h2>
         <span v-if="repo?.is_private" class="badge private">私有</span>
+        <span v-if="repo?.archived" class="badge archived">Archived</span>
         <div class="actions">
           <button class="chip">Watch 1</button>
           <button class="chip accent">Star 1</button>
           <button class="chip">Fork 0</button>
         </div>
       </div>
+      <p v-if="repo?.archived" class="archived-hint">此仓库已归档，只读</p>
       <nav class="repo-tabs">
         <button
           v-for="t in tabs"
@@ -336,6 +419,7 @@ onUnmounted(() => {
         <section class="card">
           <h4>描述</h4>
           <p>{{ repo?.description || '本仓库为镜像仓库...' }}</p>
+          <span v-if="license" class="license-badge">{{ license }}</span>
         </section>
         <section class="card">
           <h4>管理主题</h4>
@@ -365,6 +449,15 @@ onUnmounted(() => {
 
       <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createIssue">
         <h4>新建工单</h4>
+        <select
+          v-if="issueTemplates.length"
+          v-model="selectedTemplate"
+          class="form-input"
+          @change="onTemplateChange"
+        >
+          <option value="">选择模板（可选）</option>
+          <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
+        </select>
         <input v-model="newTitle" type="text" placeholder="标题" class="form-input" />
         <textarea v-model="newBody" rows="3" placeholder="描述（可选）" class="form-input" />
         <p v-if="createError" class="error">{{ createError }}</p>
@@ -389,6 +482,16 @@ onUnmounted(() => {
         <h3>合并请求</h3>
         <button class="chip" @click="loadPulls">刷新</button>
       </div>
+      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent>
+        <h4>新建合并请求</h4>
+        <textarea
+          v-model="prBody"
+          rows="5"
+          placeholder="描述（可选）"
+          class="form-input"
+          :disabled="prTemplateLoading"
+        />
+      </form>
       <p v-if="pullsError" class="error">{{ pullsError }}</p>
       <ul v-if="pulls.length" class="item-list">
         <li v-for="p in pulls" :key="p.ID" class="item-row">
@@ -447,6 +550,13 @@ onUnmounted(() => {
 
     <div v-else-if="activeTab === '设置'" class="tab-panel">
       <DeployKeys :owner="owner" :repo="name" />
+      <RepoDangerZone
+        v-if="auth.isLoggedIn"
+        :owner="owner"
+        :repo="name"
+        :archived="repo?.archived ?? false"
+        @updated="onRepoUpdated"
+      />
     </div>
 
     <div v-else class="tab-panel">
