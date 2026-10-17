@@ -3,6 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore, useUiStore } from '../../stores'
 import { useTheme } from '../../composables/useTheme'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{ variant?: 'landing' | 'app' }>(), {
   variant: 'landing',
@@ -63,9 +66,9 @@ async function logout() {
       <RouterLink class="brand" to="/">gitli</RouterLink>
       <template v-if="variant === 'landing'">
         <nav class="links">
-          <a href="#features">功能</a>
-          <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">文档</a>
-          <a href="#about">关于</a>
+          <a href="#features">{{ t('nav.features') }}</a>
+          <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">{{ t('nav.docs') }}</a>
+          <a href="#about">{{ t('nav.about') }}</a>
         </nav>
       </template>
       <template v-else>
@@ -102,7 +105,7 @@ async function logout() {
       </button>
       <template v-if="auth.isLoggedIn">
         <RouterLink v-if="variant === 'app'" class="icon-btn" to="/dashboard" title="通知">通知</RouterLink>
-        <RouterLink v-if="variant === 'landing'" class="btn primary" to="/dashboard">进入控制台</RouterLink>
+        <RouterLink v-if="variant === 'landing'" class="btn primary" to="/dashboard">{{ t('nav.dashboard') }}</RouterLink>
         <template v-else>
           <span class="avatar">{{ auth.user?.username?.[0]?.toUpperCase() }}</span>
           <RouterLink class="icon-btn" to="/settings" title="用户设置">设置</RouterLink>
@@ -111,8 +114,8 @@ async function logout() {
         </template>
       </template>
       <template v-else>
-        <RouterLink class="btn" to="/login">登录</RouterLink>
-        <RouterLink class="btn primary" to="/register">注册</RouterLink>
+        <RouterLink class="btn" to="/login">{{ t('nav.login') }}</RouterLink>
+        <RouterLink class="btn primary" to="/register">{{ t('nav.register') }}</RouterLink>
       </template>
     </div>
   </header>

@@ -119,6 +119,7 @@ type TabKey =
   | 'totp'
   | 'deleted'
   | 'security'
+  | 'general'
 
 interface Tab {
   key: TabKey
@@ -134,9 +135,18 @@ const tabs: Tab[] = [
   { key: 'totp', label: '两步验证' },
   { key: 'deleted', label: '已删除的仓库' },
   { key: 'security', label: '安全活动' },
+  { key: 'general', label: '通用' },
 ]
 
+import { localeOptions, setLocale, currentLocale } from '../i18n'
+
 const auth = useAuthStore()
+const selectedLocale = ref(currentLocale())
+
+function changeLocale(v: string) {
+  setLocale(v)
+  selectedLocale.value = v
+}
 const active = ref<TabKey>('profile')
 
 function errMessage(e: unknown): string {
@@ -1233,6 +1243,16 @@ onMounted(async () => {
         </section>
 
         <!-- 安全活动 -->
+        <section v-else-if="active === 'general'" class="card">
+          <h3>通用</h3>
+          <label class="field">
+            语言 / Language
+            <select v-model="selectedLocale" @change="changeLocale(selectedLocale)">
+              <option v-for="o in localeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+            </select>
+          </label>
+          <p class="hint">切换后立即生效并保存。</p>
+        </section>
         <section v-else class="card">
           <h3>我的活动</h3>
           <p v-if="logsError" class="error">{{ logsError }}</p>
