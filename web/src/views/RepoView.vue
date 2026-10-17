@@ -7,6 +7,7 @@ import DeployKeys from '../components/repo/DeployKeys.vue'
 import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import SavedReplies from '../components/common/SavedReplies.vue'
+import { useShortcuts } from '../composables/useShortcuts'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 import type { CloneInfo, Issue, LanguageStat, Pull, Repo } from '../stores'
@@ -32,6 +33,7 @@ interface PrTemplate {
 }
 
 const route = useRoute()
+useShortcuts(() => `${route.params.owner}/${route.params.repo}`)
 const auth = useAuthStore()
 const owner = route.params.owner as string
 const name = route.params.repo as string
@@ -45,6 +47,10 @@ const selectedBranch = ref('')
 
 const tabs = ['代码', '工单', '合并请求', '工作流', '依赖', '项目', '发布', '百科', '活动', '设置', '更多']
 const activeTab = ref('代码')
+const initialTab = route.query.tab
+if (typeof initialTab === 'string' && tabs.includes(initialTab)) {
+  activeTab.value = initialTab
+}
 
 const issues = ref<Issue[]>([])
 const pulls = ref<Pull[]>([])
