@@ -29,6 +29,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/deploykey"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
+	"github.com/LiStudioorg/gitli/internal/service/globalsearch"
 	"github.com/LiStudioorg/gitli/internal/service/ide"
 	importer "github.com/LiStudioorg/gitli/internal/service/import"
 	"github.com/LiStudioorg/gitli/internal/service/issue"
@@ -190,6 +191,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),
 		DeployKeys:    deploykey.New(st),
 		SavedReplies:  savedreply.New(st),
+		GlobalSearch:  globalsearch.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

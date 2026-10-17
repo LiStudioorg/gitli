@@ -91,6 +91,7 @@ func (s *Server) Router() http.Handler {
 	api.Use(middleware.CSRF())
 
 	api.Get("/version", s.handleVersion)
+	api.Get("/search", s.handleGlobalSearch)
 
 	api.Route("/admin", func(ar chi.Router) {
 		ar.Get("/stats", s.handleAdminStats)
