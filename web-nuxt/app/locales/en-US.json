@@ -1,0 +1,35 @@
+{
+  "nav": {
+    "features": "Features",
+    "docs": "Docs",
+    "about": "About",
+    "login": "Sign in",
+    "register": "Sign up",
+    "dashboard": "Dashboard",
+    "explore": "Explore",
+    "settings": "Settings",
+    "search": "Search..."
+  },
+  "landing": {
+    "title": "Lightweight self-hosted Git service — low memory, single binary, Go + Vue3",
+    "subtitle": "SSH/HTTP Git, Issues/PRs, TOTP, fine-grained PATs, package registry (NPM/Docker/Go/Maven), CI, and more. AGPL-3.0.",
+    "getStarted": "Get started",
+    "github": "GitHub"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "empty": "No data"
+  },
+  "settings": {
+    "language": "Language",
+    "languageHint": "Takes effect immediately",
+    "profile": "Profile",
+    "security": "Security activity",
+    "notifications": "Notifications"
+  }
+}

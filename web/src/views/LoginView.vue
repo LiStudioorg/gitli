@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import { useAuthStore } from '../stores'
+import { apiStatus, errMessage } from '../utils/error'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -22,8 +23,8 @@ async function submit() {
     await auth.login(username.value, password.value, totpCode.value)
     const redirect = (route.query.redirect as string) || '/dashboard'
     router.push(redirect)
-  } catch (e: any) {
-    if (e?.response?.status === 401 && e?.response?.data?.error === 'totp_required') {
+  } catch (e) {
+    if (apiStatus(e) === 401 && errMessage(e) === 'totp_required') {
       needsTOTP.value = true
       error.value = '请输入两步验证码'
     } else {

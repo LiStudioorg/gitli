@@ -11,6 +11,7 @@ import SavedReplies from '../components/common/SavedReplies.vue'
 import { useShortcuts } from '../composables/useShortcuts'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
+import { REPO_TABS, TABS, isRepoTab, type RepoTab } from '../constants/tabs'
 import type { CloneInfo, Issue, LanguageStat, Pull, Repo } from '../stores'
 
 interface RepoResponse {
@@ -46,10 +47,10 @@ const cloneInfo = ref<CloneInfo | null>(null)
 const branches = ref<string[]>([])
 const selectedBranch = ref('')
 
-const tabs = ['代码', '工单', '合并请求', '工作流', '依赖', '项目', '讨论', '发布', '百科', '活动', '设置']
-const activeTab = ref('代码')
+const tabs = REPO_TABS
+const activeTab = ref<RepoTab>(TABS.code)
 const initialTab = route.query.tab
-if (typeof initialTab === 'string' && tabs.includes(initialTab)) {
+if (isRepoTab(initialTab)) {
   activeTab.value = initialTab
 }
 
@@ -740,7 +741,7 @@ async function markAnswer(comment: DiscussionComment) {
   }
 }
 
-function selectTab(tab: string) {
+function selectTab(tab: RepoTab) {
   activeTab.value = tab
   if (tab === '工单') {
     if (!issues.value.length && !issuesLoading.value) loadIssues()

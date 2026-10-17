@@ -1,5 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { TABS } from '../constants/tabs'
 
 // Global navigation shortcuts. Ignored while typing in inputs.
 export function useShortcuts(getRepoPath: () => string | null) {
@@ -23,12 +24,12 @@ export function useShortcuts(getRepoPath: () => string | null) {
       if (timer) window.clearTimeout(timer)
       if (e.key === 'i' && repo) {
         e.preventDefault()
-        router.push(`/${repo}?tab=${encodeURIComponent('工单')}`)
+        router.push(`/${repo}?tab=${encodeURIComponent(TABS.issues)}`)
         return
       }
       if (e.key === 'p' && repo) {
         e.preventDefault()
-        router.push(`/${repo}?tab=${encodeURIComponent('合并请求')}`)
+        router.push(`/${repo}?tab=${encodeURIComponent(TABS.pulls)}`)
         return
       }
     }
@@ -40,7 +41,7 @@ export function useShortcuts(getRepoPath: () => string | null) {
     }
     if (e.key === 'c' && repo) {
       e.preventDefault()
-      router.push(`/${repo}?tab=${encodeURIComponent('工单')}`)
+      router.push(`/${repo}?tab=${encodeURIComponent(TABS.issues)}`)
       return
     }
     if (e.key === '/') {

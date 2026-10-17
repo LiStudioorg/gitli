@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import axios from 'axios'
+import { errMessage } from '../utils/error'
 import TopNav from '../components/layout/TopNav.vue'
 import Sidebar from '../components/layout/Sidebar.vue'
 import api from '../api/client'
@@ -138,12 +138,12 @@ const tabs: Tab[] = [
   { key: 'general', label: '通用' },
 ]
 
-import { localeOptions, setLocale, currentLocale } from '../i18n'
+import { localeOptions, setLocale, currentLocale, type AppLocale } from '../i18n'
 
 const auth = useAuthStore()
 const selectedLocale = ref(currentLocale())
 
-function changeLocale(v: string) {
+function changeLocale(v: AppLocale) {
   setLocale(v)
   selectedLocale.value = v
 }
@@ -195,15 +195,6 @@ async function saveNotificationFrequency() {
 }
 const active = ref<TabKey>('profile')
 
-function errMessage(e: unknown): string {
-  if (axios.isAxiosError(e)) {
-    const data = e.response?.data as { error?: string } | undefined
-    if (data?.error) return data.error
-    if (e.response?.status) return `请求失败（HTTP ${e.response.status}）`
-    return e.message
-  }
-  return e instanceof Error ? e.message : '未知错误'
-}
 
 // --- profile ---
 const profile = reactive({ full_name: '', bio: '', website: '', location: '' })

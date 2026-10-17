@@ -138,14 +138,14 @@ export const useAuthStore = defineStore('auth', {
       return this.user
     },
     async login(username: string, password: string, totpCode = '') {
-      const { data } = await api.post<User>('/auth/login', {
+      // 登录成功后一律以 /user/me 的回读结果为准，而不是信任登录响应体的字段完整性：
+      // user 状态一旦缺字段就被置 loaded=true，路由守卫便不再回读，is_admin 会被永久误判为 false。
+      await api.post<{ id: number; username: string }>('/auth/login', {
         username,
         password,
         totp_code: totpCode,
       })
-      this.user = data
-      this.loaded = true
-      return data
+      return await this.fetchMe()
     },
     async logout() {
       try {

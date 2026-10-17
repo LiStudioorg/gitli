@@ -1,8 +1,20 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 
-const routes = [
+// RouteMeta 默认是 Record<string|symbol, unknown>，不声明的话 to.meta.requiresAdmin
+// 这类键名拼错也不会有任何提示（unknown 允许出现在条件表达式里）。
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    requiresAdmin?: boolean
+    guestOnly?: boolean
+    /** 无需登录且跳过初始化检查（如 /setup 引导页）。 */
+    public?: boolean
+  }
+}
+
+const routes: RouteRecordRaw[] = [
   { path: '/', name: 'landing', component: () => import('../views/LandingView.vue') },
   { path: '/setup', name: 'setup', component: () => import('../views/SetupView.vue'), meta: { public: true } },
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
