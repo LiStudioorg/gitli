@@ -26,6 +26,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/globalsearch"
 	"github.com/LiStudioorg/gitli/internal/service/ide"
 	importer "github.com/LiStudioorg/gitli/internal/service/import"
+	"github.com/LiStudioorg/gitli/internal/service/ipallow"
 	"github.com/LiStudioorg/gitli/internal/service/issue"
 	"github.com/LiStudioorg/gitli/internal/service/lfs"
 	"github.com/LiStudioorg/gitli/internal/service/metrics"
@@ -120,6 +121,7 @@ type Deps struct {
 	Follows      *follow.Service
 	Explore      *explore.Service
 	OAuth        *oauth.Service
+	IPAllow      *ipallow.Service
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
 	// layer to avoid an import cycle.

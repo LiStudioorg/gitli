@@ -34,6 +34,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/globalsearch"
 	"github.com/LiStudioorg/gitli/internal/service/ide"
 	importer "github.com/LiStudioorg/gitli/internal/service/import"
+	"github.com/LiStudioorg/gitli/internal/service/ipallow"
 	"github.com/LiStudioorg/gitli/internal/service/issue"
 	"github.com/LiStudioorg/gitli/internal/service/lfs"
 	"github.com/LiStudioorg/gitli/internal/service/metrics"
@@ -198,6 +199,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Follows:       follow.New(st),
 		Explore:       explore.New(st),
 		OAuth:         oauth.New(st),
+		IPAllow:       ipallow.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

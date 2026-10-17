@@ -4,6 +4,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
@@ -53,6 +54,14 @@ func (s *Server) RequireOrgPermission(resource, action string) func(http.Handler
 			if err != nil {
 				writeError(w, http.StatusNotFound, "organization not found")
 				return
+			}
+			if s.deps.IPAllow != nil && !u.IsAdmin && !strings.Contains(r.URL.Path, "/ip-allowlist") {
+				ok, ierr := s.deps.IPAllow.Check(r.Context(), o.ID, clientIP(r))
+				if ierr == nil && !ok {
+					s.auditAction(r, u.ID, "org.ip_allowlist_denied", "denied")
+					writeError(w, http.StatusForbidden, "your IP is not allowed for this organization")
+					return
+				}
 			}
 			if !s.deps.RBAC.Check(r.Context(), u.ID, u.IsAdmin, rbac.Requirement{
 				Resource: resource, Action: action, OrgID: o.ID,
