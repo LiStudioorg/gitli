@@ -50,6 +50,15 @@ Landing/Dashboard/Repo/Admin/Settings、Clone 下拉、语言统计、依赖 Tab
 2. 本地运行，修复失败项（记录在下方"E2E 结果"）。
 3. 全绿后打 `v0.2.0-beta` tag，验证 CD。
 
+**状态：已完成**（2026-10-17）
+
+- `v0.2.0-beta` 已发布：<https://github.com/LiStudioorg/gitli/releases/tag/v0.2.0-beta>
+- Release 工作流全绿：GoReleaser 26 个产物 + deb/rpm/apk + `SHA256SUMS`；
+  多架构镜像 `ghcr.io/listudioorg/gitli:v0.2.0-beta` 推送成功。
+- 修复：`internal/platform` 磁盘统计在 BSD/NetBSD 无 `syscall.Statfs`，
+  拆分为 `disk_syscall.go`（linux/darwin）、`disk_other.go`（其它 Unix）、
+  `disk_windows.go`，全部交叉编译目标通过。
+
 ## E2E 结果
 
 `bash test/e2e.sh` — **PASS=34 FAIL=0 SKIP=2**
