@@ -211,15 +211,15 @@ func (s *Service) CollaboratorPermission(ctx context.Context, repoID, userID int
 }
 
 // AddBranchProtection protects branches matching pattern.
-func (s *Service) AddBranchProtection(ctx context.Context, repoID int64, pattern string, requireReview, requireSigned bool) error {
-	q := s.st.Rebind(`INSERT INTO branch_protections (repo_id, pattern, require_reviews, require_signed) VALUES (?, ?, ?, ?)`)
-	_, err := s.st.DB.ExecContext(ctx, q, repoID, pattern, requireReview, requireSigned)
+func (s *Service) AddBranchProtection(ctx context.Context, repoID int64, pattern string, requireReview, requireSigned, requireCodeowners bool) error {
+	q := s.st.Rebind(`INSERT INTO branch_protections (repo_id, pattern, require_reviews, require_signed, require_codeowners_review) VALUES (?, ?, ?, ?, ?)`)
+	_, err := s.st.DB.ExecContext(ctx, q, repoID, pattern, requireReview, requireSigned, requireCodeowners)
 	return err
 }
 
 // ListBranchProtections lists protections for a repo.
 func (s *Service) ListBranchProtections(ctx context.Context, repoID int64) ([]*domain.BranchProtection, error) {
-	q := s.st.Rebind(`SELECT id, repo_id, pattern, require_reviews, require_signed, created_at FROM branch_protections WHERE repo_id = ?`)
+	q := s.st.Rebind(`SELECT id, repo_id, pattern, require_reviews, require_signed, require_codeowners_review, created_at FROM branch_protections WHERE repo_id = ?`)
 	rows, err := s.st.DB.QueryContext(ctx, q, repoID)
 	if err != nil {
 		return nil, err
@@ -228,7 +228,7 @@ func (s *Service) ListBranchProtections(ctx context.Context, repoID int64) ([]*d
 	var out []*domain.BranchProtection
 	for rows.Next() {
 		var b domain.BranchProtection
-		if err := rows.Scan(&b.ID, &b.RepoID, &b.Pattern, &b.RequireReview, &b.RequireSigned, &b.CreatedAt); err != nil {
+		if err := rows.Scan(&b.ID, &b.RepoID, &b.Pattern, &b.RequireReview, &b.RequireSigned, &b.RequireCodeowners, &b.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &b)

@@ -42,6 +42,15 @@ func (s *Server) handleCreatePull(w http.ResponseWriter, r *http.Request) {
 	s.dispatch(r, "pull_request", rp.ID, u.ID, map[string]any{
 		"action": "opened", "number": p.Number, "title": p.Title, "pull_id": p.ID,
 	})
+	if s.deps.RequestCodeOwnerReviews != nil {
+		if repoPath, err := s.repoPath(r, rp); err == nil {
+			base := req.BaseBranch
+			if base == "" {
+				base = rp.DefaultBranch
+			}
+			s.deps.RequestCodeOwnerReviews(r.Context(), rp.ID, repoPath, base, req.HeadBranch, p.ID)
+		}
+	}
 	writeJSON(w, http.StatusCreated, p)
 }
 

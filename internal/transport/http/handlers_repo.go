@@ -293,9 +293,10 @@ func (s *Server) handleListProtections(w http.ResponseWriter, r *http.Request) {
 }
 
 type protectionReq struct {
-	Pattern       string `json:"pattern"`
-	RequireReview bool   `json:"require_reviews"`
-	RequireSigned bool   `json:"require_signed"`
+	Pattern           string `json:"pattern"`
+	RequireReview     bool   `json:"require_reviews"`
+	RequireSigned     bool   `json:"require_signed"`
+	RequireCodeowners bool   `json:"require_codeowners_review"`
 }
 
 func (s *Server) handleAddBranchProtection(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +308,7 @@ func (s *Server) handleAddBranchProtection(w http.ResponseWriter, r *http.Reques
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := s.deps.Repos.AddBranchProtection(r.Context(), rp.ID, req.Pattern, req.RequireReview, req.RequireSigned); err != nil {
+	if err := s.deps.Repos.AddBranchProtection(r.Context(), rp.ID, req.Pattern, req.RequireReview, req.RequireSigned, req.RequireCodeowners); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

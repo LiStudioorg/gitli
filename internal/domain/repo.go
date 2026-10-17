@@ -81,12 +81,13 @@ type Collaborator struct {
 
 // BranchProtection protects branches matching a pattern.
 type BranchProtection struct {
-	ID            int64
-	RepoID        int64
-	Pattern       string
-	RequireReview bool
-	RequireSigned bool
-	CreatedAt     time.Time
+	ID                int64
+	RepoID            int64
+	Pattern           string
+	RequireReview     bool
+	RequireSigned     bool
+	RequireCodeowners bool
+	CreatedAt         time.Time
 }
 
 // TagProtection protects tags matching a pattern.

@@ -114,6 +114,9 @@ type Deps struct {
 	// layer to avoid an import cycle.
 	Dispatch func(ctx context.Context, action string, repoID, actorID int64, payload map[string]any)
 	Notify   func(ctx context.Context, userID int64, subjectType string, subjectID int64, title, url string)
+
+	// RequestCodeOwnerReviews creates review requests for CODEOWNERS matches.
+	RequestCodeOwnerReviews func(ctx context.Context, repoID int64, repoPath, base, head string, pullID int64) []string
 }
 
 // ExternalBase returns the externally visible HTTP base URL.

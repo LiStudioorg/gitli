@@ -191,3 +191,39 @@ func parseCommits(out string) []Commit {
 	}
 	return commits
 }
+
+// ChangedFiles returns the paths changed between base and head.
+func (s *Service) ChangedFiles(ctx context.Context, path, base, head string) ([]string, error) {
+	if err := validateRef(base); err != nil {
+		return nil, err
+	}
+	if err := validateRef(head); err != nil {
+		return nil, err
+	}
+	out, err := s.runner.Run(ctx, path, "diff", "--name-only", base, head, "--")
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, l := range strings.Split(out, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			files = append(files, l)
+		}
+	}
+	return files, nil
+}
+
+// ShowFile returns the contents of a file at ref, or (nil,false) if absent.
+func (s *Service) ShowFile(ctx context.Context, path, ref, file string) ([]byte, bool) {
+	if err := validateRef(ref); err != nil {
+		return nil, false
+	}
+	if err := validateSubPath(file); err != nil {
+		return nil, false
+	}
+	data, err := s.runner.RunStream(ctx, path, "show", ref+":"+file)
+	if err != nil {
+		return nil, false
+	}
+	return data, true
+}

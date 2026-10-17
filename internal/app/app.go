@@ -197,6 +197,10 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		a.DispatchRepoEvent(ctx, Event{Action: action, RepoID: repoID, ActorID: actorID, Payload: payload})
 	}
 	deps.Notify = a.Notify
+	deps.RequestCodeOwnerReviews = func(ctx context.Context, repoID int64, repoPath, base, head string, pullID int64) []string {
+		owners, _ := a.RequestCodeOwnerReviews(ctx, repoID, repoPath, base, head, pullID)
+		return owners
+	}
 	q := queue.New(2, 256, log)
 	q.Register(LanguageRefreshKind, func(ctx context.Context, payload string) error {
 		repoID, err := ParseLanguageRefreshPayload(payload)
