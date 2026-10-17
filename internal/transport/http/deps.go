@@ -18,6 +18,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/ci"
 	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
+	"github.com/LiStudioorg/gitli/internal/service/deploykey"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/ide"
@@ -106,7 +107,8 @@ type Deps struct {
 	NotifPrefs *notifpref.Service
 	Org2FA     *org2fa.Service
 
-	Runners *runner.Service
+	Runners    *runner.Service
+	DeployKeys *deploykey.Service
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app
 	// layer to avoid an import cycle.

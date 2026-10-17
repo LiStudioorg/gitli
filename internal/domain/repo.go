@@ -128,3 +128,15 @@ type TeamMember struct {
 	Role      string
 	CreatedAt time.Time
 }
+
+// DeployKey is a repository-scoped SSH key used for automated access.
+type DeployKey struct {
+	ID          int64
+	RepoID      int64
+	Title       string
+	Fingerprint string
+	PublicKey   string
+	ReadOnly    bool
+	CreatedAt   time.Time
+	LastUsedAt  *time.Time
+}

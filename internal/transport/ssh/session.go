@@ -4,6 +4,7 @@ package ssh
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -11,7 +12,7 @@ import (
 
 // handleSession processes channel requests, honoring the exec request and the
 // configured idle timeout.
-func (s *Server) handleSession(ctx context.Context, username string, ch ssh.Channel, reqs <-chan *ssh.Request) {
+func (s *Server) handleSession(ctx context.Context, username string, readOnly bool, ch ssh.Channel, reqs <-chan *ssh.Request) {
 	defer func() { _ = ch.Close() }()
 	idle := time.Duration(s.cfg.SSH.IdleTimeoutSeconds) * time.Second
 	if idle <= 0 {
@@ -39,7 +40,7 @@ func (s *Server) handleSession(ctx context.Context, username string, ch ssh.Chan
 					continue
 				}
 				_ = req.Reply(true, nil)
-				s.runCommand(ctx, username, cmd, ch)
+				s.runCommand(ctx, username, readOnly, cmd, ch)
 				return
 			case "shell", "pty-req", "window-change":
 				// A rejected shell/pty still leaves the session open: keep the
@@ -77,7 +78,7 @@ func decodeExecPayload(payload []byte) (string, bool) {
 	return string(payload[4 : 4+n]), true
 }
 
-func (s *Server) runCommand(ctx context.Context, username, raw string, ch ssh.Channel) {
+func (s *Server) runCommand(ctx context.Context, username string, readOnly bool, raw string, ch ssh.Channel) {
 	cmd, ok := ParseCommand(raw)
 	if !ok {
 		_, _ = fmt.Fprintln(ch.Stderr(), "gitli: unsupported command")
@@ -86,6 +87,11 @@ func (s *Server) runCommand(ctx context.Context, username, raw string, ch ssh.Ch
 	}
 	if s.dispatch == nil {
 		_, _ = fmt.Fprintln(ch.Stderr(), "gitli: git dispatcher not configured")
+		sendExit(ch, 1)
+		return
+	}
+	if readOnly && strings.HasPrefix(cmd, "git-receive-pack") {
+		_, _ = fmt.Fprintln(ch.Stderr(), "gitli: deploy key is read-only; push is not permitted")
 		sendExit(ch, 1)
 		return
 	}

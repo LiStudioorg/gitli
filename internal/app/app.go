@@ -26,6 +26,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/ci"
 	"github.com/LiStudioorg/gitli/internal/service/cisecret"
 	"github.com/LiStudioorg/gitli/internal/service/comment"
+	"github.com/LiStudioorg/gitli/internal/service/deploykey"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
 	"github.com/LiStudioorg/gitli/internal/service/git"
 	"github.com/LiStudioorg/gitli/internal/service/ide"
@@ -186,6 +187,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		Topics:        topic.New(st),
 		CISecrets:     cisecret.New(st, cipher),
 		Runners:       runnersvc.New(st, cfg.Runner.LogMaxMB),
+		DeployKeys:    deploykey.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),

@@ -30,7 +30,10 @@ type Options struct {
 
 // PublicKeyAuthorizer resolves an SSH public key fingerprint to an account.
 type PublicKeyAuthorizer interface {
-	AuthorizeSSHKey(ctx context.Context, fingerprint string) (username string, ok bool)
+	// AuthorizeSSHKey maps a fingerprint to a login name. For user keys the
+	// name is the username; for deploy keys it is the repository owner and
+	// readOnly is true when the deploy key must not push.
+	AuthorizeSSHKey(ctx context.Context, fingerprint string) (username string, readOnly bool, ok bool)
 	TouchSSHKey(ctx context.Context, fingerprint string)
 }
 
@@ -163,16 +166,19 @@ func (s *Server) serveListener(ctx context.Context, ln net.Listener, sshCfg *ssh
 
 func (s *Server) authorize(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 	fp := ssh.FingerprintSHA256(key)
-	username, ok := s.auth.AuthorizeSSHKey(context.Background(), fp)
+	username, readOnly, ok := s.auth.AuthorizeSSHKey(context.Background(), fp)
 	if !ok {
-		// Fall back to the offered username when the key is unknown.
 		return nil, fmt.Errorf("ssh: unknown public key %s", fp)
 	}
 	if conn.User() != username && conn.User() != "git" {
 		return nil, fmt.Errorf("ssh: user mismatch")
 	}
 	s.auth.TouchSSHKey(context.Background(), fp)
-	return &ssh.Permissions{Extensions: map[string]string{"user": username}}, nil
+	ro := "0"
+	if readOnly {
+		ro = "1"
+	}
+	return &ssh.Permissions{Extensions: map[string]string{"user": username, "deploy_readonly": ro}}, nil
 }
 
 func (s *Server) handleConn(ctx context.Context, nConn net.Conn, sshCfg *ssh.ServerConfig) {
@@ -192,6 +198,7 @@ func (s *Server) handleConn(ctx context.Context, nConn net.Conn, sshCfg *ssh.Ser
 	go ssh.DiscardRequests(reqs)
 
 	username := sconn.Permissions.Extensions["user"]
+	readOnly := sconn.Permissions.Extensions["deploy_readonly"] == "1"
 	for newChan := range chans {
 		if newChan.ChannelType() != "session" {
 			_ = newChan.Reject(ssh.UnknownChannelType, "only session channels supported")
@@ -201,7 +208,7 @@ func (s *Server) handleConn(ctx context.Context, nConn net.Conn, sshCfg *ssh.Ser
 		if err != nil {
 			continue
 		}
-		go s.handleSession(ctx, username, ch, chReqs)
+		go s.handleSession(ctx, username, readOnly, ch, chReqs)
 	}
 }
 

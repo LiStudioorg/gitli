@@ -22,16 +22,26 @@ func (a *App) sshDispatcher() sshdispatch.CommandDispatcher {
 
 type sshAuthorizer struct{ a *App }
 
-func (s *sshAuthorizer) AuthorizeSSHKey(ctx context.Context, fingerprint string) (string, bool) {
-	u, err := s.a.Deps.Users.UserBySSHFingerprint(ctx, fingerprint)
-	if err != nil || u == nil {
-		return "", false
+func (s *sshAuthorizer) AuthorizeSSHKey(ctx context.Context, fingerprint string) (string, bool, bool) {
+	// User-level key.
+	if u, err := s.a.Deps.Users.UserBySSHFingerprint(ctx, fingerprint); err == nil && u != nil {
+		return u.Username, false, true
 	}
-	return u.Username, true
+	// Repository deploy key: authorize as the repository owner.
+	repoID, readOnly, err := s.a.Deps.DeployKeys.Resolve(ctx, fingerprint)
+	if err == nil {
+		if rp, rerr := s.a.Deps.Repos.ByID(ctx, repoID); rerr == nil {
+			if owner, oerr := s.a.Deps.Users.ByID(ctx, rp.OwnerID); oerr == nil {
+				return owner.Username, readOnly, true
+			}
+		}
+	}
+	return "", false, false
 }
 
 func (s *sshAuthorizer) TouchSSHKey(ctx context.Context, fingerprint string) {
 	_ = s.a.Deps.Users.TouchSSHKey(ctx, fingerprint)
+	_ = s.a.Deps.DeployKeys.Touch(ctx, fingerprint)
 }
 
 // sshDispatcher runs git-upload-pack / git-receive-pack against a repository
