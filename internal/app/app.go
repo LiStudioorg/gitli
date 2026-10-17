@@ -19,8 +19,8 @@ import (
 	"github.com/LiStudioorg/gitli/internal/infra/ldapauth"
 	"github.com/LiStudioorg/gitli/internal/infra/queue"
 	"github.com/LiStudioorg/gitli/internal/infra/samlauth"
-	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 	"github.com/LiStudioorg/gitli/internal/infra/weakpass"
+	"github.com/LiStudioorg/gitli/internal/platform"
 	"github.com/LiStudioorg/gitli/internal/service/activity"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 	"github.com/LiStudioorg/gitli/internal/service/auth"
@@ -249,7 +249,14 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 }
 
 func enforcePerms(cfg *config.Config) error {
-	return secutil.EnforceDirPerms(map[string]os.FileMode{
-		cfg.Storage.Repos: 0o750,
-	})
+	if cfg.Storage.Repos == "" {
+		return nil
+	}
+	if _, err := os.Stat(cfg.Storage.Repos); err != nil {
+		return nil
+	}
+	// 权限位只在 Unix 上有意义：Windows 的 os.Stat 返回合成模式（临时目录常为
+	// 0777），直接按 POSIX 位判定会让服务在本机完全起不来。平台差异交给
+	// internal/platform 吸收，符合 AGENTS「文件权限检查仅在 Unix 生效」。
+	return platform.CheckDataDirPerm(cfg.Storage.Repos, 0o750)
 }

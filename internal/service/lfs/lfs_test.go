@@ -91,11 +91,15 @@ func TestPutGetRoundtrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get: %v", err)
 	}
-	defer func() { _ = rc.Close() }()
+	// 句柄必须在 Delete 之前显式关闭：Windows 不允许删除仍被打开的文件，
+	// defer 到测试结束会让 os.Remove 报 "being used by another process"。
+	closeRC := func() { _ = rc.Close() }
 	if size != int64(len(payload)) {
+		closeRC()
 		t.Fatalf("size = %d want %d", size, len(payload))
 	}
 	got, err := io.ReadAll(rc)
+	closeRC()
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}

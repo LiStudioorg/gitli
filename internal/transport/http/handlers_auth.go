@@ -79,7 +79,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Secure:   s.deps.HTTPSecure(),
 		MaxAge:   30 * 24 * 3600,
 	})
-	writeJSON(w, http.StatusOK, map[string]any{"id": res.User.ID, "username": res.User.Username})
+	// 登录响应必须是完整公开档案：前端 auth store 直接把响应体写入 user 状态并置
+	// loaded=true，此后路由守卫不再回读 /user/me。若此处只返回 id/username，
+	// is_admin 缺失会让管理员登录后被挡在 /admin 之外。
+	writeJSON(w, http.StatusOK, publicUser(res.User))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {

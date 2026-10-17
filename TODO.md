@@ -2,10 +2,49 @@
 
 > 外部记忆文件。每次完成小模块就更新。上下文被压缩后先读本文件 + `ROADMAP.md` + `STATUS.md`。
 
-## 正在进行（阶段 A：功能冻结）
-- [ ] 编写并跑通 test/e2e.sh
-- [ ] 修复 E2E 失败项
-- [ ] 发布 v0.2.0-beta
+## 正在进行（阶段 B0：前端 Nuxt 4 重构）
+
+### 可用性修复（已完成，Windows 本机）
+- [x] `enforcePerms` 走 `platform.CheckDataDirPerm`（服务此前在 Windows 无法启动）
+- [x] 集成测试 TOML 路径转义（`go test ./...` 在 Windows 恢复全绿）
+- [x] `fsrepo` 钩子可执行位断言按平台能力守卫
+- [x] `lfs` 测试读句柄提前关闭（Windows 不允许删除已打开文件）
+- [x] `gitcmd.ValidateRepoPath` 不再禁止原生分隔符（Windows Git 托管恢复）+ 新增 `validate_test.go`
+- [x] `/auth/login` 返回 `publicUser`；前端登录以回读 `/user/me` 为准（管理员进 `/admin` 恢复）
+- [x] RouteMeta 声明合并 / 仓库页 TabKey union / i18n 语言码 union / `utils/error.ts` 统一
+- [x] `errMessage` 全部收口：5 个视图统一到 `utils/error.ts`，`OrgSettingsView` 仅保留 403/404 专属文案并委托共享实现；`catch (e: any)` 归零
+
+### Nuxt 4 脚手架（已完成）
+- [x] `web-nuxt/`：`ssr:false` + `nitro.preset=static`，12 条路由逐一对齐
+- [x] `nuxt typecheck` 与 `nuxt generate` 全绿；产出 `index.html` + 同内容 `200.html`
+- [x] Nuxt dev + 真实 gitli 端到端冒烟（CSRF/Session/注册登录/建仓/分支/Issue/评论/SSE）
+- [x] `web-nuxt/README.md` 记录约束与切换前置条件
+
+### 阶段 3：逐页行为回归（进行中）
+- [x] 暗色模式、Ctrl+K 命令面板、`g i`/`g p`/`c`/`/` 快捷键
+- [x] SSE 事件解析、退避重连、未读计数（铃铛数据源）
+- [x] i18n 中英切换（语言码 union + 两种语言同键解析）
+- [x] CSRF 头注入与空 token 行为；登录后回读 `/user/me` 使 `isAdmin` 生效
+- [x] 仓库页 Tab 契约（顺序、拼错拒绝、URL 中文值不变）
+- [x] TopNav：登录态分支、管理员「管理」入口、主题循环、⌘K 入口
+- [x] 12 视图导入契约 + 12 页面壳与旧 router 表一一对应
+- [x] 测试类型门禁（`tests/tsconfig.json` 继承 `.nuxt`，已用故意错误验证有效）
+- [x] `npm run verify` 走 `scripts/verify.mjs`，规避 npm `&&` 链的全局 nuxt 命中
+- [ ] RepoView 各 Tab 数据流（代码/工单/合并请求/工作流/依赖/项目/讨论/发布/百科/活动/设置）
+- [ ] AdminView / UserSettingsView 各面板交互
+- [ ] 响应式与无障碍抽查
+
+### 阶段 4：切换（待做）
+- [ ] `web/embed.go` 指向新产物（或把 `.output/public` 落到 embed 目录）
+- [ ] `Makefile:17` 改为 Nuxt 构建
+- [ ] `ci.yml` / `cd.yml`：`node-version: '20'` → `22`/`24`（nuxt 4 engines）
+- [ ] 旧 `web/src` 清理与 `web/dist` 提交策略确认
+- [ ] 校正 README/AGENTS/SECURITY 中过时条目（技术栈、`--config` 支持、发布版本、Markdown 渲染声明）
+
+## 已完成（阶段 A：功能冻结）
+- [x] 编写并跑通 test/e2e.sh（PASS=34 FAIL=0 SKIP=2）
+- [x] 修复 E2E 失败项
+- [x] 发布 v0.2.0-beta
 
 ## 企业级审计系统（用户单独要求，已完成）
 - [x] audit_logs 表扩展（actor/event/resource/target/old/new/result/request_id/metadata + 索引）

@@ -117,6 +117,9 @@ func EnsureWithin(base, target string) (string, error) {
 }
 
 // CheckPerms fails if path's permission bits are looser than want.
+//
+// 平台无关的 POSIX 位判定在 Windows 上不可靠（os.Stat 返回合成模式），
+// 需要目录权限校验请走 internal/platform.CheckDataDirPerm。
 func CheckPerms(path string, want os.FileMode) error {
 	info, err := os.Stat(path)
 	if err != nil {
