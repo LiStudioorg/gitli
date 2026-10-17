@@ -2,9 +2,12 @@
 package app
 
 import (
+	"io"
 	"log/slog"
 	"os"
 	"strings"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/LiStudioorg/gitli/internal/config"
 )
@@ -23,11 +26,33 @@ func NewLogger(cfg config.LogConfig) *slog.Logger {
 		level = slog.LevelInfo
 	}
 	opts := &slog.HandlerOptions{Level: level}
+	var out io.Writer = os.Stderr
+	if cfg.File != "" {
+		maxSize := cfg.MaxSizeMB
+		if maxSize <= 0 {
+			maxSize = 100
+		}
+		backups := cfg.MaxBackups
+		if backups <= 0 {
+			backups = 5
+		}
+		age := cfg.MaxAgeDays
+		if age <= 0 {
+			age = 30
+		}
+		out = &lumberjack.Logger{
+			Filename:   cfg.File,
+			MaxSize:    maxSize,
+			MaxBackups: backups,
+			MaxAge:     age,
+			Compress:   cfg.Compress,
+		}
+	}
 	var handler slog.Handler
 	if strings.ToLower(cfg.Format) == "json" {
-		handler = slog.NewJSONHandler(os.Stderr, opts)
+		handler = slog.NewJSONHandler(out, opts)
 	} else {
-		handler = slog.NewTextHandler(os.Stderr, opts)
+		handler = slog.NewTextHandler(out, opts)
 	}
 	return slog.New(handler)
 }

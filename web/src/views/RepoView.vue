@@ -8,7 +8,6 @@ import DeployKeys from '../components/repo/DeployKeys.vue'
 import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import SavedReplies from '../components/common/SavedReplies.vue'
-import { useShortcuts } from '../composables/useShortcuts'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 import { REPO_TABS, TABS, isRepoTab, type RepoTab } from '../constants/tabs'
@@ -35,7 +34,6 @@ interface PrTemplate {
 }
 
 const route = useRoute()
-useShortcuts(() => `${route.params.owner}/${route.params.repo}`)
 const auth = useAuthStore()
 const owner = route.params.owner as string
 const name = route.params.repo as string

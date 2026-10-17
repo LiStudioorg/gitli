@@ -273,6 +273,12 @@ type PackageLimits struct {
 type LogConfig struct {
 	Level  string `toml:"level"`
 	Format string `toml:"format"`
+	// File enables file logging with rotation. Empty keeps logs on stderr.
+	File       string `toml:"file"`
+	MaxSizeMB  int    `toml:"max_size_mb"`
+	MaxBackups int    `toml:"max_backups"`
+	MaxAgeDays int    `toml:"max_age_days"`
+	Compress   bool   `toml:"compress"`
 }
 
 // MailConfig configures outbound SMTP.

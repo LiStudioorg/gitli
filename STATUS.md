@@ -53,6 +53,10 @@
 - 性能：gzip 压缩、静态资源 immutable 缓存、SQLite WAL/busy_timeout、`memory_limit_mb`。
 - 运维：`/readyz`、`gitli install`（systemd）、`gitli admin backup`、JSON 日志。
 - 体验：骨架屏、Toast、PWA、GFM 任务列表、A11y、大 Diff 保护。
+- 快捷键：全局 `g i` / `g p` / `g d` / `g e` / `c` / `/` / `?`，`?` 呼出说明弹窗。
+- 敏感操作确认：生成/吊销 PAT、关闭 2FA、删除 OAuth 应用、注销会话均二次确认。
+- 日志轮转：`[log] file` + lumberjack 按大小/保留数/天数切割，`format = "json"` 可选。
+- 构建：Docker 前端与 Go 编译固定在 BUILDPLATFORM（避免 QEMU 模拟），Release 支持手动跳过 Docker。
 
 ## 已完成功能总览
 
