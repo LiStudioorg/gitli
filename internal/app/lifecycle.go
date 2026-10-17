@@ -56,6 +56,9 @@ func (a *App) Serve(ctx context.Context) error {
 	if a.Deps.Audit != nil && a.Cfg.Audit.RetentionDays > 0 {
 		go a.runAuditRetention(ctx)
 	}
+	if a.Deps.Repos != nil {
+		go a.runRepoCleanup(ctx)
+	}
 
 	httpServers, err := a.startHTTP(ctx, handler)
 	if err != nil {

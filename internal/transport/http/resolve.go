@@ -28,6 +28,10 @@ func (s *Server) resolveRepo(w http.ResponseWriter, r *http.Request, owner, repo
 		writeError(w, http.StatusNotFound, "repository not found")
 		return nil, nil, false
 	}
+	if deleted, derr := s.deps.Repos.IsDeleted(r.Context(), rp.ID); derr == nil && deleted {
+		writeError(w, http.StatusGone, "repository deleted")
+		return nil, nil, false
+	}
 	u := userFrom(r.Context())
 	var userID int64
 	var isAdmin bool

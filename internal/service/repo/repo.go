@@ -161,19 +161,6 @@ func (s *Service) Search(ctx context.Context, q string, limit, offset int) ([]*d
 	return s.scanMany(rows)
 }
 
-// Delete removes a repo and its on-disk data.
-func (s *Service) Delete(ctx context.Context, id int64) error {
-	r, err := s.ByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	owner := s.ownerSlug(ctx, r.OwnerID, r.OwnerType, r.OrgID)
-	if _, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM repos WHERE id = ?`), id); err != nil {
-		return err
-	}
-	return s.fs.Remove(owner, r.Name)
-}
-
 // Transfer moves a repo to a new owner, relocating on disk.
 func (s *Service) Transfer(ctx context.Context, id, newOwnerID int64, newOwnerType domain.OwnerType, newOrgID *int64) error {
 	r, err := s.ByID(ctx, id)

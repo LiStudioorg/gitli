@@ -103,3 +103,28 @@ func (a *App) runAuditRetention(ctx context.Context) {
 		}
 	}
 }
+
+// runRepoCleanup periodically purges repositories soft-deleted beyond 30 days.
+func (a *App) runRepoCleanup(ctx context.Context) {
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	cleanup := func() {
+		n, err := a.Deps.Repos.PurgeExpired(ctx, 30)
+		if err != nil {
+			a.Log.Warn("repo cleanup failed", "error", err)
+			return
+		}
+		if n > 0 {
+			a.Log.Info("soft-deleted repositories purged", "count", n)
+		}
+	}
+	cleanup()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			cleanup()
+		}
+	}
+}

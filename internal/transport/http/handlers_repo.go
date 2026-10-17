@@ -88,6 +88,10 @@ func (s *Server) loadRepoAndPerm(w http.ResponseWriter, r *http.Request, need do
 		writeError(w, http.StatusNotFound, "repository not found")
 		return nil, nil, false
 	}
+	if deleted, derr := s.deps.Repos.IsDeleted(r.Context(), rp.ID); derr == nil && deleted {
+		writeError(w, http.StatusGone, "repository deleted")
+		return nil, nil, false
+	}
 	u := userFrom(r.Context())
 	// Package/other non-browser clients authenticate with HTTP Basic instead of
 	// a session cookie; fall back to it when no session user is present.
@@ -214,12 +218,71 @@ func (s *Server) handleDeleteRepo(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.deps.Repos.Delete(r.Context(), rp.ID); err != nil {
+	if err := s.deps.Repos.SoftDelete(r.Context(), rp.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	s.auditAction(r, u.ID, "repo.delete", "success")
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "deleted": true})
+}
+
+// handleRestoreRepo restores a soft-deleted repository owned by the caller.
+func (s *Server) handleRestoreRepo(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	id, err := pathInt(r, "id")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	rp, err := s.deps.Repos.ByID(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "repository not found")
+		return
+	}
+	if rp.OwnerID != u.ID && !u.IsAdmin {
+		writeError(w, http.StatusForbidden, "not your repository")
+		return
+	}
+	if err := s.deps.Repos.Restore(r.Context(), id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "repo.restore", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// handleListDeletedRepos lists the caller's soft-deleted repositories.
+func (s *Server) handleListDeletedRepos(w http.ResponseWriter, r *http.Request) {
+	u := requireUser(w, r)
+	if u == nil {
+		return
+	}
+	repos, err := s.deps.Repos.ListDeletedByOwner(r.Context(), u.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, repos)
+}
+
+// handlePurgeDeletedRepo permanently deletes a soft-deleted repository.
+func (s *Server) handlePurgeDeletedRepo(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := pathInt(r, "id")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := s.deps.Repos.Purge(r.Context(), id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "purged": true})
 }
 
 type transferReq struct {
