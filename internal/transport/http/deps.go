@@ -21,6 +21,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/deploykey"
 	"github.com/LiStudioorg/gitli/internal/service/deps"
+	"github.com/LiStudioorg/gitli/internal/service/digest"
 	"github.com/LiStudioorg/gitli/internal/service/discussion"
 	"github.com/LiStudioorg/gitli/internal/service/explore"
 	"github.com/LiStudioorg/gitli/internal/service/follow"
@@ -130,6 +131,7 @@ type Deps struct {
 	Deps         *deps.Service
 	Discussions  *discussion.Service
 	Projects     *project.Service
+	Digest       *digest.Service
 	RefreshDeps  func(ctx context.Context, repoID int64, repoPath, ref string) (int, error)
 
 	// Dispatch delivers a repository event to webhooks. Injected by the app

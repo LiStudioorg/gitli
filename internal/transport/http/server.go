@@ -149,6 +149,8 @@ func (s *Server) Router() http.Handler {
 		ur.Get("/me/tokens", s.handleListTokens)
 		ur.Get("/activity", s.handleMyActivity)
 		ur.Get("/deleted-repos", s.handleListDeletedRepos)
+		ur.Get("/notification-frequency", s.handleGetDigestFrequency)
+		ur.Put("/notification-frequency", s.handleSetDigestFrequency)
 		ur.Get("/oauth-apps", s.handleListOAuthApps)
 		ur.With(middleware.MaxBody(middleware.BodyLimitSmall)).Post("/oauth-apps", s.handleCreateOAuthApp)
 		ur.Delete("/oauth-apps/{id}", s.handleDeleteOAuthApp)

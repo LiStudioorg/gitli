@@ -65,6 +65,9 @@ func (a *App) Serve(ctx context.Context) error {
 	if a.Cfg.Mail.Inbound.Enabled {
 		go a.runInboundMailer(ctx)
 	}
+	if a.Deps.Digest != nil {
+		go a.runDigestScheduler(ctx)
+	}
 
 	httpServers, err := a.startHTTP(ctx, handler)
 	if err != nil {
