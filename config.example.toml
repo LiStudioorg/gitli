@@ -573,3 +573,27 @@ sp_key = ""
 # SP 根地址，需与 IdP 注册的 ACS 一致。
 # ACS 地址为 {root_url}/api/v1/auth/saml/acs
 root_url = "https://git.example.com"
+
+
+# -----------------------------------------------------------------------------
+# [mail.inbound] 入站邮件（Reply by Email）
+# -----------------------------------------------------------------------------
+[mail.inbound]
+# 是否启用入站邮件。默认：false
+enabled = false
+
+# IMAP 服务器（993 通常为 IMAPS）。
+host = "imap.example.com"
+port = 993
+
+# IMAP 账号。密码建议从环境变量 GITLI_MAIL_INBOUND_PASSWORD 注入。
+username = "replies@example.com"
+password = ""
+mailbox = "INBOX"
+
+# 回复地址域名：通知邮件会带有 reply+<token>@<reply_domain>。
+# 需在 MTA 上把该地址路由到上述 IMAP 邮箱。
+reply_domain = "example.com"
+
+# 拉取间隔（秒）。默认：60
+interval_seconds = 60

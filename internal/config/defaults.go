@@ -84,6 +84,7 @@ func Defaults() *Config {
 			Format: "text",
 		},
 		Mail: MailConfig{
+			Inbound: InboundMailConfig{Port: 993, Mailbox: "INBOX", IntervalSec: 60},
 			Enabled: false,
 			Host:    "smtp.example.com",
 			Port:    587,

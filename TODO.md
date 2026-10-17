@@ -45,7 +45,7 @@
 - [x] 4.1 LDAP 登录：`[auth.ldap]` 配置、认证回退、自动创建/关联本地用户（组映射预留）
 - [x] 4.2 SAML 登录：crewjam/saml、SP-initiated（login + ACS 回调）
 - [x] 4.3 依赖图：解析 go.mod/package.json/pom.xml/requirements.txt、`repo_dependencies`、post-receive 触发、依赖 API
-- [ ] 4.4 入站邮件（Reply by Email）：IMAP、reply+{token}、评论写入、附件
+- [x] 4.4 入站邮件（Reply by Email）：IMAP 拉取、HMAC reply token、评论写入（附件预留）
 
 ### 批次 5：体验提升
 - [ ] 5.1 讨论（Discussions）：`discussions`/`discussion_comments`/`discussion_categories`、分类、标记答案

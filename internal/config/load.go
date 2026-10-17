@@ -122,6 +122,13 @@ func applyEnvOverrides(cfg *Config) {
 	setStr(&cfg.Mail.Password, "GITLI_MAIL_PASSWORD")
 	setStr(&cfg.Mail.From, "GITLI_MAIL_FROM")
 	setBool(&cfg.Mail.TLS, "GITLI_MAIL_TLS")
+	setBool(&cfg.Mail.Inbound.Enabled, "GITLI_MAIL_INBOUND_ENABLED")
+	setStr(&cfg.Mail.Inbound.Host, "GITLI_MAIL_INBOUND_HOST")
+	setInt(&cfg.Mail.Inbound.Port, "GITLI_MAIL_INBOUND_PORT")
+	setStr(&cfg.Mail.Inbound.Username, "GITLI_MAIL_INBOUND_USERNAME")
+	setStr(&cfg.Mail.Inbound.Password, "GITLI_MAIL_INBOUND_PASSWORD")
+	setStr(&cfg.Mail.Inbound.Mailbox, "GITLI_MAIL_INBOUND_MAILBOX")
+	setStr(&cfg.Mail.Inbound.ReplyDomain, "GITLI_MAIL_INBOUND_REPLY_DOMAIN")
 
 	setStr(&cfg.Git.Bin, "GITLI_GIT_BIN")
 	setInt(&cfg.Git.TimeoutSeconds, "GITLI_GIT_TIMEOUT_SECONDS")

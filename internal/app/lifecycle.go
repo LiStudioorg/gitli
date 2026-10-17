@@ -62,6 +62,9 @@ func (a *App) Serve(ctx context.Context) error {
 	if a.Deps.Explore != nil {
 		go a.runTrendingAggregator(ctx)
 	}
+	if a.Cfg.Mail.Inbound.Enabled {
+		go a.runInboundMailer(ctx)
+	}
 
 	httpServers, err := a.startHTTP(ctx, handler)
 	if err != nil {

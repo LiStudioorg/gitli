@@ -275,11 +275,24 @@ type LogConfig struct {
 
 // MailConfig configures outbound SMTP.
 type MailConfig struct {
-	Enabled  bool   `toml:"enabled"`
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
-	Username string `toml:"username"`
-	Password string `toml:"password"`
-	From     string `toml:"from"`
-	TLS      bool   `toml:"tls"`
+	Enabled  bool              `toml:"enabled"`
+	Host     string            `toml:"host"`
+	Port     int               `toml:"port"`
+	Username string            `toml:"username"`
+	Password string            `toml:"password"`
+	From     string            `toml:"from"`
+	TLS      bool              `toml:"tls"`
+	Inbound  InboundMailConfig `toml:"inbound"`
+}
+
+// InboundMailConfig configures IMAP reply-by-email ingestion.
+type InboundMailConfig struct {
+	Enabled     bool   `toml:"enabled"`
+	Host        string `toml:"host"`
+	Port        int    `toml:"port"`
+	Username    string `toml:"username"`
+	Password    string `toml:"password"`
+	Mailbox     string `toml:"mailbox"`
+	ReplyDomain string `toml:"reply_domain"`
+	IntervalSec int    `toml:"interval_seconds"`
 }
