@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import TopNav from '../components/layout/TopNav.vue'
 import api from '../api/client'
+import { errMessage } from '../utils/error'
 
 interface AuthorizeInfo {
   app?: { name: string; client_id: string }
@@ -29,16 +30,6 @@ const clientId = queryString('client_id')
 const redirectUri = queryString('redirect_uri')
 const scope = queryString('scope')
 const state = queryString('state')
-
-function errMessage(e: unknown): string {
-  if (axios.isAxiosError(e)) {
-    const data = e.response?.data as { error?: string } | undefined
-    if (data?.error) return data.error
-    if (e.response?.status) return `请求失败（HTTP ${e.response.status}）`
-    return e.message
-  }
-  return e instanceof Error ? e.message : '未知错误'
-}
 
 function redirectToLogin() {
   const current = route.fullPath

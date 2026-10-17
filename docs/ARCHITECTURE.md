@@ -1,6 +1,7 @@
 # 架构（ARCHITECTURE）
 
-本文件是 gitli 架构的**权威文档**；`docs/architecture.md` 为兼容保留的精简版，如两者冲突，以本文件为准。
+本文件是 gitli 架构的**权威文档**（原 `docs/architecture.md` 精简副本已合并进本文件，
+避免在大小写不敏感的文件系统上互相覆盖）。
 
 gitli 是**单二进制、严格分层、依赖单向**的 Git 服务平台。
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import { apiStatus, errMessage as httpErrMessage } from '../utils/error'
 import TopNav from '../components/layout/TopNav.vue'
 import Sidebar from '../components/layout/Sidebar.vue'
 import api from '../api/client'
@@ -23,17 +23,12 @@ interface IPAllowlistResponse {
 const route = useRoute()
 const org = String(route.params.org ?? '')
 
+/** 组织设置页的 403/404 有专属文案，其余情况交回统一解析。 */
 function errMessage(e: unknown): string {
-  if (axios.isAxiosError(e)) {
-    if (e.response?.status === 403) return '没有权限：需要该组织的管理员权限'
-    if (e.response?.status === 404) return '组织不存在'
-    const data = e.response?.data as { error?: string; message?: string } | undefined
-    if (data?.error) return data.error
-    if (data?.message) return data.message
-    if (e.response?.status) return `请求失败（HTTP ${e.response.status}）`
-    return e.message
-  }
-  return e instanceof Error ? e.message : '未知错误'
+  const status = apiStatus(e)
+  if (status === 403) return '没有权限：需要该组织的管理员权限'
+  if (status === 404) return '组织不存在'
+  return httpErrMessage(e)
 }
 
 function fmtTime(v: string | null | undefined): string {

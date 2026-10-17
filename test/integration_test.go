@@ -4,12 +4,8 @@
 //
 // These tests exercise real components (config loading, database migration,
 // RBAC seeding and git repository provisioning) without spinning up the HTTP
-// listener. They are guarded by a build tag so that plain `go test ./...`
-// skips them and does not depend on a local git binary or writable temp state.
-//
-// Run with:
-//
-//	go test -tags integration ./test/
+// listener. They run as part of plain `go test ./...` and require a writable
+// temp dir plus a local git binary.
 //
 // SHA-256 is stubbed in the sandbox, so no token/hash/crypto value is asserted;
 // only structural facts (row counts, filesystem existence, RBAC evaluation)
@@ -53,18 +49,22 @@ level = "error"
 format = "text"
 `
 
+// tomlPath renders an OS path for use inside a TOML basic string: on Windows
+// the backslashes would otherwise form invalid escapes such as "\Users".
+func tomlPath(p string) string { return filepath.ToSlash(p) }
+
 func TestEndToEnd(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
 
 	cfgPath := filepath.Join(root, "config.toml")
 	body := fmt.Sprintf(testConfig,
-		filepath.Join(root, "gitli.db"),
-		filepath.Join(root, "repos"),
-		filepath.Join(root, "lfs"),
-		filepath.Join(root, "packages"),
-		filepath.Join(root, "avatars"),
-		filepath.Join(root, "attachments"),
+		tomlPath(filepath.Join(root, "gitli.db")),
+		tomlPath(filepath.Join(root, "repos")),
+		tomlPath(filepath.Join(root, "lfs")),
+		tomlPath(filepath.Join(root, "packages")),
+		tomlPath(filepath.Join(root, "avatars")),
+		tomlPath(filepath.Join(root, "attachments")),
 	)
 	if err := os.WriteFile(cfgPath, []byte(body), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)

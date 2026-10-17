@@ -1,12 +1,24 @@
 import { createI18n } from 'vue-i18n'
+import type { WritableComputedRef } from 'vue'
 import zhCN from './locales/zh-CN.json'
 import enUS from './locales/en-US.json'
 
 const STORAGE_KEY = 'gitli-locale'
 
-function detectLocale(): string {
+export type AppLocale = 'zh-CN' | 'en-US'
+
+export const localeOptions: ReadonlyArray<{ value: AppLocale; label: string }> = [
+  { value: 'zh-CN', label: '简体中文' },
+  { value: 'en-US', label: 'English' },
+]
+
+function isAppLocale(value: unknown): value is AppLocale {
+  return value === 'zh-CN' || value === 'en-US'
+}
+
+function detectLocale(): AppLocale {
   const saved = localStorage.getItem(STORAGE_KEY)
-  if (saved === 'zh-CN' || saved === 'en-US') return saved
+  if (isAppLocale(saved)) return saved
   const nav = navigator.language || 'zh-CN'
   return nav.toLowerCase().startsWith('en') ? 'en-US' : 'zh-CN'
 }
@@ -21,18 +33,16 @@ export const i18n = createI18n({
   },
 })
 
-export function setLocale(locale: string): void {
-  if (locale !== 'zh-CN' && locale !== 'en-US') return
-  ;(i18n.global.locale as unknown as { value: string }).value = locale
+// vue-i18n 在 legacy:false 下把 global 推断成 Composer|VueI18n 联合类型，取不到
+// WritableComputedRef。断言集中在这一个访问器里，而不是散落到每个调用点。
+const globalLocale = i18n.global.locale as unknown as WritableComputedRef<AppLocale>
+
+export function setLocale(locale: AppLocale): void {
+  globalLocale.value = locale
   localStorage.setItem(STORAGE_KEY, locale)
   document.documentElement.lang = locale
 }
 
-export function currentLocale(): string {
-  return (i18n.global.locale as unknown as { value: string }).value
+export function currentLocale(): AppLocale {
+  return globalLocale.value
 }
-
-export const localeOptions = [
-  { value: 'zh-CN', label: '简体中文' },
-  { value: 'en-US', label: 'English' },
-]

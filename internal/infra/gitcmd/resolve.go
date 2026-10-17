@@ -77,7 +77,9 @@ func resolveOnce(bin string) (string, error) {
 	if info.IsDir() {
 		return "", fmt.Errorf("gitcmd: %s is a directory", bin)
 	}
-	if info.Mode().Perm()&0o111 == 0 {
+	// 可执行位只在 POSIX 平台有意义：Windows 的 os.Stat 不返回 0111，
+	// 无条件检查会让显式配置 [git] bin 的实例直接拒绝启动。
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o111 == 0 {
 		return "", fmt.Errorf("gitcmd: %s is not executable", bin)
 	}
 	abs, err := filepath.Abs(bin)

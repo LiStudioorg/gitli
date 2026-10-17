@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/LiStudioorg/gitli/internal/platform"
 )
 
 func TestInstallHooks(t *testing.T) {
@@ -15,6 +17,9 @@ func TestInstallHooks(t *testing.T) {
 		t.Fatal(err)
 	}
 	l := New(dir)
+	// 可执行位只在 POSIX 平台有意义：Windows 上 os.Chmod 不会产生 0111。
+	// AGENTS 约定「文件权限检查仅在 Unix 生效」，这里按平台能力决定是否断言。
+	checkExec := platform.Current().SupportsPerms
 	if err := l.InstallHooks(repoPath, "alice", "demo", "/usr/local/bin/gitli", "/etc/gitli/config.toml"); err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +29,7 @@ func TestInstallHooks(t *testing.T) {
 		if err != nil {
 			t.Fatalf("hook %s missing: %v", name, err)
 		}
-		if info.Mode().Perm()&0o111 == 0 {
+		if checkExec && info.Mode().Perm()&0o111 == 0 {
 			t.Fatalf("hook %s not executable", name)
 		}
 		data, _ := os.ReadFile(path)

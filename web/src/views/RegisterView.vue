@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import { useAuthStore } from '../stores'
+import { errMessage } from '../utils/error'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -39,8 +40,8 @@ async function submit() {
     })
     await auth.login(username.value, password.value)
     router.push('/dashboard')
-  } catch (e: any) {
-    error.value = e?.response?.data?.error ?? '注册失败'
+  } catch (e) {
+    error.value = errMessage(e, '注册失败')
   } finally {
     loading.value = false
   }
