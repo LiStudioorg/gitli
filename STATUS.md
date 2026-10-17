@@ -176,6 +176,27 @@ SSE 解析与退避重连、未读计数、i18n 切换、CSRF 头、登录后 `i
 3. 测试类型门禁最初形同虚设：`tests/` 不在 Nuxt 的 tsconfig include 内，故意写错的类型
    不会被捕获。现由 `tests/tsconfig.json`（继承 `.nuxt`）覆盖，已用 probe 验证有效。
 
+### 越权漏洞修复（2026-10-17，安全）
+
+修复前 `RequireOrgPermission` / `loadRepoAndPerm` 只校验 URL 里的**父资源**（org / repo），
+而 handler 拿到的是 URL 里的**子资源 id**，两者从未交叉校验，导致「A 组织的 admin 可以操作
+B 组织的团队/角色」「有仓库 A 写权限者可操作仓库 B 的看板」这类横向越权。
+
+| 位置 | 修复前 | 修复 |
+| --- | --- | --- |
+| `/orgs/{org}/teams/{team}/members`、`/reparent`、`/repos` | `{team}` 完全未校验 | 新增 `RBAC.TeamOrgID` + `orgScoped()`，不匹配返回 404 |
+| `/orgs/{org}/roles/{role}` (DELETE) | 只按 id 删除，内置角色也可被跨组织删 | 新增 `RBAC.RoleOrgID`，`org_id` 为 NULL 的内置角色一律拒绝 |
+| `/repos/{o}/{r}/projects/{id}/cards/{cardId}` (PATCH/DELETE) | `{id}` 未被使用，`cardId` 直通 | `MoveCard`/`DeleteCard` 经 `projects.repo_id` 子查询限定 |
+| `/repos/{o}/{r}/projects/{id}/columns` (POST) | `{id}` 直通 `AddColumn` | `AddColumn` 校验项目属于该仓库 |
+| `/repos/{o}/{r}/projects/{id}/cards` (POST) | 列 id 来自**请求体**，未校验 | `AddCard` 校验列属于该仓库 |
+
+回归测试：`project.TestCrossRepoBoardIsolation`（跨仓四项全拒 + 同仓仍可）、
+`rbac.TestOrgScopedLookups`（团队/角色归属查询、内置角色返回 0、缺失返回 ErrNotFound）。
+
+端到端验证（真实服务 + 两组织两仓库）：跨 org 加团队成员 / reparent / 删角色 / 授权仓库
+/ 删内置角色**全部 404**；跨仓加列 / 加卡 / 移卡 / 删卡**全部 404**；对应的同组织、同仓库
+操作**仍 201/200 成功**，双向验证未误伤正常功能。
+
 ### 已知遗留（非本次引入）
 
 - 多个端点直接 marshal `domain` 结构体，JSON 是 PascalCase（`{"ID":1,"RepoID":1,...}`），

@@ -2,9 +2,11 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
+	"github.com/LiStudioorg/gitli/internal/service/project"
 )
 
 func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
@@ -75,15 +77,20 @@ func (s *Server) handleAddProjectCard(w http.ResponseWriter, r *http.Request) {
 	if requireUser(w, r) == nil {
 		return
 	}
-	if _, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite); !ok {
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite)
+	if !ok {
 		return
 	}
 	var req addCardReq
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	card, err := s.deps.Projects.AddCard(r.Context(), req.ColumnID, req.IssueID, req.PullID, req.Title)
+	card, err := s.deps.Projects.AddCard(r.Context(), rp.ID, req.ColumnID, req.IssueID, req.PullID, req.Title)
 	if err != nil {
+		if errors.Is(err, project.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "列不存在")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -99,7 +106,8 @@ func (s *Server) handleMoveProjectCard(w http.ResponseWriter, r *http.Request) {
 	if requireUser(w, r) == nil {
 		return
 	}
-	if _, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite); !ok {
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite)
+	if !ok {
 		return
 	}
 	cardID, err := pathInt(r, "cardId")
@@ -111,7 +119,7 @@ func (s *Server) handleMoveProjectCard(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := s.deps.Projects.MoveCard(r.Context(), cardID, req.ColumnID, req.Position); err != nil {
+	if err := s.deps.Projects.MoveCard(r.Context(), rp.ID, cardID, req.ColumnID, req.Position); err != nil {
 		writeError(w, http.StatusNotFound, "卡片不存在")
 		return
 	}
@@ -122,7 +130,8 @@ func (s *Server) handleDeleteProjectCard(w http.ResponseWriter, r *http.Request)
 	if requireUser(w, r) == nil {
 		return
 	}
-	if _, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite); !ok {
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite)
+	if !ok {
 		return
 	}
 	cardID, err := pathInt(r, "cardId")
@@ -130,8 +139,8 @@ func (s *Server) handleDeleteProjectCard(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "无效的卡片 ID")
 		return
 	}
-	if err := s.deps.Projects.DeleteCard(r.Context(), cardID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+	if err := s.deps.Projects.DeleteCard(r.Context(), rp.ID, cardID); err != nil {
+		writeError(w, http.StatusNotFound, "卡片不存在")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
@@ -145,7 +154,8 @@ func (s *Server) handleAddProjectColumn(w http.ResponseWriter, r *http.Request) 
 	if requireUser(w, r) == nil {
 		return
 	}
-	if _, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite); !ok {
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermWrite)
+	if !ok {
 		return
 	}
 	id, err := pathInt(r, "id")
@@ -157,8 +167,12 @@ func (s *Server) handleAddProjectColumn(w http.ResponseWriter, r *http.Request) 
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	col, err := s.deps.Projects.AddColumn(r.Context(), id, req.Name)
+	col, err := s.deps.Projects.AddColumn(r.Context(), rp.ID, id, req.Name)
 	if err != nil {
+		if errors.Is(err, project.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "项目不存在")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

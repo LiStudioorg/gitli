@@ -306,3 +306,35 @@ func (s *Service) IsOrgOwner(ctx context.Context, orgID, userID int64) (bool, er
 	}
 	return owner == userID, nil
 }
+
+// TeamOrgID returns the org that owns the team. Handlers use it to prove the
+// {team} path parameter really belongs to the {org} they were authorized for —
+// without it, an org admin could pass another org's team id and act on it.
+func (s *Service) TeamOrgID(ctx context.Context, teamID int64) (int64, error) {
+	var orgID int64
+	err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT org_id FROM teams WHERE id = ?`), teamID).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrNotFound
+	}
+	if err != nil {
+		return 0, err
+	}
+	return orgID, nil
+}
+
+// RoleOrgID returns the org that owns the role. Built-in/global roles have a
+// NULL org_id, reported as 0 so callers can treat them as not org-scoped.
+func (s *Service) RoleOrgID(ctx context.Context, roleID int64) (int64, error) {
+	var orgID sql.NullInt64
+	err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT org_id FROM roles WHERE id = ?`), roleID).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrNotFound
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !orgID.Valid {
+		return 0, nil
+	}
+	return orgID.Int64, nil
+}

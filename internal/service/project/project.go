@@ -173,8 +173,20 @@ func (s *Service) listCards(ctx context.Context, columnID int64) ([]*Card, error
 	return out, rows.Err()
 }
 
-// AddCard appends a card to a column.
-func (s *Service) AddCard(ctx context.Context, columnID int64, issueID, pullID *int64, title string) (*Card, error) {
+// AddCard appends a card to a column that belongs to the given repository.
+// The column id arrives in the request body, so it must be re-checked against
+// the repository the caller was authorized for.
+func (s *Service) AddCard(ctx context.Context, repoID, columnID int64, issueID, pullID *int64, title string) (*Card, error) {
+	var owned int64
+	err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(
+		`SELECT COUNT(*) FROM project_columns WHERE id = ? AND project_id IN (`+reposProjectSubquery+`)`),
+		columnID, repoID).Scan(&owned)
+	if err != nil {
+		return nil, err
+	}
+	if owned == 0 {
+		return nil, ErrNotFound
+	}
 	var pos int
 	_ = s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT COALESCE(MAX(position)+1,0) FROM project_cards WHERE column_id = ?`), columnID).Scan(&pos)
 	res, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`INSERT INTO project_cards (column_id, issue_id, pull_id, title, position) VALUES (?, ?, ?, ?, ?)`), columnID, issueID, pullID, title, pos)
@@ -185,9 +197,21 @@ func (s *Service) AddCard(ctx context.Context, columnID int64, issueID, pullID *
 	return &Card{ID: id, ColumnID: columnID, IssueID: issueID, PullID: pullID, Title: title, Position: pos}, nil
 }
 
-// MoveCard moves a card to another column/position.
-func (s *Service) MoveCard(ctx context.Context, cardID, columnID int64, position int) error {
-	res, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`UPDATE project_cards SET column_id = ?, position = ? WHERE id = ?`), columnID, position, cardID)
+// reposProjectSubquery selects the project ids that belong to a repository.
+// Every card/column mutation is scoped through it so that a caller who holds
+// write access to repo A cannot move or delete board items of repo B by
+// guessing ids.
+const reposProjectSubquery = `SELECT id FROM projects WHERE repo_id = ?`
+
+// MoveCard moves a card to another column/position. Both the card and the
+// destination column must belong to the given repository.
+func (s *Service) MoveCard(ctx context.Context, repoID, cardID, columnID int64, position int) error {
+	res, err := s.st.DB.ExecContext(ctx, s.st.Rebind(
+		`UPDATE project_cards SET column_id = ?, position = ?
+		 WHERE id = ?
+		   AND column_id IN (SELECT id FROM project_columns WHERE project_id IN (`+reposProjectSubquery+`))
+		   AND ? IN (SELECT id FROM project_columns WHERE project_id IN (`+reposProjectSubquery+`))`),
+		columnID, position, cardID, repoID, columnID, repoID)
 	if err != nil {
 		return err
 	}
@@ -197,14 +221,33 @@ func (s *Service) MoveCard(ctx context.Context, cardID, columnID int64, position
 	return nil
 }
 
-// DeleteCard removes a card.
-func (s *Service) DeleteCard(ctx context.Context, cardID int64) error {
-	_, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`DELETE FROM project_cards WHERE id = ?`), cardID)
-	return err
+// DeleteCard removes a card that belongs to the given repository.
+func (s *Service) DeleteCard(ctx context.Context, repoID, cardID int64) error {
+	res, err := s.st.DB.ExecContext(ctx, s.st.Rebind(
+		`DELETE FROM project_cards
+		 WHERE id = ?
+		   AND column_id IN (SELECT id FROM project_columns WHERE project_id IN (`+reposProjectSubquery+`))`),
+		cardID, repoID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
-// AddColumn appends a column.
-func (s *Service) AddColumn(ctx context.Context, projectID int64, name string) (*Column, error) {
+// AddColumn appends a column to a project owned by the given repository.
+func (s *Service) AddColumn(ctx context.Context, repoID, projectID int64, name string) (*Column, error) {
+	var exists int64
+	err := s.st.DB.QueryRowContext(ctx, s.st.Rebind(
+		`SELECT COUNT(*) FROM projects WHERE id = ? AND repo_id = ?`), projectID, repoID).Scan(&exists)
+	if err != nil {
+		return nil, err
+	}
+	if exists == 0 {
+		return nil, ErrNotFound
+	}
 	var pos int
 	_ = s.st.DB.QueryRowContext(ctx, s.st.Rebind(`SELECT COALESCE(MAX(position)+1,0) FROM project_columns WHERE project_id = ?`), projectID).Scan(&pos)
 	res, err := s.st.DB.ExecContext(ctx, s.st.Rebind(`INSERT INTO project_columns (project_id, name, position) VALUES (?, ?, ?)`), projectID, name, pos)

@@ -153,3 +153,47 @@ func roleID(t *testing.T, svc *Service, name string) int64 {
 	}
 	return id
 }
+
+// TestOrgScopedLookups 回归测试：handler 依赖这两个查询来证明 {team}/{role}
+// 确实属于它在 URL 中已被授权的 {org}。修复前团队/角色的增删改只按 id 进行，
+// 一个 org 的管理员可以操作另一个 org 的团队与角色。
+func TestOrgScopedLookups(t *testing.T) {
+	svc, st := testService(t)
+	ctx := context.Background()
+
+	res, err := st.DB.ExecContext(ctx, st.Rebind(`INSERT INTO teams (org_id, name) VALUES (?, ?)`), 11, "team-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	teamA, _ := res.LastInsertId()
+
+	got, err := svc.TeamOrgID(ctx, teamA)
+	if err != nil {
+		t.Fatalf("TeamOrgID: %v", err)
+	}
+	if got != 11 {
+		t.Fatalf("TeamOrgID = %d, want 11", got)
+	}
+	if _, err := svc.TeamOrgID(ctx, teamA+9999); err != ErrNotFound {
+		t.Fatalf("missing team: want ErrNotFound, got %v", err)
+	}
+
+	// 自定义角色（带 org_id）应返回其组织。
+	res, err = st.DB.ExecContext(ctx, st.Rebind(`INSERT INTO roles (org_id, name, is_builtin) VALUES (?, ?, 0)`), 12, "custom-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	roleA, _ := res.LastInsertId()
+	if got, err := svc.RoleOrgID(ctx, roleA); err != nil || got != 12 {
+		t.Fatalf("RoleOrgID = %d, %v; want 12, nil", got, err)
+	}
+
+	// 内置角色（org_id 为 NULL）返回 0，调用方据此拒绝跨组织使用。
+	builtin := roleID(t, svc, "admin")
+	if got, err := svc.RoleOrgID(ctx, builtin); err != nil || got != 0 {
+		t.Fatalf("builtin RoleOrgID = %d, %v; want 0, nil", got, err)
+	}
+	if _, err := svc.RoleOrgID(ctx, roleA+9999); err != ErrNotFound {
+		t.Fatalf("missing role: want ErrNotFound, got %v", err)
+	}
+}

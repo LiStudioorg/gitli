@@ -2,10 +2,50 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/LiStudioorg/gitli/internal/service/rbac"
 )
+
+// orgScoped resolves the {org} URL parameter and proves the given child id
+// (team or role) belongs to that org. RequireOrgPermission only authorizes the
+// org from the URL, so without this check an admin of org A could pass org B's
+// team/role id and act on it.
+//
+// It writes the error response itself and reports whether the handler should
+// continue.
+func (s *Server) orgScoped(w http.ResponseWriter, r *http.Request, kind string, id int64) bool {
+	o, err := s.deps.Orgs.ByName(r.Context(), urlParam(r, "org"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "组织不存在")
+		return false
+	}
+	var owner int64
+	switch kind {
+	case "team":
+		owner, err = s.deps.RBAC.TeamOrgID(r.Context(), id)
+	case "role":
+		owner, err = s.deps.RBAC.RoleOrgID(r.Context(), id)
+	default:
+		writeError(w, http.StatusInternalServerError, "未知的资源类型")
+		return false
+	}
+	if err != nil {
+		if errors.Is(err, rbac.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "资源不存在")
+			return false
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return false
+	}
+	// owner == 0 表示全局内置角色（org_id 为 NULL），不属于任何组织，一律拒绝。
+	if owner == 0 || owner != o.ID {
+		writeError(w, http.StatusNotFound, "资源不存在")
+		return false
+	}
+	return true
+}
 
 // --- org members ---
 
@@ -112,6 +152,9 @@ func (s *Server) handleReparentTeam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "无效的团队 ID")
 		return
 	}
+	if !s.orgScoped(w, r, "team", teamID) {
+		return
+	}
 	var req reparentReq
 	if !decodeJSON(w, r, &req) {
 		return
@@ -136,6 +179,9 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 	teamID, err := pathInt(r, "team")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的团队 ID")
+		return
+	}
+	if !s.orgScoped(w, r, "team", teamID) {
 		return
 	}
 	var req teamMemberReq
@@ -164,6 +210,9 @@ func (s *Server) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "无效的团队 ID")
 		return
 	}
+	if !s.orgScoped(w, r, "team", teamID) {
+		return
+	}
 	target, err := s.deps.Users.ByUsername(r.Context(), urlParam(r, "username"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "用户不存在")
@@ -190,6 +239,9 @@ func (s *Server) handleGrantTeamRepo(w http.ResponseWriter, r *http.Request) {
 	teamID, err := pathInt(r, "team")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的团队 ID")
+		return
+	}
+	if !s.orgScoped(w, r, "team", teamID) {
 		return
 	}
 	var req teamRepoReq
@@ -250,6 +302,9 @@ func (s *Server) handleDeleteRole(w http.ResponseWriter, r *http.Request) {
 	roleID, err := pathInt(r, "role")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的角色 ID")
+		return
+	}
+	if !s.orgScoped(w, r, "role", roleID) {
 		return
 	}
 	if err := s.deps.RBAC.DeleteRole(r.Context(), u.ID, roleID); err != nil {
