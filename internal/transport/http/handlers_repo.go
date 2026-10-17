@@ -479,3 +479,29 @@ func (s *Server) handleRenameRepo(w http.ResponseWriter, r *http.Request) {
 	s.auditAction(r, u.ID, "repo.rename", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "name": req.Name})
 }
+
+type archiveRepoReq struct {
+	Archived bool `json:"archived"`
+}
+
+// handleArchiveRepo archives or unarchives a repository (repo admin only).
+func (s *Server) handleArchiveRepo(w http.ResponseWriter, r *http.Request) {
+	rp, u, ok := s.loadRepoAndPerm(w, r, domain.PermAdmin)
+	if !ok {
+		return
+	}
+	var req archiveRepoReq
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if err := s.deps.Repos.Archive(r.Context(), rp.ID, req.Archived); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	action := "repo.archive"
+	if !req.Archived {
+		action = "repo.unarchive"
+	}
+	s.auditAction(r, u.ID, action, "success")
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "archived": req.Archived})
+}

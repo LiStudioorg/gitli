@@ -187,6 +187,7 @@ func (s *Server) Router() http.Handler {
 		rr.Post("/{owner}/{repo}/fork", s.handleForkRepo)
 		rr.Post("/{owner}/{repo}/transfer", s.handleTransferRepo)
 		rr.Post("/{owner}/{repo}/rename", s.handleRenameRepo)
+		rr.Post("/{owner}/{repo}/archive", s.handleArchiveRepo)
 		rr.Get("/{owner}/{repo}/branches", s.handleBranches)
 		rr.Get("/{owner}/{repo}/tree/{ref}", s.handleTree)
 		rr.Get("/{owner}/{repo}/tree/{ref}/*", s.handleTree)

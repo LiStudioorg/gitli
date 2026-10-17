@@ -48,6 +48,10 @@ func (s *Server) resolveRepo(w http.ResponseWriter, r *http.Request, owner, repo
 		writeError(w, http.StatusNotFound, "repository not found")
 		return nil, nil, false
 	}
+	if need >= domain.PermWrite && s.deps.Repos.IsArchived(r.Context(), rp) {
+		writeError(w, http.StatusForbidden, "repository is archived (read-only)")
+		return nil, nil, false
+	}
 	if perm < need {
 		writeError(w, http.StatusForbidden, "insufficient permissions")
 		return nil, nil, false
