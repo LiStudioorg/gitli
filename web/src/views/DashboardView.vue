@@ -129,14 +129,14 @@ async function removeRepo(repo: Repo) {
 .content {
   flex: 1;
   min-width: 0;
-  padding: 1.5rem;
+  padding: 24px;
 }
 .columns {
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(260px, 3fr);
   gap: 1.5rem;
   align-items: start;
-  max-width: 1200px;
+  width: 100%;
 }
 .col-head {
   display: flex;

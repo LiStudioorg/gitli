@@ -297,6 +297,13 @@ const filteredPulls = computed(() =>
   pulls.value.filter((p) => pullFilter.value === 'all' || p.State === pullFilter.value),
 )
 
+function formatSize(kb: number): string {
+  if (!kb) return '0 B'
+  if (kb < 1024) return `${kb} KB`
+  if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(1)} MB`
+  return `${(kb / 1024 / 1024).toFixed(1)} GB`
+}
+
 function relTime(raw: string): string {
   const d = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw.replace(' ', 'T') + 'Z')
   if (Number.isNaN(d.getTime())) return raw
@@ -872,9 +879,9 @@ onUnmounted(() => {
         <span v-if="repo?.is_private" class="badge private">私有</span>
         <span v-if="repo?.archived" class="badge archived">Archived</span>
         <div class="actions">
-          <button class="chip">Watch 1</button>
-          <button class="chip accent">Star 1</button>
-          <button class="chip">Fork 0</button>
+          <button class="chip">关注 {{ repo?.StarsCount ?? 0 }}</button>
+          <button class="chip accent">星标 {{ repo?.StarsCount ?? 0 }}</button>
+          <button class="chip">派生 {{ repo?.ForksCount ?? 0 }}</button>
         </div>
       </div>
       <p v-if="repo?.archived" class="archived-hint">此仓库已归档，只读</p>
@@ -909,27 +916,20 @@ onUnmounted(() => {
       </main>
 
       <aside class="side-col">
-        <section class="card">
-          <h4>描述</h4>
-          <p>{{ repo?.description || '本仓库为镜像仓库...' }}</p>
+        <section v-if="repo?.description || license" class="card">
+          <h4>关于</h4>
+          <p v-if="repo?.description">{{ repo.description }}</p>
+          <p v-else class="muted">暂无描述</p>
           <span v-if="license" class="license-badge">{{ license }}</span>
         </section>
-        <section class="card">
-          <h4>管理主题</h4>
-          <div class="tags">
-            <span class="tag">自述文档</span>
-            <span class="tag">AGPL-3.0</span>
-          </div>
-          <p class="size">2.1 MiB</p>
-          <p class="social">1 点赞 · 1 关注</p>
-        </section>
-        <section class="card">
-          <h4>发布</h4>
-          <span class="tag accent">LiCore v0.9.11 最新</span>
-        </section>
-        <section class="card">
+        <section v-if="languages.length" class="card">
           <h4>语言</h4>
           <LanguageStats :languages="languages" />
+        </section>
+        <section v-if="repo && (repo.SizeKB ?? 0) > 0" class="card">
+          <h4>仓库信息</h4>
+          <p class="size">{{ formatSize(repo.SizeKB ?? 0) }}</p>
+          <p class="social">{{ repo.StarsCount ?? 0 }} 星标 · {{ repo.ForksCount ?? 0 }} 派生</p>
         </section>
       </aside>
     </div>
@@ -1402,7 +1402,7 @@ onUnmounted(() => {
 
 <style scoped>
 .repo-page {
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
 }
 .repo-header {
@@ -1471,10 +1471,16 @@ onUnmounted(() => {
 }
 .repo-body {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.5rem;
-  padding: 1.25rem 1.5rem;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  padding: 24px;
   align-items: start;
+}
+.main-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 .toolbar {
   display: flex;
@@ -1616,7 +1622,7 @@ onUnmounted(() => {
   }
 }
 .tab-panel {
-  padding: 1.25rem 1.5rem;
+  padding: 24px;
 }
 .panel-head {
   display: flex;

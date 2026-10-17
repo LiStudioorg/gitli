@@ -60,7 +60,21 @@ func (s *Service) DefaultBranch(ctx context.Context, path string) (string, error
 	return strings.TrimSpace(out), nil
 }
 
-// Tree lists entries at a path on a ref.
+// ErrEmptyRepo indicates the repository has no commits yet. Callers must render
+// an onboarding state instead of surfacing a git error to the user.
+var ErrEmptyRepo = errors.New("git: repository has no commits")
+
+// IsEmpty reports whether the repository has no commits at all.
+func (s *Service) IsEmpty(ctx context.Context, path string) bool {
+	out, err := s.runner.Run(ctx, path, "rev-list", "--all", "--count")
+	if err != nil {
+		return true
+	}
+	return strings.TrimSpace(out) == "0"
+}
+
+// Tree lists entries at a path on a ref. ErrEmptyRepo is returned when the ref
+// does not resolve yet (fresh repository), so the caller can show onboarding.
 func (s *Service) Tree(ctx context.Context, path, ref, subPath string) ([]TreeEntry, error) {
 	if err := validateRef(ref); err != nil {
 		return nil, err
@@ -74,9 +88,29 @@ func (s *Service) Tree(ctx context.Context, path, ref, subPath string) ([]TreeEn
 	}
 	out, err := s.runner.Run(ctx, path, "ls-tree", "--long", "-z", target, "--")
 	if err != nil {
+		if isMissingObject(err) {
+			return nil, ErrEmptyRepo
+		}
 		return nil, err
 	}
 	return parseTree(out), nil
+}
+
+// isMissingObject recognises git's "no such ref/object" failures, which for a
+// brand-new repository simply mean there is nothing to list yet.
+func isMissingObject(err error) bool {
+	msg := err.Error()
+	for _, needle := range []string{
+		"Not a valid object name",
+		"unknown revision or path not in the working tree",
+		"bad revision",
+		"Needed a single revision",
+	} {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // Blob returns the raw bytes of a file at ref:subPath.

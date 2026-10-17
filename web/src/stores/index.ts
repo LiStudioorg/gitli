@@ -26,6 +26,14 @@ export interface Repo {
   updated_at: string
   owner_name?: string
   relation?: 'owned' | 'collaborated'
+  // domain.Repo has no JSON tags, so the API returns Go field names.
+  Name?: string
+  Description?: string
+  DefaultBranch?: string
+  StarsCount?: number
+  ForksCount?: number
+  SizeKB?: number
+  Archived?: boolean
 }
 
 export interface Activity {

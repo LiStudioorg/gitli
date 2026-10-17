@@ -54,12 +54,19 @@ function go(path: string) {
 <style scoped>
 .sidebar {
   width: 240px;
+  min-width: 240px;
+  flex: 0 0 240px;
   padding: 1rem;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   background: var(--card);
+  position: sticky;
+  top: 57px;
+  align-self: flex-start;
+  max-height: calc(100vh - 57px);
+  overflow-y: auto;
 }
 h4 {
   font-size: 0.78rem;

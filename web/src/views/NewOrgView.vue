@@ -9,6 +9,7 @@ const router = useRouter()
 const name = ref('')
 const displayName = ref('')
 const error = ref('')
+const touched = ref(false)
 const loading = ref(false)
 
 const disabledReason = computed(() => {
@@ -48,7 +49,7 @@ async function submit() {
         <form class="form" @submit.prevent="submit">
           <label>
             组织标识
-            <input v-model="name" placeholder="my-team" autocomplete="off" />
+            <input v-model="name" placeholder="my-team" autocomplete="off" @blur="touched = true" />
           </label>
           <label>
             显示名称（可选）
@@ -60,7 +61,7 @@ async function submit() {
           </div>
         </form>
         <p v-if="error" class="error">{{ error }}</p>
-        <p v-else-if="disabledReason" class="hint">{{ disabledReason }}</p>
+        <p v-else-if="touched && disabledReason" class="hint">{{ disabledReason }}</p>
       </main>
     </div>
   </div>

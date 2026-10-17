@@ -12,6 +12,7 @@ const name = ref('')
 const description = ref('')
 const isPrivate = ref(false)
 const error = ref('')
+const touched = ref(false)
 const loading = ref(false)
 
 const disabledReason = computed(() => {
@@ -53,7 +54,7 @@ async function submit() {
         <form class="form" @submit.prevent="submit">
           <label>
             仓库名称
-            <input v-model="name" placeholder="my-project" autocomplete="off" />
+            <input v-model="name" placeholder="my-project" autocomplete="off" @blur="touched = true" />
           </label>
           <label>
             描述（可选）
@@ -69,7 +70,7 @@ async function submit() {
           </div>
         </form>
         <p v-if="error" class="error">{{ error }}</p>
-        <p v-else-if="disabledReason" class="hint">{{ disabledReason }}</p>
+        <p v-else-if="touched && disabledReason" class="hint">{{ disabledReason }}</p>
       </main>
     </div>
   </div>

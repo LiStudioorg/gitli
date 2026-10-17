@@ -35,6 +35,30 @@ const pathStack = ref<string[]>([])
 const entries = ref<TreeEntry[]>([])
 const latestCommit = ref<Commit | null>(null)
 const readme = ref<{ name: string; content: string } | null>(null)
+const isEmptyRepo = ref(false)
+const copiedQuickstart = ref(false)
+
+const quickstart = computed(() => {
+  const remote = `${window.location.origin}/${props.owner}/${props.repo}.git`
+  return [
+    'git init',
+    'git add .',
+    'git commit -m "first commit"',
+    `git branch -M ${props.branch || 'main'}`,
+    `git remote add origin ${remote}`,
+    `git push -u origin ${props.branch || 'main'}`,
+  ].join('\n')
+})
+
+async function copyQuickstart() {
+  try {
+    await navigator.clipboard.writeText(quickstart.value)
+    copiedQuickstart.value = true
+    setTimeout(() => (copiedQuickstart.value = false), 1500)
+  } catch {
+    copiedQuickstart.value = false
+  }
+}
 const loading = ref(false)
 const error = ref('')
 
@@ -62,7 +86,8 @@ async function loadTree() {
   try {
     const base = `/repos/${props.owner}/${props.repo}/tree/${encodeURIComponent(props.branch)}`
     const url = currentPath.value ? `${base}/${currentPath.value}` : base
-    const { data } = await api.get<{ entries: TreeEntry[] }>(url)
+    const { data } = await api.get<{ entries: TreeEntry[]; is_empty?: boolean }>(url)
+    isEmptyRepo.value = data.is_empty === true
     const list = data.entries ?? []
     list.sort((a, b) => {
       if (a.type === b.type) return a.name.localeCompare(b.name)
@@ -156,7 +181,17 @@ onMounted(() => void loadTree())
       <button type="button" class="chip" aria-label="复制当前路径" title="复制当前路径" @click="copyPath">复制路径</button>
     </div>
 
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="error && !isEmptyRepo" class="error">{{ error }}</p>
+    <section v-else-if="isEmptyRepo" class="empty-repo">
+      <div class="empty-icon" aria-hidden="true">📦</div>
+      <h3>这是一个空仓库</h3>
+      <p class="muted">还没有任何提交。在本地推送第一个提交后，这里会显示文件列表与 README。</p>
+      <pre class="quickstart"><code>{{ quickstart }}</code></pre>
+      <button class="ui-btn" type="button" @click="copyQuickstart">
+        {{ copiedQuickstart ? '已复制' : '复制命令' }}
+      </button>
+    </section>
+
     <div v-else-if="loading" class="skeleton-list">
       <SkeletonBlock v-for="i in 5" :key="i" :lines="1" height="1.4rem" />
     </div>
@@ -359,6 +394,45 @@ onMounted(() => void loadTree())
 }
 .readme :deep(.markdown-body) {
   padding: 1rem 1.1rem;
+}
+.empty-repo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+}
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  background: var(--color-primary-bg);
+}
+.empty-repo h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+}
+.quickstart {
+  width: 100%;
+  max-width: 620px;
+  margin: 0.75rem 0 0.25rem;
+  text-align: left;
+  background: color-mix(in srgb, var(--border) 28%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
 }
 .skeleton-list {
   display: flex;

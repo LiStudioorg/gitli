@@ -11,6 +11,7 @@ const auth = useAuthStore()
 const name = ref('')
 const sourceURL = ref('')
 const error = ref('')
+const touched = ref(false)
 const loading = ref(false)
 
 const disabledReason = computed(() => {
@@ -58,11 +59,11 @@ async function submit() {
         <form class="form" @submit.prevent="submit">
           <label>
             新仓库名称
-            <input v-model="name" placeholder="my-imported-repo" autocomplete="off" />
+            <input v-model="name" placeholder="my-imported-repo" autocomplete="off" @blur="touched = true" />
           </label>
           <label>
             来源仓库地址
-            <input v-model="sourceURL" placeholder="https://github.com/user/repo.git" autocomplete="off" />
+            <input v-model="sourceURL" placeholder="https://github.com/user/repo.git" autocomplete="off" @blur="touched = true" />
           </label>
           <div class="actions">
             <button type="submit" :disabled="loading">{{ loading ? '导入中…' : '开始导入' }}</button>
@@ -70,7 +71,7 @@ async function submit() {
           </div>
         </form>
         <p v-if="error" class="error">{{ error }}</p>
-        <p v-else-if="disabledReason" class="hint">{{ disabledReason }}</p>
+        <p v-else-if="touched && disabledReason" class="hint">{{ disabledReason }}</p>
       </main>
     </div>
   </div>
