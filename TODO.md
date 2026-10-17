@@ -48,7 +48,7 @@
 - [x] 4.4 入站邮件（Reply by Email）：IMAP 拉取、HMAC reply token、评论写入（附件预留）
 
 ### 批次 5：体验提升
-- [ ] 5.1 讨论（Discussions）：`discussions`/`discussion_comments`/`discussion_categories`、分类、标记答案
+- [x] 5.1 讨论（Discussions）：分类（Announcements/General/Ideas/Q&A）、评论、Q&A 标记答案、API
 - [ ] 5.2 项目看板（Projects）：`projects`/`project_columns`/`project_cards`、拖拽、筛选
 - [ ] 5.3 命令面板 + 快捷键：Ctrl+K、`g i`/`g p`/`c`/`/`
 - [ ] 5.4 多语言（i18n）：Vue i18n 中英文、后端 Accept-Language

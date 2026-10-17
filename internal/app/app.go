@@ -30,6 +30,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/service/comment"
 	"github.com/LiStudioorg/gitli/internal/service/deploykey"
 	"github.com/LiStudioorg/gitli/internal/service/deps"
+	"github.com/LiStudioorg/gitli/internal/service/discussion"
 	"github.com/LiStudioorg/gitli/internal/service/explore"
 	"github.com/LiStudioorg/gitli/internal/service/follow"
 	"github.com/LiStudioorg/gitli/internal/service/gist"
@@ -207,6 +208,7 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		IPAllow:       ipallow.New(st),
 		SAML:          samlSvc,
 		Deps:          deps.New(st),
+		Discussions:   discussion.New(st),
 		Blocks:        block.New(st),
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),
