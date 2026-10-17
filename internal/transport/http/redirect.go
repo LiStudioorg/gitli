@@ -24,7 +24,19 @@ func (s *Server) usernameRedirect(next http.Handler) http.Handler {
 			return
 		}
 		// Skip if the user exists already (current username).
-		if _, err := s.deps.Users.ByUsername(r.Context(), owner); err == nil {
+		if ownerUser, err := s.deps.Users.ByUsername(r.Context(), owner); err == nil {
+			// Same owner: check for a repository rename redirect.
+			if repoName, ok := splitRepoName(rest); ok {
+				if _, err := s.deps.Repos.ByOwnerName(r.Context(), ownerUser.ID, repoName); err != nil {
+					if targetID, rerr := s.deps.Repos.ResolveRedirect(r.Context(), owner, repoName); rerr == nil {
+						if target, rerr := s.deps.Repos.ByID(r.Context(), targetID); rerr == nil {
+							sub := strings.TrimPrefix(rest, "/"+repoName)
+							http.Redirect(w, r, "/"+owner+"/"+target.Name+sub, http.StatusMovedPermanently)
+							return
+						}
+					}
+				}
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -40,6 +52,19 @@ func (s *Server) usernameRedirect(next http.Handler) http.Handler {
 		}
 		http.Redirect(w, r, "/"+target.Username+rest, http.StatusMovedPermanently)
 	})
+}
+
+// splitRepoName extracts the repository name (first segment) from a "/repo/..."
+// remainder, returning false when there is no repository segment.
+func splitRepoName(rest string) (string, bool) {
+	p := strings.TrimPrefix(rest, "/")
+	if p == "" {
+		return "", false
+	}
+	if i := strings.IndexByte(p, '/'); i >= 0 {
+		return p[:i], true
+	}
+	return p, true
 }
 
 // splitOwner extracts the first path segment and the remaining path.

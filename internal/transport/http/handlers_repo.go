@@ -363,3 +363,32 @@ func (s *Server) handleAddCollaborator(w http.ResponseWriter, r *http.Request) {
 	s.auditAction(r, u.ID, "repo.collaborator_add", "success")
 	writeJSON(w, http.StatusCreated, map[string]any{"status": "ok"})
 }
+
+type renameRepoReq struct {
+	Name string `json:"name"`
+}
+
+func (s *Server) handleRenameRepo(w http.ResponseWriter, r *http.Request) {
+	rp, u, ok := s.loadRepoAndPerm(w, r, domain.PermAdmin)
+	if !ok {
+		return
+	}
+	var req renameRepoReq
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if err := validateName("repo", req.Name); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := s.deps.Repos.Rename(r.Context(), rp.ID, req.Name); err != nil {
+		if errors.Is(err, repo.ErrExists) {
+			writeError(w, http.StatusConflict, "repository name already exists")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.auditAction(r, u.ID, "repo.rename", "success")
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "name": req.Name})
+}

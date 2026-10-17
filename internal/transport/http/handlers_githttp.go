@@ -106,6 +106,14 @@ func (s *Server) gitRepoAccess(w http.ResponseWriter, r *http.Request, service s
 	}
 	rp, err := s.deps.Repos.ByOwnerName(r.Context(), ownerUser.ID, name)
 	if err != nil {
+		// Follow a repository rename with a 301 to the canonical git path.
+		if targetID, rerr := s.deps.Repos.ResolveRedirect(r.Context(), owner, name); rerr == nil {
+			if target, rerr := s.deps.Repos.ByID(r.Context(), targetID); rerr == nil {
+				sub := strings.TrimPrefix(r.URL.Path, "/"+owner+"/"+name)
+				http.Redirect(w, r, "/"+owner+"/"+target.Name+sub, http.StatusMovedPermanently)
+				return nil, nil, false
+			}
+		}
 		writeError(w, http.StatusNotFound, "repository not found")
 		return nil, nil, false
 	}

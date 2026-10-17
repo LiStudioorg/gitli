@@ -64,6 +64,16 @@ func (s *sshDispatcher) Dispatch(ctx context.Context, username, command string, 
 	if err := secutil.ValidateName("repo", name); err != nil {
 		return err
 	}
+	// Resolve a repository rename before touching the filesystem.
+	if ownerUser, err := s.a.Deps.Users.ByUsername(ctx, owner); err == nil {
+		if _, err := s.a.Deps.Repos.ByOwnerName(ctx, ownerUser.ID, name); err != nil {
+			if targetID, rerr := s.a.Deps.Repos.ResolveRedirect(ctx, owner, name); rerr == nil {
+				if target, rerr := s.a.Deps.Repos.ByID(ctx, targetID); rerr == nil {
+					name = target.Name
+				}
+			}
+		}
+	}
 	full := s.a.Deps.FS.Path(owner, name)
 	validated, err := gitcmdinfra.ValidateRepoPath(s.a.Deps.FS.Root(), full)
 	if err != nil {
