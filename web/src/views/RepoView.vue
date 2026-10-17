@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
+import DeployKeys from '../components/repo/DeployKeys.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
@@ -24,7 +25,7 @@ const cloneInfo = ref<CloneInfo | null>(null)
 const branches = ref<string[]>([])
 const selectedBranch = ref('')
 
-const tabs = ['代码', '工单', '合并请求', '工作流', '项目', '发布', '百科', '活动', '更多']
+const tabs = ['代码', '工单', '合并请求', '工作流', '项目', '发布', '百科', '活动', '设置', '更多']
 const activeTab = ref('代码')
 
 const issues = ref<Issue[]>([])
@@ -442,6 +443,10 @@ onUnmounted(() => {
         <p v-if="logError" class="error">{{ logError }}</p>
         <pre class="log-view">{{ logLines.join('\n') }}</pre>
       </div>
+    </div>
+
+    <div v-else-if="activeTab === '设置'" class="tab-panel">
+      <DeployKeys :owner="owner" :repo="name" />
     </div>
 
     <div v-else class="tab-panel">
