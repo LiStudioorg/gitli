@@ -1,0 +1,35 @@
+{
+  "nav": {
+    "features": "功能",
+    "docs": "文档",
+    "about": "关于",
+    "login": "登录",
+    "register": "注册",
+    "dashboard": "进入控制台",
+    "explore": "探索",
+    "settings": "设置",
+    "search": "搜索..."
+  },
+  "landing": {
+    "title": "轻量级自研 Git 服务平台，低内存，单二进制，Go + Vue3",
+    "subtitle": "支持 SSH/HTTP Git 协议、Issue/PR、TOTP、细粒度 PAT、包管理（NPM/Docker/Go/Maven）、CI 等。AGPL-3.0 开源。",
+    "getStarted": "快速开始",
+    "github": "GitHub 仓库"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "create": "创建",
+    "loading": "加载中...",
+    "error": "出错了",
+    "empty": "暂无数据"
+  },
+  "settings": {
+    "language": "语言",
+    "languageHint": "切换后立即生效",
+    "profile": "个人资料",
+    "security": "安全活动",
+    "notifications": "通知"
+  }
+}

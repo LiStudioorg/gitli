@@ -22,8 +22,12 @@ func FS() (fs.FS, error) {
 
 // setAssetCacheHeaders gives content-hashed build output an immutable cache
 // lifetime while keeping unhashed files revalidated.
+//
+// 两套前端的资源目录不同：Vite 产物在 assets/，Nuxt 产物在 _nuxt/。两处都带
+// 内容哈希，可以安全地长期缓存；其余文件（index.html 等）必须每次回源，
+// 否则新版本发布会因为旧 HTML 缓存而不生效。
 func setAssetCacheHeaders(w http.ResponseWriter, path string) {
-	if strings.HasPrefix(path, "assets/") {
+	if strings.HasPrefix(path, "assets/") || strings.HasPrefix(path, "_nuxt/") {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		return
 	}

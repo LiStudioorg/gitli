@@ -24,7 +24,8 @@ permissions:
 
 env:
   GO_VERSION: '1.27.x'
-  NODE_VERSION: '20'
+  # Nuxt 4 要求 ^22.22.3 || ^24.15.0 || >=26。
+  NODE_VERSION: '22'
 
 jobs:
   release:
@@ -52,11 +53,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: web-nuxt/package-lock.json
 
       - name: Build frontend
         run: |
-          cd web
+          cd web-nuxt
           npm ci
           npm run build
 

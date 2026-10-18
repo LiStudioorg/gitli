@@ -59,25 +59,29 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # Nuxt 4 的 engines 要求 ^22.22.3 || ^24.15.0 || >=26，Node 20 构建不了。
+          node-version: '22'
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: web-nuxt/package-lock.json
 
       - name: Build frontend
         run: |
-          cd web
+          cd web-nuxt
           npm ci
           npm run build
 
       - name: Verify committed dist matches source
         run: |
-          # web/dist is embedded in the binary, so a stale commit silently ships
-          # old UI code. Fail loudly when npm run build produced different files.
+          # web/dist 会被嵌入二进制，提交里残留旧产物等于静默发布旧界面。
+          # npm run build 会把 Nuxt 静态产物发布到 web/dist，不一致就失败。
           if ! git diff --quiet -- web/dist; then
-            echo "web/dist is out of date; run 'cd web && npm run build' and commit the result"
+            echo "web/dist is out of date; run 'cd web-nuxt && npm run build' and commit the result"
             git --no-pager diff --stat -- web/dist
             exit 1
           fi
+
+      - name: Frontend type and behavior tests
+        run: cd web-nuxt && npm run verify
 
       - name: Build (verify embed)
         run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o gitli .

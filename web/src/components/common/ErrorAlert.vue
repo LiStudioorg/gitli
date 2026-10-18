@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * GitHub Primer 风格的错误提示。只渲染在主内容区顶部，
+ * 轻量内联错误提示条。只渲染在主内容区顶部，
  * 绝不替换 Layout（TopNav / Sidebar 始终保留）。
  */
 withDefaults(

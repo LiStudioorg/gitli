@@ -75,9 +75,9 @@ describe('TopNav（导航 / 主题 / 管理入口 / 命令面板入口）', () =
     }
     auth.loaded = true
     const w = await mountNav()
-    // beta 把管理入口收进了头像下拉菜单，平铺文本里不再直接出现
+    // 管理入口收进了头像下拉菜单，平铺文本里不再直接出现
     expect(w.text()).not.toContain('管理面板')
-    await w.find('.avatar').trigger('click')
+    await w.find('[aria-label^="用户菜单"]').trigger('click')
     expect(w.text()).toContain('管理面板')
     w.unmount()
   })
@@ -98,7 +98,7 @@ describe('TopNav（导航 / 主题 / 管理入口 / 命令面板入口）', () =
     }
     auth.loaded = true
     const w = await mountNav()
-    await w.find('.avatar').trigger('click')
+    await w.find('[aria-label^="用户菜单"]').trigger('click')
     expect(w.text()).toContain('个人主页')
     expect(w.text()).not.toContain('管理面板')
     w.unmount()
@@ -109,7 +109,7 @@ describe('TopNav（导航 / 主题 / 管理入口 / 命令面板入口）', () =
     const { theme } = useTheme()
     theme.value = 'auto'
     const w = await mountNav()
-    const btn = w.find('.theme-toggle')
+    const btn = w.find('[title^="主题"]')
     expect(btn.exists()).toBe(true)
     await btn.trigger('click')
     expect(theme.value).toBe('light')
@@ -125,7 +125,7 @@ describe('TopNav（导航 / 主题 / 管理入口 / 命令面板入口）', () =
     const w = await mountNav()
     const ui = useUiStore()
     expect(ui.commandPaletteOpen).toBe(false)
-    await w.find('.palette-trigger').trigger('click')
+    await w.find('[aria-label="打开命令面板"]').trigger('click')
     expect(ui.commandPaletteOpen).toBe(true)
     w.unmount()
   })

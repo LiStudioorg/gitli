@@ -1,4 +1,4 @@
-.PHONY: all build frontend run test lint clean migrate release-check release-snapshot
+.PHONY: all build build-with-frontend frontend run test lint clean migrate release-check release-snapshot
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
@@ -14,9 +14,14 @@ GOFLAGS := -trimpath
 all: build
 
 frontend:
-	cd web && npm install && npm run build
+	cd web-nuxt && npm install && npm run build
 
+# 默认 build 只编译 Go：前端产物（web/dist）随仓库提交，日常改后端不必等 Nuxt 构建。
+# 需要重建前端时用 `make build-with-frontend`。
 build:
+	CGO_ENABLED=0 go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o gitli .
+
+build-with-frontend: frontend
 	CGO_ENABLED=0 go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o gitli .
 
 run:
@@ -40,4 +45,4 @@ release-snapshot:
 
 clean:
 	rm -f gitli
-	rm -rf web/dist dist
+	rm -rf web/dist dist web-nuxt/.output
