@@ -26,6 +26,22 @@ export default defineNuxtConfig({
 
   css: ['~/style.css'],
 
+  runtimeConfig: {
+    app: {
+      // 默认每次构建生成随机 buildId 注入到每个 HTML 的 window.__NUXT__.config，
+      // 会让 web/dist 无法字节级复现（CI 的 dist 同步校验因此必红）。
+      // 单二进制没有「运行中检测新版本」的需求，固定成常量即可。
+      buildId: 'gitli-static',
+    },
+  },
+
+  experimental: {
+    // app manifest 会往 HTML 注入每次构建随机的 buildId，并生成 builds/latest.json
+    // 与 meta/<uuid>.json，用于「检测到新版本」提示。单二进制内嵌的静态产物用不到，
+    // 且它让 web/dist 无法字节级复现，进而使 CI 的 dist 同步校验必然失败。关掉它。
+    appManifest: false,
+  },
+
   nitro: {
     preset: 'static',
     prerender: {

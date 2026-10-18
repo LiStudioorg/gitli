@@ -73,10 +73,12 @@ jobs:
       - name: Verify committed dist matches source
         run: |
           # web/dist 会被嵌入二进制，提交里残留旧产物等于静默发布旧界面。
-          # npm run build 会把 Nuxt 静态产物发布到 web/dist，不一致就失败。
-          if ! git diff --quiet -- web/dist; then
-            echo "web/dist is out of date; run 'cd web-nuxt && npm run build' and commit the result"
-            git --no-pager diff --stat -- web/dist
+          # 只校验 _nuxt 下的内容哈希资源（真正被嵌入的 JS/CSS）：它们在源码未变时
+          # 字节级可复现。HTML 里带 Nuxt 预渲染的构建时间戳，每次 generate 都不同，
+          # 若纳入比较会让本门禁必然变红，故排除。逻辑/样式一旦改变，_nuxt 资源哈希必变。
+          if ! git diff --quiet -- web/dist/_nuxt; then
+            echo "web/dist/_nuxt is out of date; run 'cd web-nuxt && npm run build' and commit the result"
+            git --no-pager diff --stat -- web/dist/_nuxt
             exit 1
           fi
 
