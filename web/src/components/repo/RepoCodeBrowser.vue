@@ -184,7 +184,7 @@ onMounted(() => void loadTree())
     <!-- 工具栏：分支 + 面包屑 -->
     <div class="flex flex-wrap items-center gap-2">
       <select
-        class="h-8 rounded-md border border-[#d0d7de] bg-white px-2 text-sm text-[#1f2328] outline-none focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#e6edf3]"
+        class="h-8 rounded-md border border-[#d1d9e0] bg-white px-2 text-sm text-[#1f2328] outline-none focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#e6edf3]"
         :value="branch"
         aria-label="选择分支"
         title="选择分支"
@@ -201,7 +201,7 @@ onMounted(() => void loadTree())
           {{ repo }}
         </button>
         <template v-for="(p, i) in pathStack" :key="p + i">
-          <span class="text-[#656d76]">/</span>
+          <span class="text-[#59636e]">/</span>
           <button type="button" class="truncate rounded px-1 text-[#ea580c] hover:underline" @click="jumpTo(i + 1)">
             {{ p }}
           </button>
@@ -209,7 +209,7 @@ onMounted(() => void loadTree())
       </nav>
       <button
         type="button"
-        class="ml-auto h-8 rounded-md border border-[#d0d7de] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+        class="ml-auto h-8 rounded-md border border-[#d1d9e0] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
         aria-label="复制当前路径"
         title="复制当前路径"
         @click="copyPath"
@@ -228,15 +228,15 @@ onMounted(() => void loadTree())
     <!-- 空仓库引导 -->
     <section
       v-else-if="isEmptyRepo"
-      class="flex flex-col items-center gap-2 rounded-md border border-dashed border-[#d0d7de] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
+      class="flex flex-col items-center gap-2 rounded-md border border-dashed border-[#d1d9e0] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
     >
       <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#ea580c]/10 text-xl" aria-hidden="true">📦</div>
       <h3 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">这是一个空仓库</h3>
-      <p class="max-w-md text-sm text-[#656d76]">还没有任何提交。在本地推送第一个提交后，这里会显示文件列表与 README。</p>
-      <pre class="mt-2 w-full max-w-[620px] overflow-x-auto rounded-md border border-[#d0d7de] bg-[#f6f8fa] p-3 text-left font-mono text-xs leading-relaxed text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"><code>{{ quickstart }}</code></pre>
+      <p class="max-w-md text-sm text-[#59636e]">还没有任何提交。在本地推送第一个提交后，这里会显示文件列表与 README。</p>
+      <pre class="mt-2 w-full max-w-[620px] overflow-x-auto rounded-md border border-[#d1d9e0] bg-[#f6f8fa] p-3 text-left font-mono text-xs leading-relaxed text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"><code>{{ quickstart }}</code></pre>
       <button
         type="button"
-        class="mt-1 h-8 rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+        class="mt-1 h-8 rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
         @click="copyQuickstart"
       >
         {{ copiedQuickstart ? '已复制' : '复制命令' }}
@@ -244,8 +244,8 @@ onMounted(() => void loadTree())
     </section>
 
     <!-- 加载骨架 -->
-    <div v-else-if="loading" class="flex flex-col gap-2 rounded-md border border-[#d0d7de] dark:border-[#30363d]">
-      <div v-for="i in 6" :key="i" class="border-b border-[#d0d7de] p-3 last:border-0 dark:border-[#30363d]">
+    <div v-else-if="loading" class="flex flex-col gap-2 rounded-md border border-[#d1d9e0] dark:border-[#30363d]">
+      <div v-for="i in 6" :key="i" class="border-b border-[#d1d9e0] p-3 last:border-0 dark:border-[#30363d]">
         <SkeletonBlock :lines="1" height="1.1rem" />
       </div>
     </div>
@@ -254,16 +254,16 @@ onMounted(() => void loadTree())
       <!-- 最新提交条（表头） -->
       <div
         v-if="latestCommit"
-        class="flex items-center gap-3 rounded-t-md border border-b-0 border-[#d0d7de] bg-[#f6f8fa] px-3 py-2.5 dark:border-[#30363d] dark:bg-[#161b22]"
+        class="flex items-center gap-3 rounded-t-md border border-b-0 border-[#d1d9e0] bg-[#f6f8fa] p-1 dark:border-[#3d444d] dark:bg-[#161b22]"
       >
         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-xs font-semibold text-white">
           {{ latestCommit.author?.[0]?.toUpperCase() ?? '?' }}
         </span>
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-medium text-[#1f2328] dark:text-[#e6edf3]">{{ latestCommit.subject }}</p>
-          <p class="truncate text-xs text-[#656d76]">
+          <p class="truncate text-xs text-[#59636e]">
             {{ latestCommit.author }} · {{ dateLabel(latestCommit.date) }}
-            <code class="rounded bg-[#d0d7de]/40 px-1 font-mono dark:bg-[#30363d]">{{ latestCommit.short }}</code>
+            <code class="rounded bg-[#d1d9e0]/40 px-1 font-mono dark:bg-[#30363d]">{{ latestCommit.short }}</code>
           </p>
         </div>
         <RouterLink
@@ -278,10 +278,10 @@ onMounted(() => void loadTree())
       </div>
 
       <!-- 文件列表 -->
-      <ul class="overflow-hidden rounded-b-md border border-t-0 border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]">
+      <ul class="overflow-hidden rounded-b-md border border-t-0 border-[#d1d9e0] bg-white dark:border-[#3d444d] dark:bg-[#161b22]">
         <li
           v-if="currentPath"
-          class="flex cursor-pointer items-center gap-3 border-b border-[#d0d7de] px-3 py-2 text-sm hover:bg-[#f6f8fa] dark:border-[#30363d] dark:hover:bg-[#21262d]"
+          class="flex h-10 cursor-pointer items-center gap-2 border-t border-[#d1d9e0] pl-4 pr-3 text-sm hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:hover:bg-[#161b22]"
           @click="jumpTo(pathStack.length - 1)"
         >
           <FileIcon name=".." type="parent" />
@@ -290,8 +290,8 @@ onMounted(() => void loadTree())
         <li
           v-for="entry in entries"
           :key="entry.hash + entry.name"
-          class="flex items-center gap-3 border-b border-[#d0d7de] px-3 py-2 text-sm last:border-0 dark:border-[#30363d]"
-          :class="entry.type === 'tree' ? 'cursor-pointer hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]' : ''"
+          class="flex h-10 items-center gap-2 border-t border-[#d1d9e0] pl-4 pr-3 text-sm dark:border-[#3d444d]"
+          :class="entry.type === 'tree' ? 'cursor-pointer hover:bg-[#f6f8fa] dark:hover:bg-[#161b22]' : ''"
           @click="enter(entry)"
         >
           <FileIcon :name="entry.name" :type="entry.type" />
@@ -305,23 +305,23 @@ onMounted(() => void loadTree())
           <span v-else class="min-w-0 flex-1 truncate font-medium text-[#1f2328] dark:text-[#e6edf3]">
             {{ entry.name }}
           </span>
-          <span class="hidden min-w-0 max-w-[45%] flex-[2] truncate text-xs text-[#656d76] sm:block">
+          <span class="hidden min-w-0 flex-1 truncate text-xs text-[#59636e] sm:block">
             {{ entry.last_commit?.subject ?? '' }}
           </span>
-          <span class="hidden shrink-0 text-xs text-[#656d76] md:block">
+          <span class="hidden w-[125px] shrink-0 truncate text-right text-xs text-[#59636e] md:block">
             {{ entry.last_commit ? relTime(entry.last_commit.date) : '' }}
           </span>
         </li>
       </ul>
-      <p v-if="!entries.length" class="py-8 text-center text-sm text-[#656d76]">仓库为空，或该分支还没有提交。</p>
+      <p v-if="!entries.length" class="py-8 text-center text-sm text-[#59636e]">仓库为空，或该分支还没有提交。</p>
 
       <!-- README 独立卡片 -->
       <section
         v-if="readme && !currentPath"
-        class="mt-2 overflow-hidden rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]"
+        class="mt-2 overflow-hidden rounded-md border border-[#d1d9e0] bg-white dark:border-[#30363d] dark:bg-[#161b22]"
       >
-        <header class="flex items-center gap-2 border-b border-[#d0d7de] px-4 py-2.5 dark:border-[#30363d]">
-          <svg class="h-4 w-4 text-[#656d76]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <header class="flex items-center gap-2 border-b border-[#d1d9e0] px-4 py-2.5 dark:border-[#30363d]">
+          <svg class="h-4 w-4 text-[#59636e]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Z" />
           </svg>
           <span class="truncate text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ readmeName }}</span>

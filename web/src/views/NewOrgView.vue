@@ -45,7 +45,7 @@ async function submit() {
       <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">新建组织</h2>
       <ErrorAlert v-if="error" title="操作失败" :message="error" @dismiss="error = ''" />
       <form
-        class="flex flex-col gap-4 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22] md:p-6"
+        class="flex flex-col gap-4 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22] md:p-6"
         @submit.prevent="submit"
       >
         <label class="flex flex-col gap-1.5">
@@ -54,7 +54,7 @@ async function submit() {
             v-model="name"
             placeholder="my-team"
             autocomplete="off"
-            class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-9 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
             @blur="touched = true"
           />
         </label>
@@ -64,7 +64,7 @@ async function submit() {
             v-model="displayName"
             placeholder="我的团队"
             autocomplete="off"
-            class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-9 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
             @blur="touched = true"
           />
         </label>
@@ -79,7 +79,7 @@ async function submit() {
           </button>
           <button
             type="button"
-            class="inline-flex h-9 items-center rounded-md border border-[#d0d7de] px-4 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            class="inline-flex h-9 items-center rounded-md border border-[#d1d9e0] px-4 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
             @click="router.back()"
           >
             取消

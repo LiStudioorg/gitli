@@ -75,39 +75,39 @@ async function removeRepo(repo: Repo) {
     />
 
     <!-- 概览卡片：PC 三列，移动端单列 -->
-    <section class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
-        <p class="text-xs font-medium text-[#656d76]">我的仓库</p>
+    <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <p class="text-xs font-medium text-[#59636e]">我的仓库</p>
         <p class="mt-1 truncate text-xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">
           {{ repos.myRepos.length }}
         </p>
       </div>
-      <div class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
-        <p class="text-xs font-medium text-[#656d76]">未读通知</p>
+      <div class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <p class="text-xs font-medium text-[#59636e]">未读通知</p>
         <p class="mt-1 truncate text-xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">
           {{ notifications.unread }}
         </p>
       </div>
-      <div class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
-        <p class="text-xs font-medium text-[#656d76]">最近活动</p>
+      <div class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <p class="text-xs font-medium text-[#59636e]">最近活动</p>
         <p class="mt-1 truncate text-xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">
           {{ repos.activities.length }}
         </p>
       </div>
     </section>
 
-    <div class="grid grid-cols-1 items-start gap-6 md:grid-cols-4">
-      <section class="min-w-0 md:col-span-3">
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_356px]">
+      <section class="min-w-0">
         <header class="mb-3 flex items-baseline gap-2">
           <h2 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">动态流</h2>
-          <span class="text-xs text-[#656d76]">你最近的仓库活动</span>
+          <span class="text-xs text-[#59636e]">你最近的仓库活动</span>
         </header>
 
         <div v-if="loading" class="flex flex-col gap-3">
           <div
             v-for="i in 4"
             :key="i"
-            class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
+            class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
           >
             <SkeletonBlock :lines="3" />
           </div>
@@ -117,10 +117,10 @@ async function removeRepo(repo: Repo) {
         </div>
         <div
           v-else
-          class="rounded-md border border-dashed border-[#d0d7de] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
+          class="rounded-md border border-dashed border-[#d1d9e0] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
         >
           <p class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">还没有任何动态</p>
-          <p class="mx-auto mt-1 max-w-md text-sm text-[#656d76]">
+          <p class="mx-auto mt-1 max-w-md text-sm text-[#59636e]">
             创建仓库、推送代码或提交工单后，这里会显示你的活动记录。
           </p>
           <RouterLink
@@ -133,7 +133,7 @@ async function removeRepo(repo: Repo) {
 
         <section
           v-if="notifications.items.length"
-          class="mt-6 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
+          class="mt-6 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
         >
           <header class="mb-2 flex items-center gap-2">
             <h2 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">通知</h2>
@@ -144,7 +144,7 @@ async function removeRepo(repo: Repo) {
               {{ notifications.unread }}
             </span>
           </header>
-          <ul class="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+          <ul class="divide-y divide-[#d1d9e0] dark:divide-[#30363d]">
             <li
               v-for="n in notifications.items"
               :key="n.ID"
@@ -172,7 +172,7 @@ async function removeRepo(repo: Repo) {
         </section>
       </section>
 
-      <aside class="flex min-w-0 flex-col gap-4 md:col-span-1">
+      <aside class="flex min-w-0 flex-col gap-4">
         <RepoSidebarCard :repos="repos.myRepos" :username="auth.user?.username" @remove="removeRepo" />
         <ContributionGraph :activities="repos.activities" />
       </aside>

@@ -64,6 +64,18 @@
 - 个人主页 / 设置 / 管理后台 / 组织设置 / 探索 / 搜索：迁移 Tailwind，移除全部 scoped CSS。
 - CSS 总量：101.4 KB → 55.0 KB。
 
+## 布局校准（v0.11.3）
+
+从 `github/` 抓取源码中提取的真实数值（非估算）：
+- 顶栏 `--header-height: 48px` → `h-12`；左区 `padding-right: 8px`；`center: flex 1 min-width 0`；右区 `padding-left: 8px`。
+- 边框 `--borderColor-default: #d1d9e0`（浅色）/ `#3d444d`（深色）；`--fgColor-muted: #59636e`。
+- 圆角 `--borderRadius-medium: .375rem` → `rounded-md`；控件 `--control-medium-size: 2rem`。
+- Dashboard 侧栏 `col-md-4`(33.3%) / `col-lg-3`(25%)，`border-right`，`sticky top:0`；
+  右栏 `.feed-right-column` 356px（≥1280）。
+- 仓库页 `Layout-sidebar: 220px`，gutter 16px，≤543px 单列。
+- 文件表 `tr.react-directory-row { height: 40px }`，单元格 `padding-left: 16px`，行间 `border-top`。
+- 修复挤压：分栏断点由 `md` 改为 `lg`，并给主列 `min-w-0`，杜绝右栏被压缩成竖排。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**

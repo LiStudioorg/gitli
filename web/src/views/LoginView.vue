@@ -56,9 +56,9 @@ function loginWithOIDC() {
   <div>
     <TopNav />
     <main class="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.10),transparent_70%)] px-4 py-10">
-      <section class="w-full max-w-[420px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
+      <section class="w-full max-w-[420px] rounded-md border border-[#d1d9e0] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
         <h1>登录 gitli</h1>
-        <p class="mb-5 mt-1 text-sm text-[#656d76]">使用你的账号继续</p>
+        <p class="mb-5 mt-1 text-sm text-[#59636e]">使用你的账号继续</p>
 
         <form class="ui-form" @submit.prevent="submit">
           <div class="ui-field">
@@ -114,7 +114,7 @@ function loginWithOIDC() {
           <button class="ui-btn ui-btn-block" type="button" @click="loginWithOIDC">通过 OIDC 登录</button>
         </div>
 
-        <p class="mt-6 text-center text-sm text-[#656d76]">
+        <p class="mt-6 text-center text-sm text-[#59636e]">
           还没有账号？<RouterLink to="/register" class="font-semibold text-[#ea580c] hover:underline">注册</RouterLink>
         </p>
       </section>

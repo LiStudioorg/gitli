@@ -888,26 +888,26 @@ onUnmounted(() => {
     <header class="bg-white dark:bg-[#161b22]">
       <div class="mx-auto w-full max-w-[1280px] px-4 pt-4 md:px-6">
         <div class="flex flex-wrap items-center gap-2">
-          <svg class="h-4 w-4 shrink-0 text-[#656d76]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <svg class="h-4 w-4 shrink-0 text-[#59636e]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z" />
           </svg>
           <h2 class="min-w-0 truncate text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3] md:text-xl">
             <RouterLink :to="`/${owner}`" class="text-[#ea580c] hover:underline">{{ owner }}</RouterLink>
-            <span class="mx-1 font-normal text-[#656d76]">/</span>
+            <span class="mx-1 font-normal text-[#59636e]">/</span>
             <span class="break-all">{{ name }}</span>
           </h2>
-          <span v-if="repo?.is_private" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">私有</span>
-          <span v-if="repo?.archived" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">已归档</span>
+          <span v-if="repo?.is_private" class="rounded-full border border-[#d1d9e0] px-2 py-0.5 text-xs text-[#59636e] dark:border-[#30363d]">私有</span>
+          <span v-if="repo?.archived" class="rounded-full border border-[#d1d9e0] px-2 py-0.5 text-xs text-[#59636e] dark:border-[#30363d]">已归档</span>
 
           <!-- Watch / Fork / Star：GitHub 分体按钮 -->
           <div class="ml-auto flex flex-wrap items-center gap-2">
-            <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+            <div class="inline-flex overflow-hidden rounded-md border border-[#d1d9e0] dark:border-[#30363d]">
               <button type="button" class="px-2.5 py-1 text-xs font-medium text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">Fork</button>
-              <span class="flex items-center border-l border-[#d0d7de] px-2 text-xs text-[#656d76] dark:border-[#30363d]">{{ repo?.ForksCount ?? 0 }}</span>
+              <span class="flex items-center border-l border-[#d1d9e0] px-2 text-xs text-[#59636e] dark:border-[#30363d]">{{ repo?.ForksCount ?? 0 }}</span>
             </div>
-            <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+            <div class="inline-flex overflow-hidden rounded-md border border-[#d1d9e0] dark:border-[#30363d]">
               <button type="button" class="px-2.5 py-1 text-xs font-medium text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">Star</button>
-              <span class="flex items-center border-l border-[#d0d7de] px-2 text-xs text-[#656d76] dark:border-[#30363d]">{{ repo?.StarsCount ?? 0 }}</span>
+              <span class="flex items-center border-l border-[#d1d9e0] px-2 text-xs text-[#59636e] dark:border-[#30363d]">{{ repo?.StarsCount ?? 0 }}</span>
             </div>
           </div>
         </div>
@@ -922,7 +922,7 @@ onUnmounted(() => {
             class="h-12 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm transition-colors"
             :class="t === activeTab
               ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
-              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+              : 'border-transparent text-[#59636e] hover:rounded-t-md hover:border-[#d1d9e0] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
             @click="selectTab(t)"
           >
             {{ t }}
@@ -931,7 +931,7 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <div v-if="activeTab === '代码'" class="grid min-w-0 grid-cols-1 items-start gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_294px]">
+    <div v-if="activeTab === '代码'" class="grid min-w-0 grid-cols-1 items-start gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_220px]">
       <main class="min-w-0">
         <div class="mb-3 flex justify-end">
           <CloneDropdown :owner="owner" :repo="name" :clone-info="cloneInfo" />
@@ -947,19 +947,19 @@ onUnmounted(() => {
       </main>
 
       <aside class="flex min-w-0 flex-col gap-4">
-        <section class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3 class="mb-2 text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">About</h3>
           <p class="break-words text-sm text-[#1f2328] dark:text-[#e6edf3]">
             {{ repo?.description || '暂无描述' }}
           </p>
-          <div v-if="license" class="mt-3 flex items-center gap-1.5 text-sm text-[#656d76]">
+          <div v-if="license" class="mt-3 flex items-center gap-1.5 text-sm text-[#59636e]">
             <span aria-hidden="true">⚖</span>{{ license }}
           </div>
-          <div v-if="repo && (repo.SizeKB ?? 0) > 0" class="mt-2 flex items-center gap-1.5 text-sm text-[#656d76]">
+          <div v-if="repo && (repo.SizeKB ?? 0) > 0" class="mt-2 flex items-center gap-1.5 text-sm text-[#59636e]">
             <span aria-hidden="true">◔</span>{{ formatSize(repo.SizeKB ?? 0) }}
           </div>
-          <div v-if="languages.length" class="mt-4 border-t border-[#d0d7de] pt-3 dark:border-[#30363d]">
-            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-[#656d76]">语言</h4>
+          <div v-if="languages.length" class="mt-4 border-t border-[#d1d9e0] pt-3 dark:border-[#30363d]">
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-[#59636e]">语言</h4>
             <LanguageStats :languages="languages" />
           </div>
         </section>
@@ -970,20 +970,20 @@ onUnmounted(() => {
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">工单</h3>
         <div class="flex flex-wrap items-center gap-2">
-          <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]" role="group" aria-label="按状态筛选工单">
+          <div class="inline-flex overflow-hidden rounded-md border border-[#d1d9e0] dark:border-[#30363d]" role="group" aria-label="按状态筛选工单">
             <button
               v-for="f in [{ k: 'open', t: `开启 ${issues.filter((i) => i.State === 'open').length}` }, { k: 'closed', t: `已关闭 ${issues.filter((i) => i.State !== 'open').length}` }, { k: 'all', t: '全部' }]"
               :key="f.k"
               type="button"
               class="px-3 py-1.5 text-xs"
-              :class="issueFilter === f.k ? 'bg-[#ea580c]/10 font-semibold text-[#ea580c]' : 'text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+              :class="issueFilter === f.k ? 'bg-[#ea580c]/10 font-semibold text-[#ea580c]' : 'text-[#59636e] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
               @click="issueFilter = f.k as 'open' | 'closed' | 'all'"
             >
               {{ f.t }}
             </button>
           </div>
           <button
-            class="h-8 rounded-md border border-[#d0d7de] px-3 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            class="h-8 rounded-md border border-[#d1d9e0] px-3 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
             type="button"
             @click="loadIssues"
           >
@@ -1002,10 +1002,10 @@ onUnmounted(() => {
 
       <form
         v-if="auth.isLoggedIn && issueFormOpen"
-        class="mb-4 rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]"
+        class="mb-4 rounded-md border border-[#d1d9e0] bg-white dark:border-[#30363d] dark:bg-[#161b22]"
         @submit.prevent="createIssue"
       >
-        <header class="border-b border-[#d0d7de] px-4 py-2.5 text-sm font-semibold text-[#1f2328] dark:border-[#30363d] dark:text-[#e6edf3]">
+        <header class="border-b border-[#d1d9e0] px-4 py-2.5 text-sm font-semibold text-[#1f2328] dark:border-[#30363d] dark:text-[#e6edf3]">
           新建工单
         </header>
         <div class="flex flex-col gap-4 p-4">
@@ -1016,7 +1016,7 @@ onUnmounted(() => {
             <input
               id="issue-title"
               v-model="newTitle"
-              class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+              class="h-9 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
               :class="{ '!border-[#cf222e]': issueTitleTouched && !newTitle.trim() }"
               type="text"
               placeholder="简要描述问题"
@@ -1030,7 +1030,7 @@ onUnmounted(() => {
             <select
               id="issue-template"
               v-model="selectedTemplate"
-              class="h-9 rounded-md border border-[#d0d7de] bg-white px-2 text-sm text-[#1f2328] dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#e6edf3]"
+              class="h-9 rounded-md border border-[#d1d9e0] bg-white px-2 text-sm text-[#1f2328] dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#e6edf3]"
               @change="onTemplateChange"
             >
               <option value="">选择模板（可选）</option>
@@ -1046,11 +1046,11 @@ onUnmounted(() => {
             <textarea
               id="issue-body"
               v-model="newBody"
-              class="rounded-md border border-[#d0d7de] bg-white px-3 py-2 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+              class="rounded-md border border-[#d1d9e0] bg-white px-3 py-2 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
               rows="6"
               placeholder="补充细节、复现步骤（支持 Markdown）"
             />
-            <span class="text-xs text-[#656d76]">支持 Markdown、代码块与任务列表</span>
+            <span class="text-xs text-[#59636e]">支持 Markdown、代码块与任务列表</span>
           </div>
 
           <p v-if="createError" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">
@@ -1067,7 +1067,7 @@ onUnmounted(() => {
               {{ creating ? '提交中…' : '创建工单' }}
             </button>
             <button
-              class="h-8 rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+              class="h-8 rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
               type="button"
               @click="issueFormOpen = false"
             >
@@ -1078,7 +1078,7 @@ onUnmounted(() => {
       </form>
 
       <div v-if="issuesLoading" class="flex flex-col gap-2">
-        <div v-for="i in 4" :key="i" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <div v-for="i in 4" :key="i" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <SkeletonBlock :lines="2" />
         </div>
       </div>
@@ -1092,7 +1092,7 @@ onUnmounted(() => {
         :show-action="auth.isLoggedIn && !issues.length"
         @action="issueFormOpen = true"
       />
-      <ul v-else class="divide-y divide-[#d0d7de] overflow-hidden rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+      <ul v-else class="divide-y divide-[#d1d9e0] overflow-hidden rounded-md border border-[#d1d9e0] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li v-for="i in filteredIssues" :key="i.ID" class="flex items-center gap-3 px-4 py-3 text-sm">
           <span
             class="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -1106,7 +1106,7 @@ onUnmounted(() => {
             >
               #{{ i.Number }} {{ i.Title }}
             </RouterLink>
-            <span class="block truncate text-xs text-[#656d76]">
+            <span class="block truncate text-xs text-[#59636e]">
               <template v-if="i.AuthorName">{{ i.AuthorName }} 创建于 </template>{{ relTime(i.CreatedAt) }}
             </span>
           </div>
@@ -1124,7 +1124,7 @@ onUnmounted(() => {
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>合并请求</h3>
         <div class="flex flex-wrap items-center gap-2">
-          <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]" role="group" aria-label="按状态筛选合并请求">
+          <div class="inline-flex overflow-hidden rounded-md border border-[#d1d9e0] dark:border-[#30363d]" role="group" aria-label="按状态筛选合并请求">
             <button type="button" :class="{ active: pullFilter === 'open' }" @click="pullFilter = 'open'">
               开启 {{ pulls.filter((p) => p.State === 'open' && !p.Merged).length }}
             </button>
@@ -1150,7 +1150,7 @@ onUnmounted(() => {
         :show-action="!pulls.length"
         @action="activeTab = '代码'"
       />
-      <ul v-else class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+      <ul v-else class="divide-y divide-[#d1d9e0] rounded-md border border-[#d1d9e0] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li v-for="p in filteredPulls" :key="p.ID" class="item-wrap">
           <div class="flex items-center gap-3 px-4 py-3 text-sm">
             <span class="state-dot" :class="p.Merged ? 'merged' : p.State === 'open' ? 'open' : 'closed'" />
@@ -1158,7 +1158,7 @@ onUnmounted(() => {
               <button class="truncate text-left font-semibold text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]" type="button" @click="toggleDiff(p)">
                 #{{ p.Number }} {{ p.Title }}
               </button>
-              <span class="text-xs text-[#656d76]">
+              <span class="text-xs text-[#59636e]">
                 {{ p.HeadBranch }} → {{ p.BaseBranch }}
                 <template v-if="p.AuthorName"> · {{ p.AuthorName }}</template>
                 · {{ relTime(p.CreatedAt) }}
@@ -1190,12 +1190,12 @@ onUnmounted(() => {
     <div v-else-if="activeTab === '工作流'" class="p-4 md:p-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>工作流</h3>
-        <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="loadWorkflows">刷新</button>
+        <button class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="loadWorkflows">刷新</button>
       </div>
 
       <p v-if="workflowsError" class="error">{{ workflowsError }}</p>
-      <div v-if="workflowsLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
-      <ul v-else-if="workflows.length" class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+      <div v-if="workflowsLoading" class="py-8 text-center text-sm text-[#59636e]">加载中…</div>
+      <ul v-else-if="workflows.length" class="divide-y divide-[#d1d9e0] rounded-md border border-[#d1d9e0] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li
           v-for="j in workflows"
           :key="j.id"
@@ -1203,7 +1203,7 @@ onUnmounted(() => {
           :class="{ selected: selectedJob?.id === j.id }"
           @click="openLog(j)"
         >
-          <span class="shrink-0 rounded-full bg-[#f6f8fa] px-2 py-0.5 text-xs font-medium text-[#656d76] dark:bg-[#21262d]">{{ statusLabel(j.status) }}</span>
+          <span class="shrink-0 rounded-full bg-[#f6f8fa] px-2 py-0.5 text-xs font-medium text-[#59636e] dark:bg-[#21262d]">{{ statusLabel(j.status) }}</span>
           <span class="mono">{{ shortSha(j.commit_sha) }}</span>
           <span class="wf-ref">{{ j.ref || '-' }}</span>
           <span class="wf-path">{{ j.workflow_path || '-' }}</span>
@@ -1219,13 +1219,13 @@ onUnmounted(() => {
           </button>
         </li>
       </ul>
-      <p v-else-if="!workflowsError" class="py-8 text-center text-sm text-[#656d76]">暂无工作流任务</p>
+      <p v-else-if="!workflowsError" class="py-8 text-center text-sm text-[#59636e]">暂无工作流任务</p>
 
       <div v-if="selectedJob" class="log-panel">
         <div class="log-head">
           <strong>任务 #{{ selectedJob.id }} 日志</strong>
           <span class="log-status">{{ statusLabel(selectedJob.status) }}</span>
-          <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeLog">关闭</button>
+          <button class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeLog">关闭</button>
         </div>
         <p v-if="logError" class="error">{{ logError }}</p>
         <pre class="log-view">{{ logLines.join('\n') }}</pre>
@@ -1236,7 +1236,7 @@ onUnmounted(() => {
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>依赖</h3>
         <div class="dep-actions">
-          <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="dependenciesLoading" @click="loadDependencies">
+          <button class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="dependenciesLoading" @click="loadDependencies">
             刷新列表
           </button>
           <button
@@ -1254,7 +1254,7 @@ onUnmounted(() => {
       <p v-if="dependenciesError" class="error">{{ dependenciesError }}</p>
       <p v-if="dependencyMessage" class="dep-ok">{{ dependencyMessage }}</p>
 
-      <div v-if="dependenciesLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
+      <div v-if="dependenciesLoading" class="py-8 text-center text-sm text-[#59636e]">加载中…</div>
       <div v-else-if="dependencyEntries().length" class="dep-groups">
         <section v-for="[eco, items] in dependencyEntries()" :key="eco" class="dep-group">
           <header class="dep-group-head">
@@ -1269,7 +1269,7 @@ onUnmounted(() => {
           </ul>
         </section>
       </div>
-      <p v-else-if="!dependenciesError" class="py-8 text-center text-sm text-[#656d76]">
+      <p v-else-if="!dependenciesError" class="py-8 text-center text-sm text-[#59636e]">
         未发现依赖清单（支持 go.mod / package.json / pom.xml / requirements.txt）
       </p>
     </div>
@@ -1277,7 +1277,7 @@ onUnmounted(() => {
     <div v-else-if="activeTab === '项目'" class="p-4 md:p-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>项目</h3>
-        <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="projectsLoading" @click="loadProjects">
+        <button class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="projectsLoading" @click="loadProjects">
           刷新
         </button>
       </div>
@@ -1294,7 +1294,7 @@ onUnmounted(() => {
         </button>
       </form>
 
-      <div v-if="projectsLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
+      <div v-if="projectsLoading" class="py-8 text-center text-sm text-[#59636e]">加载中…</div>
       <template v-else>
         <div v-if="projects.length" class="project-picker">
           <span class="muted-label">选择项目：</span>
@@ -1302,7 +1302,7 @@ onUnmounted(() => {
             v-for="p in projects"
             :key="p.id"
             type="button"
-            class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
             :class="{ 'chip-active': p.id === selectedProjectId }"
             @click="selectProject(p.id)"
           >
@@ -1311,7 +1311,7 @@ onUnmounted(() => {
         </div>
 
         <p v-if="boardError" class="error">{{ boardError }}</p>
-        <div v-if="boardLoading" class="py-8 text-center text-sm text-[#656d76]">加载看板中…</div>
+        <div v-if="boardLoading" class="py-8 text-center text-sm text-[#59636e]">加载看板中…</div>
         <div v-else-if="board" class="kanban">
           <section v-for="col in board.columns" :key="col.id" class="kanban-col">
             <header class="kanban-col-head">
@@ -1370,7 +1370,7 @@ onUnmounted(() => {
     <div v-else-if="activeTab === '讨论'" class="p-4 md:p-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>讨论</h3>
-        <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="discussionsLoading" @click="loadDiscussions">
+        <button class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="discussionsLoading" @click="loadDiscussions">
           刷新
         </button>
       </div>
@@ -1378,7 +1378,7 @@ onUnmounted(() => {
       <div class="cat-chips">
         <button
           type="button"
-          class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
           :class="{ 'chip-active': selectedCategory === '' }"
           @click="filterCategory('')"
         >
@@ -1388,7 +1388,7 @@ onUnmounted(() => {
           v-for="c in discussionCategories"
           :key="c.id"
           type="button"
-          class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
           :class="{ 'chip-active': selectedCategory === c.id }"
           :title="c.description"
           @click="filterCategory(c.id)"
@@ -1412,8 +1412,8 @@ onUnmounted(() => {
       </form>
 
       <p v-if="discussionsError" class="error">{{ discussionsError }}</p>
-      <div v-if="discussionsLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
-      <ul v-else-if="discussions.length" class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+      <div v-if="discussionsLoading" class="py-8 text-center text-sm text-[#59636e]">加载中…</div>
+      <ul v-else-if="discussions.length" class="divide-y divide-[#d1d9e0] rounded-md border border-[#d1d9e0] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li
           v-for="d in discussions"
           :key="d.id"
@@ -1439,13 +1439,13 @@ onUnmounted(() => {
 
       <div v-if="selectedDiscussionId !== null" class="discussion-detail">
         <p v-if="discussionDetailError" class="error">{{ discussionDetailError }}</p>
-        <div v-if="discussionDetailLoading" class="py-8 text-center text-sm text-[#656d76]">加载详情中…</div>
+        <div v-if="discussionDetailLoading" class="py-8 text-center text-sm text-[#59636e]">加载详情中…</div>
         <template v-else-if="discussionDetail">
           <div class="disc-head">
             <h4>{{ discussionDetail.discussion.title }}</h4>
             <span class="tag">{{ categoryLabel(discussionDetail.discussion.category_id) }}</span>
             <span v-if="discussionDetail.discussion.is_answered" class="state answered">已回答</span>
-            <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeDiscussion">关闭</button>
+            <button class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeDiscussion">关闭</button>
           </div>
           <div class="disc-body">{{ discussionDetail.discussion.body || '（无内容）' }}</div>
 
@@ -1466,7 +1466,7 @@ onUnmounted(() => {
                 <span v-if="c.is_answer" class="state answered">答案</span>
                 <button
                   v-if="isAnswerable(discussionDetail.discussion) && !c.is_answer && auth.isLoggedIn"
-                  class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+                  class="rounded-md border border-[#d1d9e0] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
                   type="button"
                   :disabled="answerBusy === c.id"
                   @click="markAnswer(c)"
@@ -1477,7 +1477,7 @@ onUnmounted(() => {
               <p class="comment-body">{{ c.body }}</p>
             </li>
           </ul>
-          <p v-else class="py-8 text-center text-sm text-[#656d76]">暂无评论</p>
+          <p v-else class="py-8 text-center text-sm text-[#59636e]">暂无评论</p>
 
           <form v-if="auth.isLoggedIn" class="mb-4" @submit.prevent="addComment">
             <textarea v-model="commentBody" rows="3" placeholder="写下你的评论..." class="form-input" />

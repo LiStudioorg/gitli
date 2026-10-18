@@ -71,10 +71,10 @@ async function submit() {
 
 <template>
   <main class="flex min-h-screen items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.12),transparent_70%)] px-4 py-12">
-    <section class="w-full max-w-[460px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
+    <section class="w-full max-w-[460px] rounded-md border border-[#d1d9e0] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
       <div class="mb-4 flex items-center justify-center [&_svg]:h-11 [&_svg]:w-11"><LogoIcon /></div>
       <h1>初始化 gitli</h1>
-      <p class="mb-5 mt-1 text-sm text-[#656d76]">创建第一个管理员账号并设置站点名称。完成后本页面会自动锁定。</p>
+      <p class="mb-5 mt-1 text-sm text-[#59636e]">创建第一个管理员账号并设置站点名称。完成后本页面会自动锁定。</p>
 
       <form class="ui-form" @submit.prevent="submit" novalidate>
         <div class="ui-field">
@@ -148,7 +148,7 @@ async function submit() {
         </button>
       </form>
 
-      <p class="mt-4 text-center text-xs text-[#656d76]">该账号拥有最高管理权限，请妥善保管密码。</p>
+      <p class="mt-4 text-center text-xs text-[#59636e]">该账号拥有最高管理权限，请妥善保管密码。</p>
     </section>
   </main>
 </template>

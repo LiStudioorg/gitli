@@ -50,17 +50,17 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
 
     <div
       v-if="open"
-      class="absolute right-0 top-full z-50 mt-1.5 w-[360px] max-w-[calc(100vw-2rem)] rounded-md border border-[#d0d7de] bg-white p-4 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
+      class="absolute right-0 top-full z-50 mt-1.5 w-[360px] max-w-[calc(100vw-2rem)] rounded-md border border-[#d1d9e0] bg-white p-4 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
       @mouseleave="open = false"
     >
-      <p class="mb-2 text-xs font-semibold text-[#656d76]">克隆</p>
-      <div class="mb-3 flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+      <p class="mb-2 text-xs font-semibold text-[#59636e]">克隆</p>
+      <div class="mb-3 flex overflow-hidden rounded-md border border-[#d1d9e0] dark:border-[#30363d]">
         <button
           v-for="t in [{ k: 'https', l: 'HTTPS' }, { k: 'ssh', l: 'SSH' }, { k: 'cli', l: 'CLI' }]"
           :key="t.k"
           type="button"
           class="flex-1 px-2 py-1.5 text-xs"
-          :class="tab === t.k ? 'bg-[#ea580c]/10 font-semibold text-[#ea580c]' : 'text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+          :class="tab === t.k ? 'bg-[#ea580c]/10 font-semibold text-[#ea580c]' : 'text-[#59636e] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
           @click="tab = t.k as 'https' | 'ssh' | 'cli'"
         >
           {{ t.l }}
@@ -68,28 +68,28 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
       </div>
 
       <div v-if="tab !== 'cli'" class="flex items-center gap-1.5">
-        <code class="min-w-0 flex-1 truncate rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-2 py-1.5 font-mono text-xs text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]">
+        <code class="min-w-0 flex-1 truncate rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2 py-1.5 font-mono text-xs text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]">
           {{ tab === 'https' ? (cloneInfo?.https ?? '—') : (cloneInfo?.ssh ?? '—') }}
         </code>
         <button
           type="button"
-          class="inline-flex h-8 shrink-0 items-center rounded-md border border-[#d0d7de] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          class="inline-flex h-8 shrink-0 items-center rounded-md border border-[#d1d9e0] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
           @click="copy(tab === 'https' ? (cloneInfo?.https ?? '') : (cloneInfo?.ssh ?? ''), tab)"
         >
           {{ copied === tab ? '已复制' : '复制' }}
         </button>
       </div>
-      <p v-else class="text-xs leading-relaxed text-[#656d76]">
+      <p v-else class="text-xs leading-relaxed text-[#59636e]">
         目前请使用上方 git clone/push 命令。gli 命令行工具尚未提供。
       </p>
 
-      <p class="mb-2 mt-4 text-xs font-semibold text-[#656d76]">下载源码</p>
+      <p class="mb-2 mt-4 text-xs font-semibold text-[#59636e]">下载源码</p>
       <div class="flex flex-wrap gap-1.5">
         <button
           v-for="f in [{ k: 'zip', l: 'ZIP' }, { k: 'tar.gz', l: 'TAR.GZ' }, { k: 'bundle', l: 'BUNDLE' }]"
           :key="f.k"
           type="button"
-          class="h-7 rounded-md border border-[#d0d7de] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          class="h-7 rounded-md border border-[#d1d9e0] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
           @click="download(f.k as 'zip' | 'tar.gz' | 'bundle')"
         >
           {{ f.l }}

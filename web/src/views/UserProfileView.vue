@@ -159,16 +159,16 @@ void loadProfile()
     <TopNav variant="landing" />
     <main class="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6">
       <div v-if="loading" class="flex flex-col gap-4">
-        <div class="flex gap-4 rounded-md border border-[#d0d7de] bg-white p-6 dark:border-[#30363d] dark:bg-[#161b22]">
-          <div class="h-20 w-20 shrink-0 animate-pulse rounded-full bg-[#d0d7de] dark:bg-[#30363d]" />
+        <div class="flex gap-4 rounded-md border border-[#d1d9e0] bg-white p-6 dark:border-[#30363d] dark:bg-[#161b22]">
+          <div class="h-20 w-20 shrink-0 animate-pulse rounded-full bg-[#d1d9e0] dark:bg-[#30363d]" />
           <div class="flex flex-1 flex-col gap-2">
-            <div class="h-5 w-40 animate-pulse rounded bg-[#d0d7de] dark:bg-[#30363d]" />
-            <div class="h-4 w-64 animate-pulse rounded bg-[#d0d7de] dark:bg-[#30363d]" />
-            <div class="h-4 w-32 animate-pulse rounded bg-[#d0d7de] dark:bg-[#30363d]" />
+            <div class="h-5 w-40 animate-pulse rounded bg-[#d1d9e0] dark:bg-[#30363d]" />
+            <div class="h-4 w-64 animate-pulse rounded bg-[#d1d9e0] dark:bg-[#30363d]" />
+            <div class="h-4 w-32 animate-pulse rounded bg-[#d1d9e0] dark:bg-[#30363d]" />
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]" />
+          <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-md border border-[#d1d9e0] bg-white dark:border-[#30363d] dark:bg-[#161b22]" />
         </div>
       </div>
 
@@ -176,7 +176,7 @@ void loadProfile()
 
       <template v-else-if="profile">
         <!-- 资料头 -->
-        <section class="mb-6 flex flex-wrap items-start gap-5 rounded-md border border-[#d0d7de] bg-white p-6 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section class="mb-6 flex flex-wrap items-start gap-5 rounded-md border border-[#d1d9e0] bg-white p-6 dark:border-[#30363d] dark:bg-[#161b22]">
           <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-2xl font-semibold text-white">
             {{ initial(profile.user.username) }}
           </span>
@@ -185,16 +185,16 @@ void loadProfile()
               <h1 class="truncate text-2xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ profile.user.username }}</h1>
               <button
                 v-if="!isSelf && auth.isLoggedIn"
-                class="h-8 rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+                class="h-8 rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
                 :disabled="followLoading"
                 @click="toggleFollow"
               >
                 {{ profile.is_following ? '取消关注' : '关注' }}
               </button>
             </div>
-            <p v-if="profile.user.full_name" class="truncate text-sm text-[#656d76]">{{ profile.user.full_name }}</p>
+            <p v-if="profile.user.full_name" class="truncate text-sm text-[#59636e]">{{ profile.user.full_name }}</p>
             <p v-if="profile.user.bio" class="mt-2 break-words text-sm text-[#1f2328] dark:text-[#e6edf3]">{{ profile.user.bio }}</p>
-            <ul class="mt-2 flex flex-wrap gap-4 text-sm text-[#656d76]">
+            <ul class="mt-2 flex flex-wrap gap-4 text-sm text-[#59636e]">
               <li v-if="profile.user.location" class="truncate">📍 {{ profile.user.location }}</li>
               <li v-if="profile.user.website" class="min-w-0 truncate">
                 <a v-if="safeWebsite(profile.user.website)" :href="safeWebsite(profile.user.website)" target="_blank" rel="noopener noreferrer" class="text-[#0969da] hover:underline">🔗 {{ profile.user.website }}</a>
@@ -206,14 +206,14 @@ void loadProfile()
         </section>
 
         <!-- 统计 -->
-        <div class="mb-4 flex flex-wrap gap-6 text-sm text-[#656d76]">
+        <div class="mb-4 flex flex-wrap gap-6 text-sm text-[#59636e]">
           <span><strong class="text-[#1f2328] dark:text-[#e6edf3]">{{ profile.repos.length }}</strong> 仓库</span>
           <span><strong class="text-[#1f2328] dark:text-[#e6edf3]">{{ profile.following }}</strong> 关注</span>
           <span><strong class="text-[#1f2328] dark:text-[#e6edf3]">{{ profile.followers }}</strong> 粉丝</span>
         </div>
 
         <!-- Tab -->
-        <nav class="mb-4 flex gap-1 border-b border-[#d0d7de] dark:border-[#30363d]">
+        <nav class="mb-4 flex gap-1 border-b border-[#d1d9e0] dark:border-[#30363d]">
           <button
             v-for="t in [{ k: 'repos', label: '仓库' }, { k: 'followers', label: '粉丝' }, { k: 'following', label: '关注' }]"
             :key="t.k"
@@ -221,7 +221,7 @@ void loadProfile()
             class="h-11 border-b-2 px-3 text-sm"
             :class="tab === t.k
               ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
-              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+              : 'border-transparent text-[#59636e] hover:rounded-t-md hover:border-[#d1d9e0] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
             @click="tab = t.k as 'repos' | 'followers' | 'following'"
           >
             {{ t.label }}
@@ -229,23 +229,23 @@ void loadProfile()
         </nav>
 
         <section v-if="tab === 'repos'">
-          <div v-if="!profile.repos.length" class="rounded-md border border-dashed border-[#d0d7de] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]">
+          <div v-if="!profile.repos.length" class="rounded-md border border-dashed border-[#d1d9e0] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]">
             <p class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">还没有仓库</p>
-            <p class="mt-1 text-sm text-[#656d76]">该用户尚未创建任何仓库。</p>
+            <p class="mt-1 text-sm text-[#59636e]">该用户尚未创建任何仓库。</p>
           </div>
           <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <article
               v-for="r in profile.repos"
               :key="r.ID"
-              class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
+              class="flex flex-col rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
             >
               <h3 class="truncate text-base font-semibold">
                 <RouterLink :to="`/${profile.user.username}/${r.Name}`" class="text-[#0969da] hover:underline">
-                  {{ profile.user.username }}<span class="text-[#656d76]">/</span>{{ r.Name }}
+                  {{ profile.user.username }}<span class="text-[#59636e]">/</span>{{ r.Name }}
                 </RouterLink>
               </h3>
-              <p class="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-[#656d76]">{{ r.Description || '暂无描述' }}</p>
-              <div class="mt-3 flex items-center gap-4 text-xs text-[#656d76]">
+              <p class="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-[#59636e]">{{ r.Description || '暂无描述' }}</p>
+              <div class="mt-3 flex items-center gap-4 text-xs text-[#59636e]">
                 <span class="truncate">⎇ {{ r.DefaultBranch || 'main' }}</span>
                 <span class="shrink-0">★ {{ r.StarsCount ?? 0 }}</span>
               </div>
@@ -254,17 +254,17 @@ void loadProfile()
         </section>
 
         <section v-else>
-          <p v-if="listLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</p>
+          <p v-if="listLoading" class="py-8 text-center text-sm text-[#59636e]">加载中…</p>
           <ErrorAlert v-else-if="listError" title="加载失败" :message="listError" :dismissible="false" />
-          <p v-else-if="!(tab === 'followers' ? followers : following).length" class="py-8 text-center text-sm text-[#656d76]">
+          <p v-else-if="!(tab === 'followers' ? followers : following).length" class="py-8 text-center text-sm text-[#59636e]">
             暂无{{ tab === 'followers' ? '粉丝' : '关注' }}
           </p>
-          <ul v-else class="divide-y divide-[#d0d7de] overflow-hidden rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+          <ul v-else class="divide-y divide-[#d1d9e0] overflow-hidden rounded-md border border-[#d1d9e0] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
             <li v-for="u in tab === 'followers' ? followers : following" :key="u.id">
               <RouterLink class="flex items-center gap-3 px-4 py-3 hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]" :to="`/users/${u.username}`">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-xs font-semibold text-white">{{ initial(u.username) }}</span>
                 <span class="truncate text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ u.username }}</span>
-                <span v-if="u.full_name" class="truncate text-sm text-[#656d76]">{{ u.full_name }}</span>
+                <span v-if="u.full_name" class="truncate text-sm text-[#59636e]">{{ u.full_name }}</span>
               </RouterLink>
             </li>
           </ul>

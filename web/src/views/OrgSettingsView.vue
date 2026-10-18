@@ -136,9 +136,9 @@ onMounted(load)
   <AppLayout>
     <div class="mx-auto w-full max-w-[900px]">
         <h2 class="text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">组织设置</h2>
-        <p class="mb-4 truncate text-sm text-[#656d76]"><code>{{ org }}</code></p>
+        <p class="mb-4 truncate text-sm text-[#59636e]"><code>{{ org }}</code></p>
 
-        <section class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>安全 · IP 白名单</h3>
 
           <p v-if="error" class="text-sm text-[#cf222e]">{{ error }}</p>

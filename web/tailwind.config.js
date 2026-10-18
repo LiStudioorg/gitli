@@ -5,11 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        // GitHub Primer 真实取值（从 github/ 抓取源码中的 CSS 变量提取）
         canvas: '#f6f8fa',
         surface: '#ffffff',
-        line: '#d0d7de',
+        line: '#d1d9e0',
+        'line-muted': '#d1d9e0',
         ink: '#1f2328',
-        subtle: '#656d76',
+        subtle: '#59636e',
         brand: '#ea580c',
         'brand-hover': '#c2410c',
         'btn-green': '#2da44e',
@@ -20,7 +22,25 @@ export default {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Noto Sans', 'Helvetica', 'Arial', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
-      borderRadius: { md: '6px' },
+      borderRadius: {
+        // --borderRadius-medium: .375rem
+        md: '0.375rem',
+      },
+      spacing: {
+        // --base-size-* 系列
+        'base-2': '0.125rem',
+        'base-4': '0.25rem',
+        'base-8': '0.5rem',
+        'base-12': '0.75rem',
+        'base-16': '1rem',
+        'base-20': '1.25rem',
+        'base-24': '1.5rem',
+      },
+      height: {
+        // --control-medium-size / --control-small-size
+        control: '2rem',
+        'control-sm': '1.75rem',
+      },
     },
   },
   plugins: [],

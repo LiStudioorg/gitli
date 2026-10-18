@@ -85,12 +85,12 @@ const unread = computed(() => notifications.unread)
 
 <template>
   <header
-    class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-3 border-b border-[#d0d7de] bg-white px-4 dark:border-[#30363d] dark:bg-[#161b22] md:px-6"
+    class="sticky top-0 z-40 flex h-12 shrink-0 items-center border-b border-[#d1d9e0] bg-[#f6f8fa] px-4 dark:border-[#3d444d] dark:bg-[#010409]"
   >
-    <div class="flex min-w-0 items-center gap-3">
+    <div class="flex min-w-0 items-center gap-2 pr-2">
       <button
         v-if="variant === 'app'"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] md:hidden dark:hover:bg-[#21262d]"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#59636e] hover:bg-[#f6f8fa] md:hidden dark:hover:bg-[#21262d]"
         type="button"
         aria-label="打开侧边导航"
         @click="ui.toggleSidebar()"
@@ -106,16 +106,16 @@ const unread = computed(() => notifications.unread)
       </RouterLink>
 
       <template v-if="variant === 'landing'">
-        <nav class="hidden items-center gap-4 text-sm text-[#656d76] md:flex">
+        <nav class="hidden items-center gap-4 text-sm text-[#59636e] md:flex">
           <a href="#features" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">{{ t('nav.features') }}</a>
           <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">{{ t('nav.docs') }}</a>
           <a href="#about" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">{{ t('nav.about') }}</a>
         </nav>
       </template>
-      <form v-else class="hidden min-w-0 md:block" @submit.prevent="submitSearch">
+      <form v-else class="hidden min-w-0 flex-1 md:block" @submit.prevent="submitSearch">
         <input
           v-model="searchQuery"
-          class="h-8 w-64 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:bg-white focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3] dark:focus:bg-[#0d1117] lg:w-80"
+          class="h-8 w-64 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#ea580c] focus:bg-white focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3] dark:focus:bg-[#0d1117] lg:w-80"
           type="search"
           placeholder="搜索仓库、Issue、用户..."
           aria-label="全局搜索"
@@ -123,18 +123,18 @@ const unread = computed(() => notifications.unread)
       </form>
     </div>
 
-    <nav v-if="variant === 'app'" class="hidden items-center gap-4 text-sm text-[#656d76] lg:flex">
+    <nav v-if="variant === 'app'" class="hidden items-center gap-4 text-sm text-[#59636e] lg:flex">
       <RouterLink to="/dashboard" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">控制台</RouterLink>
       <RouterLink to="/explore" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">仓库</RouterLink>
       <RouterLink to="/explore?tab=trending" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">趋势</RouterLink>
       <RouterLink to="/explore?tab=topics" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">话题</RouterLink>
     </nav>
 
-    <div class="ml-auto flex shrink-0 items-center gap-1.5">
+    <div class="ml-auto flex shrink-0 items-center gap-2 pl-2">
       <RouterLink
         v-if="variant === 'app'"
         to="/search"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] md:hidden dark:hover:bg-[#21262d]"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#59636e] hover:bg-[#f6f8fa] md:hidden dark:hover:bg-[#21262d]"
         aria-label="搜索"
       >
         <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -143,7 +143,7 @@ const unread = computed(() => notifications.unread)
       </RouterLink>
 
       <button
-        class="hidden h-8 items-center rounded-md border border-[#d0d7de] px-2 text-xs text-[#656d76] hover:bg-[#f6f8fa] md:inline-flex dark:border-[#30363d] dark:hover:bg-[#21262d]"
+        class="hidden h-8 items-center rounded-md border border-[#d1d9e0] px-2 text-xs text-[#59636e] hover:bg-[#f6f8fa] md:inline-flex dark:border-[#30363d] dark:hover:bg-[#21262d]"
         type="button"
         aria-label="打开命令面板"
         title="命令面板 (Ctrl/Cmd+K)"
@@ -152,7 +152,7 @@ const unread = computed(() => notifications.unread)
         ⌘K
       </button>
       <button
-        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#59636e] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]"
         type="button"
         :aria-label="themeLabel"
         :title="themeLabel"
@@ -171,7 +171,7 @@ const unread = computed(() => notifications.unread)
         </RouterLink>
         <template v-else>
           <RouterLink
-            class="relative inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]"
+            class="relative inline-flex h-8 w-8 items-center justify-center rounded-md text-[#59636e] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]"
             to="/dashboard"
             title="通知"
             aria-label="通知"
@@ -187,7 +187,7 @@ const unread = computed(() => notifications.unread)
 
           <div class="relative">
             <button
-              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d0d7de] text-base font-semibold text-[#656d76] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:hover:bg-[#21262d]"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d1d9e0] text-base font-semibold text-[#59636e] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:hover:bg-[#21262d]"
               type="button"
               aria-label="快速创建"
               title="快速创建"
@@ -197,7 +197,7 @@ const unread = computed(() => notifications.unread)
             </button>
             <div
               v-if="plusOpen"
-              class="absolute right-0 top-full z-50 mt-1.5 flex w-48 flex-col rounded-md border border-[#d0d7de] bg-white p-1 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
+              class="absolute right-0 top-full z-50 mt-1.5 flex w-48 flex-col rounded-md border border-[#d1d9e0] bg-white p-1 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
               role="menu"
             >
               <button
@@ -210,7 +210,7 @@ const unread = computed(() => notifications.unread)
                 @click="!item.disabled && goCreate(item.to)"
               >
                 {{ item.label }}
-                <small v-if="item.hint" class="text-xs text-[#656d76]">{{ item.hint }}</small>
+                <small v-if="item.hint" class="text-xs text-[#59636e]">{{ item.hint }}</small>
               </button>
             </div>
           </div>
@@ -226,10 +226,10 @@ const unread = computed(() => notifications.unread)
             </button>
             <div
               v-if="avatarOpen"
-              class="absolute right-0 top-full z-50 mt-1.5 flex w-44 flex-col rounded-md border border-[#d0d7de] bg-white p-1 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
+              class="absolute right-0 top-full z-50 mt-1.5 flex w-44 flex-col rounded-md border border-[#d1d9e0] bg-white p-1 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
               role="menu"
             >
-              <div class="truncate px-2.5 py-1.5 text-xs text-[#656d76]">{{ auth.user?.username }}</div>
+              <div class="truncate px-2.5 py-1.5 text-xs text-[#59636e]">{{ auth.user?.username }}</div>
               <button type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="goAvatar(`/${auth.user?.username}`)">个人主页</button>
               <button type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="goAvatar('/settings')">设置</button>
               <button v-if="auth.isAdmin" type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="goAvatar('/admin')">管理面板</button>

@@ -186,20 +186,20 @@ onMounted(() => load(true))
             type="search"
             placeholder="按仓库名称搜索..."
             aria-label="按仓库名称搜索"
-            class="h-8 w-64 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-8 w-64 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
           />
           <button class="h-8 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b]" type="submit">搜索</button>
         </form>
       </header>
 
-      <nav class="mb-4 flex gap-1 border-b border-[#d0d7de] dark:border-[#30363d]">
+      <nav class="mb-4 flex gap-1 border-b border-[#d1d9e0] dark:border-[#30363d]">
         <button
           v-for="t in tabs"
           :key="t.key"
           class="h-10 border-b-2 px-3 text-sm"
           :class="activeTab === t.key
             ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
-            : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+            : 'border-transparent text-[#59636e] hover:rounded-t-md hover:border-[#d1d9e0] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
           type="button"
           @click="selectTab(t.key)"
         >
@@ -209,10 +209,10 @@ onMounted(() => load(true))
 
       <section v-if="activeTab === 'repos'">
         <p v-if="error" class="mb-3 rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
-        <div v-if="loading" class="grid grid-cols-1 gap-4 md:grid-cols-2"><div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]" /></div>
-        <p v-else-if="!repos.length" class="py-10 text-center text-sm text-[#656d76]">没有找到公开仓库</p>
+        <div v-if="loading" class="grid grid-cols-1 gap-4 md:grid-cols-2"><div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-md border border-[#d1d9e0] bg-white dark:border-[#30363d] dark:bg-[#161b22]" /></div>
+        <p v-else-if="!repos.length" class="py-10 text-center text-sm text-[#59636e]">没有找到公开仓库</p>
         <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <article v-for="r in repos" :key="r.id" class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <article v-for="r in repos" :key="r.id" class="flex flex-col rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
             <h3 class="card-title">
               <RouterLink :to="`/${r.owner}/${r.name}`">
                 <span class="owner">{{ r.owner }}</span><span class="sep">/</span><span class="name">{{ r.name }}</span>
@@ -250,7 +250,7 @@ onMounted(() => load(true))
         <p v-if="trendingLoading" class="state">加载中...</p>
         <p v-else-if="!trending.length" class="state">没有找到趋势仓库</p>
         <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <article v-for="r in trending" :key="r.id" class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <article v-for="r in trending" :key="r.id" class="flex flex-col rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
             <h3 class="card-title">
               <RouterLink :to="`/${r.owner}/${r.name}`">
                 <span class="owner">{{ r.owner }}</span><span class="sep">/</span><span class="name">{{ r.name }}</span>
@@ -300,7 +300,7 @@ onMounted(() => load(true))
           <p v-if="topicReposLoading" class="state">加载中...</p>
           <p v-else-if="!topicRepos.length" class="state">该话题下暂无仓库</p>
           <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <article v-for="r in topicRepos" :key="r.id" class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+            <article v-for="r in topicRepos" :key="r.id" class="flex flex-col rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
               <h3 class="card-title">
                 <RouterLink :to="`/${r.owner}/${r.name}`">
                   <span class="owner">{{ r.owner }}</span><span class="sep">/</span><span class="name">{{ r.name }}</span>

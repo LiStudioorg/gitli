@@ -921,14 +921,14 @@ onMounted(async () => {
   <AppLayout>
     <div class="mx-auto w-full max-w-[960px]">
         <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">用户设置</h2>
-        <nav class="mb-4 flex flex-wrap gap-1 border-b border-[#d0d7de] dark:border-[#30363d]" role="tablist">
+        <nav class="mb-4 flex flex-wrap gap-1 border-b border-[#d1d9e0] dark:border-[#30363d]" role="tablist">
           <button
             v-for="t in tabs"
             :key="t.key"
             class="h-10 border-b-2 px-3 text-sm"
             :class="active === t.key
               ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
-              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+              : 'border-transparent text-[#59636e] hover:rounded-t-md hover:border-[#d1d9e0] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
             type="button"
             role="tab"
             :aria-selected="active === t.key"
@@ -939,7 +939,7 @@ onMounted(async () => {
         </nav>
 
         <!-- 个人资料 -->
-        <section v-if="active === 'profile'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-if="active === 'profile'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <p v-if="profileError" class="text-sm text-[#cf222e]">{{ profileError }}</p>
           <p v-if="profileOk" class="ok">{{ profileOk }}</p>
           <label>用户名<input :value="auth.user?.username" disabled /></label>
@@ -954,7 +954,7 @@ onMounted(async () => {
         </section>
 
         <!-- 密码 -->
-        <section v-else-if="active === 'password'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'password'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <p v-if="pwError" class="text-sm text-[#cf222e]">{{ pwError }}</p>
           <p v-if="pwOk" class="ok">{{ pwOk }}</p>
           <label>当前密码<input v-model="pw.current_password" type="password" autocomplete="current-password" /></label>
@@ -966,7 +966,7 @@ onMounted(async () => {
         </section>
 
         <!-- SSH / GPG 密钥 -->
-        <section v-else-if="active === 'keys'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'keys'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>SSH 密钥</h3>
           <p v-if="keysError" class="text-sm text-[#cf222e]">{{ keysError }}</p>
           <p v-if="keysLoading" class="muted">加载中…</p>
@@ -996,7 +996,7 @@ onMounted(async () => {
                     </span>
                   </td>
                   <td class="center nowrap">
-                    <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="openEdit(k)">编辑</button>
+                    <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="openEdit(k)">编辑</button>
                     <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" type="button" @click="deleteKey(keyId(k))">删除</button>
                   </td>
                 </tr>
@@ -1064,7 +1064,7 @@ onMounted(async () => {
         </section>
 
         <!-- 访问令牌 -->
-        <section v-else-if="active === 'tokens'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'tokens'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <p v-if="tokensError" class="text-sm text-[#cf222e]">{{ tokensError }}</p>
           <div v-if="createdToken" class="token-callout">
             <p class="token-warn">请立即复制并妥善保存，令牌仅显示这一次。</p>
@@ -1102,7 +1102,7 @@ onMounted(async () => {
         </section>
 
         <!-- OAuth 应用 -->
-        <section v-else-if="active === 'oauth'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'oauth'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <div v-if="createdSecret" class="token-callout">
             <p class="token-warn">
               应用「{{ createdAppName }}」已创建。Client Secret 仅显示这一次，请立即复制保存。
@@ -1214,7 +1214,7 @@ onMounted(async () => {
         </section>
 
         <!-- 两步验证 -->
-        <section v-else-if="active === 'totp'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'totp'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <p v-if="totpError" class="text-sm text-[#cf222e]">{{ totpError }}</p>
           <p v-if="totpOk" class="ok">{{ totpOk }}</p>
           <p>
@@ -1253,7 +1253,7 @@ onMounted(async () => {
         </section>
 
         <!-- 已删除的仓库 -->
-        <section v-else-if="active === 'deleted'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'deleted'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>已删除的仓库</h3>
           <span class="deleted-hint">已删除的仓库处于「已删除」状态，可在此恢复。</span>
           <p v-if="deletedError" class="text-sm text-[#cf222e]">{{ deletedError }}</p>
@@ -1275,7 +1275,7 @@ onMounted(async () => {
                   <td class="center nowrap">
                     <span class="badge badge-deleted">已删除</span>
                     <button
-                      class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+                      class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
                       type="button"
                       :disabled="restoringId === r.id"
                       @click="restoreRepo(r)"
@@ -1291,7 +1291,7 @@ onMounted(async () => {
         </section>
 
         <!-- 安全活动 -->
-        <section v-else-if="active === 'general'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else-if="active === 'general'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>通用</h3>
           <label class="field">
             语言 / Language
@@ -1319,7 +1319,7 @@ onMounted(async () => {
             {{ notifSaving ? '保存中…' : '保存通知频率' }}
           </button>
         </section>
-        <section v-else class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <section v-else class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>我的活动</h3>
           <p v-if="logsError" class="text-sm text-[#cf222e]">{{ logsError }}</p>
           <div class="activity-toolbar">
@@ -1364,11 +1364,11 @@ onMounted(async () => {
           </template>
           <p v-else class="muted">暂无活动记录</p>
           <div class="pager">
-            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="logsPage === 0 || logsLoading" @click="activityPrev">
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="logsPage === 0 || logsLoading" @click="activityPrev">
               上一页
             </button>
             <span class="muted">第 {{ logsPage + 1 }} 页</span>
-            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="!logsHasNext || logsLoading" @click="activityNext">
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="!logsHasNext || logsLoading" @click="activityNext">
               下一页
             </button>
           </div>
@@ -1440,7 +1440,7 @@ onMounted(async () => {
           允许用于提交签名
         </label>
         <div class="modal-actions">
-          <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="editBusy" @click="closeEdit">取消</button>
+          <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="editBusy" @click="closeEdit">取消</button>
           <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="editBusy" @click="saveEdit">
             {{ editBusy ? '保存中…' : '保存' }}
           </button>

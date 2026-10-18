@@ -102,13 +102,13 @@ watch(
             type="search"
             placeholder="搜索仓库、Issue、用户..."
             aria-label="搜索"
-            class="h-8 w-72 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-8 w-72 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
           />
           <button class="h-8 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b]" type="submit">搜索</button>
         </form>
       </header>
 
-      <div class="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-[#d0d7de] bg-white px-3 py-2 text-xs text-[#656d76] dark:border-[#30363d] dark:bg-[#161b22]">
+      <div class="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-[#d1d9e0] bg-white px-3 py-2 text-xs text-[#59636e] dark:border-[#30363d] dark:bg-[#161b22]">
         <span class="font-semibold">语法提示</span>
         <code>language:go</code>
         <code>is:open</code>
@@ -118,9 +118,9 @@ watch(
       </div>
 
       <p v-if="error" class="mb-3 rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
-      <p v-else-if="loading" class="py-10 text-center text-sm text-[#656d76]">搜索中…</p>
-      <p v-else-if="!query" class="py-10 text-center text-sm text-[#656d76]">输入关键词开始搜索</p>
-      <p v-else-if="!hasResults" class="py-10 text-center text-sm text-[#656d76]">没有找到与「{{ query }}」相关的结果</p>
+      <p v-else-if="loading" class="py-10 text-center text-sm text-[#59636e]">搜索中…</p>
+      <p v-else-if="!query" class="py-10 text-center text-sm text-[#59636e]">输入关键词开始搜索</p>
+      <p v-else-if="!hasResults" class="py-10 text-center text-sm text-[#59636e]">没有找到与「{{ query }}」相关的结果</p>
 
       <template v-else>
         <section v-if="repos.length" class="group">

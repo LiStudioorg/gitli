@@ -34,7 +34,7 @@ const ext = computed(() => {
   return parts.length > 1 ? parts[parts.length - 1] : ''
 })
 
-const color = computed(() => palette[ext.value] ?? 'text-[#656d76]')
+const color = computed(() => palette[ext.value] ?? 'text-[#59636e]')
 const isDir = computed(() => props.type === 'tree')
 const isParent = computed(() => props.type === 'parent')
 </script>
@@ -46,7 +46,7 @@ const isParent = computed(() => props.type === 'parent')
       <path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1Z" />
     </svg>
     <!-- 返回上级 -->
-    <svg v-else-if="isParent" class="h-4 w-4 text-[#656d76]" viewBox="0 0 16 16" fill="currentColor">
+    <svg v-else-if="isParent" class="h-4 w-4 text-[#59636e]" viewBox="0 0 16 16" fill="currentColor">
       <path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z" />
     </svg>
     <!-- 文件 -->

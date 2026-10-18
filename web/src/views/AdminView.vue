@@ -861,14 +861,14 @@ onMounted(() => {
   <AppLayout>
     <div class="mx-auto w-full max-w-[1100px]">
         <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">管理面板</h2>
-        <nav class="mb-4 flex flex-wrap gap-1 border-b border-[#d0d7de] dark:border-[#30363d]" role="tablist">
+        <nav class="mb-4 flex flex-wrap gap-1 border-b border-[#d1d9e0] dark:border-[#30363d]" role="tablist">
           <button
             v-for="t in tabs"
             :key="t.key"
             class="h-10 border-b-2 px-3 text-sm"
             :class="active === t.key
               ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
-              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+              : 'border-transparent text-[#59636e] hover:rounded-t-md hover:border-[#d1d9e0] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
             type="button"
             role="tab"
             :aria-selected="active === t.key"
@@ -886,7 +886,7 @@ onMounted(() => {
             </label>
             <div class="filter filter-actions">
               <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit">搜索</button>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadUsers">刷新</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadUsers">刷新</button>
             </div>
           </form>
 
@@ -982,7 +982,7 @@ onMounted(() => {
             </label>
             <div class="filter filter-actions">
               <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit">搜索</button>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRepos">刷新</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRepos">刷新</button>
             </div>
           </form>
 
@@ -1059,7 +1059,7 @@ onMounted(() => {
 
         <section v-else-if="active === 'orgs'" class="panel">
           <div class="panel-toolbar">
-            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadOrgs">刷新</button>
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadOrgs">刷新</button>
           </div>
           <p v-if="orgsState.error" class="text-sm text-[#cf222e]">{{ orgsState.error }}</p>
           <p v-if="orgsState.loading" class="muted">加载中…</p>
@@ -1106,7 +1106,7 @@ onMounted(() => {
           <div class="subsection">
             <div class="panel-toolbar system-toolbar">
               <h3>系统运行状态</h3>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="systemLoading" @click="loadSystem">
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="systemLoading" @click="loadSystem">
                 {{ systemLoading ? '刷新中…' : '刷新' }}
               </button>
             </div>
@@ -1125,7 +1125,7 @@ onMounted(() => {
         <section v-else-if="active === 'runner'" class="panel">
           <div class="panel-toolbar">
             <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="openRunnerModal">新建 Runner</button>
-            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRunners">刷新</button>
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRunners">刷新</button>
           </div>
 
           <p v-if="runnersError" class="text-sm text-[#cf222e]">{{ runnersError }}</p>
@@ -1200,8 +1200,8 @@ onMounted(() => {
               <input v-model="auditFilters.to" type="datetime-local" @change="applyFilters" />
             </label>
             <div class="filter filter-actions">
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="applyFilters">查询</button>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadAudit">刷新</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="applyFilters">查询</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadAudit">刷新</button>
             </div>
           </div>
 
@@ -1211,14 +1211,14 @@ onMounted(() => {
                 <option value="csv">CSV</option>
                 <option value="json">JSON</option>
               </select>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="exportAudit">导出</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="exportAudit">导出</button>
             </div>
             <div class="archive-group">
               <label class="inline-field">
                 <span>保留天数</span>
                 <input v-model.number="archiveRetentionDays" type="number" min="1" />
               </label>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="archiving" @click="archiveAudit">
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="archiving" @click="archiveAudit">
                 {{ archiving ? '归档中…' : '手动归档' }}
               </button>
             </div>
@@ -1281,9 +1281,9 @@ onMounted(() => {
               </table>
             </div>
             <div class="pagination">
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditOffset === 0" @click="prevPage">上一页</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditOffset === 0" @click="prevPage">上一页</button>
               <span class="muted">第 {{ Math.floor(auditOffset / PAGE_SIZE) + 1 }} 页</span>
-              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditLogs.length < PAGE_SIZE" @click="nextPage">下一页</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditLogs.length < PAGE_SIZE" @click="nextPage">下一页</button>
             </div>
           </template>
           <p v-else-if="!auditError" class="muted">暂无数据</p>
@@ -1445,7 +1445,7 @@ onMounted(() => {
           </label>
           <p v-if="runnerFormError" class="text-sm text-[#cf222e]">{{ runnerFormError }}</p>
           <div class="modal-actions">
-            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeRunnerModal">取消</button>
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeRunnerModal">取消</button>
             <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="runnerSaving" @click="createRunner">
               {{ runnerSaving ? '创建中…' : '创建' }}
             </button>
@@ -1474,7 +1474,7 @@ onMounted(() => {
           <pre class="snippet">{{ runnerConfigSnippet(createdRunner) }}</pre>
           <div class="modal-actions">
             <button
-              class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+              class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
               type="button"
               @click="copyText(runnerConfigSnippet(createdRunner), 'snippet')"
             >
@@ -1507,7 +1507,7 @@ onMounted(() => {
         </label>
         <p v-if="editError" class="text-sm text-[#cf222e]">{{ editError }}</p>
         <div class="modal-actions">
-          <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="editModal = false">取消</button>
+          <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="editModal = false">取消</button>
           <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="editSaving" @click="saveEdit">
             {{ editSaving ? '保存中…' : '保存' }}
           </button>

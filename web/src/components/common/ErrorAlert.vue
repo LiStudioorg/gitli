@@ -26,12 +26,12 @@ const emit = defineEmits<{ (e: 'dismiss'): void }>()
     </svg>
     <div class="min-w-0 flex-1">
       <p class="font-semibold leading-5">{{ title }}</p>
-      <p class="break-words leading-5 text-[#656d76]">{{ message }}</p>
+      <p class="break-words leading-5 text-[#59636e]">{{ message }}</p>
     </div>
     <button
       v-if="dismissible"
       type="button"
-      class="shrink-0 rounded p-1 text-[#656d76] hover:bg-[#ffd7d5]"
+      class="shrink-0 rounded p-1 text-[#59636e] hover:bg-[#ffd7d5]"
       aria-label="关闭提示"
       @click="emit('dismiss')"
     >
