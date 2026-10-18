@@ -175,22 +175,31 @@ onMounted(() => load(true))
 </script>
 
 <template>
-  <div class="explore">
+  <div class="min-h-screen bg-[#f6f8fa] dark:bg-[#0d1117]">
     <TopNav variant="landing" />
-    <main class="content">
-      <header class="head">
-        <h2>探索</h2>
-        <form v-if="activeTab === 'repos'" class="search-box" @submit.prevent="search">
-          <input v-model="query" type="search" placeholder="按仓库名称搜索..." aria-label="按仓库名称搜索" />
-          <button class="btn primary" type="submit">搜索</button>
+    <main class="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6">
+      <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">探索</h2>
+        <form v-if="activeTab === 'repos'" class="flex gap-2" @submit.prevent="search">
+          <input
+            v-model="query"
+            type="search"
+            placeholder="按仓库名称搜索..."
+            aria-label="按仓库名称搜索"
+            class="h-8 w-64 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+          />
+          <button class="h-8 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b]" type="submit">搜索</button>
         </form>
       </header>
 
-      <nav class="tabs">
+      <nav class="mb-4 flex gap-1 border-b border-[#d0d7de] dark:border-[#30363d]">
         <button
           v-for="t in tabs"
           :key="t.key"
-          :class="{ active: activeTab === t.key }"
+          class="h-10 border-b-2 px-3 text-sm"
+          :class="activeTab === t.key
+            ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
+            : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
           type="button"
           @click="selectTab(t.key)"
         >
@@ -199,11 +208,11 @@ onMounted(() => load(true))
       </nav>
 
       <section v-if="activeTab === 'repos'">
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="loading" class="state">加载中...</p>
-        <p v-else-if="!repos.length" class="state">没有找到公开仓库</p>
-        <div v-else class="grid">
-          <article v-for="r in repos" :key="r.id" class="card">
+        <p v-if="error" class="mb-3 rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
+        <div v-if="loading" class="grid grid-cols-1 gap-4 md:grid-cols-2"><div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]" /></div>
+        <p v-else-if="!repos.length" class="py-10 text-center text-sm text-[#656d76]">没有找到公开仓库</p>
+        <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article v-for="r in repos" :key="r.id" class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
             <h3 class="card-title">
               <RouterLink :to="`/${r.owner}/${r.name}`">
                 <span class="owner">{{ r.owner }}</span><span class="sep">/</span><span class="name">{{ r.name }}</span>
@@ -240,8 +249,8 @@ onMounted(() => load(true))
         <p v-if="trendingError" class="error">{{ trendingError }}</p>
         <p v-if="trendingLoading" class="state">加载中...</p>
         <p v-else-if="!trending.length" class="state">没有找到趋势仓库</p>
-        <div v-else class="grid">
-          <article v-for="r in trending" :key="r.id" class="card">
+        <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article v-for="r in trending" :key="r.id" class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
             <h3 class="card-title">
               <RouterLink :to="`/${r.owner}/${r.name}`">
                 <span class="owner">{{ r.owner }}</span><span class="sep">/</span><span class="name">{{ r.name }}</span>
@@ -290,8 +299,8 @@ onMounted(() => load(true))
           <p v-if="topicReposError" class="error">{{ topicReposError }}</p>
           <p v-if="topicReposLoading" class="state">加载中...</p>
           <p v-else-if="!topicRepos.length" class="state">该话题下暂无仓库</p>
-          <div v-else class="grid">
-            <article v-for="r in topicRepos" :key="r.id" class="card">
+          <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <article v-for="r in topicRepos" :key="r.id" class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
               <h3 class="card-title">
                 <RouterLink :to="`/${r.owner}/${r.name}`">
                   <span class="owner">{{ r.owner }}</span><span class="sep">/</span><span class="name">{{ r.name }}</span>
@@ -309,209 +318,3 @@ onMounted(() => load(true))
     </main>
   </div>
 </template>
-
-<style scoped>
-.explore {
-  min-height: 100vh;
-}
-.content {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.head h2 {
-  margin: 0;
-}
-.search-box {
-  display: flex;
-  gap: 0.5rem;
-  flex: 1;
-  max-width: 420px;
-}
-.search-box input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--color-bg);
-  color: var(--color-fg);
-}
-.tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
-}
-.tabs button {
-  padding: 0.5rem 0.9rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  font: inherit;
-}
-.tabs button.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 600;
-}
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1.25rem;
-}
-.lang-label {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.lang-select {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--color-fg);
-}
-.lang-select:disabled {
-  opacity: 0.6;
-}
-.btn {
-  padding: 0.5rem 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--color-fg);
-  background: transparent;
-  cursor: pointer;
-}
-.btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.btn.primary:hover {
-  background: var(--primary-hover);
-}
-.btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-.card {
-  padding: 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.15);
-}
-.card-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.05rem;
-}
-.card-title a {
-  color: var(--primary);
-}
-.owner {
-  color: var(--muted);
-}
-.sep {
-  color: var(--muted);
-  margin: 0 0.15rem;
-}
-.name {
-  font-weight: 600;
-}
-.desc {
-  margin: 0 0 0.75rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  min-height: 1.35rem;
-}
-.meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.stars {
-  color: var(--accent);
-}
-.forks {
-  color: var(--muted);
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.topic-chip {
-  padding: 0.35rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--card);
-  color: var(--color-fg);
-  cursor: pointer;
-  font: inherit;
-}
-.topic-chip:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.topic-chip.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.chip-count {
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-.topic-chip.active .chip-count {
-  color: rgba(255, 255, 255, 0.8);
-}
-.topic-head {
-  margin: 1.75rem 0 0.75rem;
-  font-size: 1.1rem;
-}
-.state {
-  color: var(--muted);
-  padding: 1.5rem 0;
-}
-.error {
-  color: var(--accent);
-  font-size: 0.9rem;
-}
-.more {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.5rem;
-}
-.more .state {
-  padding: 0;
-}
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

@@ -15,7 +15,7 @@ import Sidebar from './Sidebar.vue'
       <Sidebar />
       <!-- 主内容：唯一滚动容器 -->
       <main class="min-w-0 flex-1 overflow-y-auto">
-        <div class="mx-auto w-full max-w-[1200px] p-4 md:p-6">
+        <div class="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6">
           <slot />
         </div>
       </main>

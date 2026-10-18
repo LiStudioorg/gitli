@@ -36,3 +36,6 @@ Thumbs.db
 # local tool binaries
 /.lintbin/
 /.tmpbin/
+
+# 外部参考文件（不提交）
+/github/

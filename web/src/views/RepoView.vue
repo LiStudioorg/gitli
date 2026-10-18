@@ -69,6 +69,8 @@ const pullsLoaded = ref(false)
 const issuesError = ref('')
 const pullsError = ref('')
 const issueFilter = ref<'open' | 'closed' | 'all'>('open')
+const issueFormOpen = ref(false)
+const issueTitleTouched = ref(false)
 const pullFilter = ref<'open' | 'closed' | 'all'>('open')
 const diffOpen = ref<number | null>(null)
 const diffText = ref('')
@@ -883,45 +885,53 @@ onUnmounted(() => {
   <div class="flex min-h-screen flex-col bg-[#f6f8fa] dark:bg-[#0d1117]">
     <TopNav variant="app" />
 
-    <header class="border-b border-[#d0d7de] bg-white px-4 pt-4 dark:border-[#30363d] dark:bg-[#161b22] md:px-6">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#ea580c]/10 text-xs font-bold text-[#ea580c]" aria-hidden="true">&#9679;</span>
-        <h2 class="min-w-0 truncate text-base font-semibold text-[#1f2328] dark:text-[#e6edf3] md:text-lg">
-          <RouterLink :to="`/${owner}`" class="text-[#ea580c] hover:underline">{{ owner }}</RouterLink>
-          <span class="mx-0.5 font-normal text-[#656d76]">/</span>
-          <span class="break-all">{{ name }}</span>
-        </h2>
-        <span v-if="repo?.is_private" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">私有</span>
-        <span v-if="repo?.archived" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">已归档</span>
-        <div class="ml-auto flex flex-wrap gap-1.5">
-          <button class="rounded-md border border-[#d0d7de] px-2.5 py-1 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">星标 {{ repo?.StarsCount ?? 0 }}</button>
-          <button class="rounded-md border border-[#d0d7de] px-2.5 py-1 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">派生 {{ repo?.ForksCount ?? 0 }}</button>
+    <header class="bg-white dark:bg-[#161b22]">
+      <div class="mx-auto w-full max-w-[1280px] px-4 pt-4 md:px-6">
+        <div class="flex flex-wrap items-center gap-2">
+          <svg class="h-4 w-4 shrink-0 text-[#656d76]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z" />
+          </svg>
+          <h2 class="min-w-0 truncate text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3] md:text-xl">
+            <RouterLink :to="`/${owner}`" class="text-[#ea580c] hover:underline">{{ owner }}</RouterLink>
+            <span class="mx-1 font-normal text-[#656d76]">/</span>
+            <span class="break-all">{{ name }}</span>
+          </h2>
+          <span v-if="repo?.is_private" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">私有</span>
+          <span v-if="repo?.archived" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">已归档</span>
+
+          <!-- Watch / Fork / Star：GitHub 分体按钮 -->
+          <div class="ml-auto flex flex-wrap items-center gap-2">
+            <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+              <button type="button" class="px-2.5 py-1 text-xs font-medium text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">Fork</button>
+              <span class="flex items-center border-l border-[#d0d7de] px-2 text-xs text-[#656d76] dark:border-[#30363d]">{{ repo?.ForksCount ?? 0 }}</span>
+            </div>
+            <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+              <button type="button" class="px-2.5 py-1 text-xs font-medium text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">Star</button>
+              <span class="flex items-center border-l border-[#d0d7de] px-2 text-xs text-[#656d76] dark:border-[#30363d]">{{ repo?.StarsCount ?? 0 }}</span>
+            </div>
+          </div>
         </div>
+        <p v-if="repo?.archived" class="mt-2 rounded-md border border-[#ff818266] bg-[#fff8c5] px-3 py-1.5 text-xs text-[#9a6700]">
+          此仓库已归档，只读
+        </p>
+        <nav class="mt-4 flex gap-1 overflow-x-auto">
+          <button
+            v-for="t in tabs"
+            :key="t"
+            type="button"
+            class="h-12 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm transition-colors"
+            :class="t === activeTab
+              ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
+              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+            @click="selectTab(t)"
+          >
+            {{ t }}
+          </button>
+        </nav>
       </div>
-      <p v-if="repo?.archived" class="mt-2 rounded-md border border-[#ff818266] bg-[#fff8c5] px-3 py-1.5 text-xs text-[#9a6700]">
-        此仓库已归档，只读
-      </p>
-      <nav class="mt-3 flex gap-0.5 overflow-x-auto">
-        <button
-          v-for="t in tabs"
-          :key="t"
-          type="button"
-          class="shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors"
-          :class="t === activeTab
-            ? 'border-[#ea580c] font-semibold text-[#ea580c]'
-            : 'border-transparent text-[#656d76] hover:bg-[#f6f8fa] hover:text-[#1f2328] dark:hover:bg-[#21262d] dark:hover:text-[#e6edf3]'"
-          @click="selectTab(t)"
-        >
-          {{ t }}
-        </button>
-      </nav>
     </header>
 
-    <div class="flex items-center gap-4 border-b border-[#d0d7de] bg-white px-4 py-1.5 text-xs text-[#656d76] dark:border-[#30363d] dark:bg-[#161b22] md:px-6">
-      <span>{{ branches.length }} 分支</span>
-    </div>
-
-    <div v-if="activeTab === '代码'" class="grid min-w-0 grid-cols-1 items-start gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div v-if="activeTab === '代码'" class="grid min-w-0 grid-cols-1 items-start gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_294px]">
       <main class="min-w-0">
         <div class="mb-3 flex justify-end">
           <CloneDropdown :owner="owner" :repo="name" :clone-info="cloneInfo" />
@@ -937,69 +947,142 @@ onUnmounted(() => {
       </main>
 
       <aside class="flex min-w-0 flex-col gap-4">
-        <section v-if="repo?.description || license" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
-          <h4>关于</h4>
-          <p v-if="repo?.description">{{ repo.description }}</p>
-          <p v-else class="muted">暂无描述</p>
-          <span v-if="license" class="license-badge">{{ license }}</span>
-        </section>
-        <section v-if="languages.length" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
-          <h4>语言</h4>
-          <LanguageStats :languages="languages" />
-        </section>
-        <section v-if="repo && (repo.SizeKB ?? 0) > 0" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
-          <h4>仓库信息</h4>
-          <p class="size">{{ formatSize(repo.SizeKB ?? 0) }}</p>
-          <p class="social">{{ repo.StarsCount ?? 0 }} 星标 · {{ repo.ForksCount ?? 0 }} 派生</p>
+        <section class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <h3 class="mb-2 text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">About</h3>
+          <p class="break-words text-sm text-[#1f2328] dark:text-[#e6edf3]">
+            {{ repo?.description || '暂无描述' }}
+          </p>
+          <div v-if="license" class="mt-3 flex items-center gap-1.5 text-sm text-[#656d76]">
+            <span aria-hidden="true">⚖</span>{{ license }}
+          </div>
+          <div v-if="repo && (repo.SizeKB ?? 0) > 0" class="mt-2 flex items-center gap-1.5 text-sm text-[#656d76]">
+            <span aria-hidden="true">◔</span>{{ formatSize(repo.SizeKB ?? 0) }}
+          </div>
+          <div v-if="languages.length" class="mt-4 border-t border-[#d0d7de] pt-3 dark:border-[#30363d]">
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-[#656d76]">语言</h4>
+            <LanguageStats :languages="languages" />
+          </div>
         </section>
       </aside>
     </div>
 
     <div v-else-if="activeTab === '工单'" class="p-4 md:p-6">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3>工单</h3>
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">工单</h3>
         <div class="flex flex-wrap items-center gap-2">
           <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]" role="group" aria-label="按状态筛选工单">
-            <button type="button" :class="{ active: issueFilter === 'open' }" @click="issueFilter = 'open'">
-              开启 {{ issues.filter((i) => i.State === 'open').length }}
+            <button
+              v-for="f in [{ k: 'open', t: `开启 ${issues.filter((i) => i.State === 'open').length}` }, { k: 'closed', t: `已关闭 ${issues.filter((i) => i.State !== 'open').length}` }, { k: 'all', t: '全部' }]"
+              :key="f.k"
+              type="button"
+              class="px-3 py-1.5 text-xs"
+              :class="issueFilter === f.k ? 'bg-[#ea580c]/10 font-semibold text-[#ea580c]' : 'text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+              @click="issueFilter = f.k as 'open' | 'closed' | 'all'"
+            >
+              {{ f.t }}
             </button>
-            <button type="button" :class="{ active: issueFilter === 'closed' }" @click="issueFilter = 'closed'">
-              已关闭 {{ issues.filter((i) => i.State !== 'open').length }}
-            </button>
-            <button type="button" :class="{ active: issueFilter === 'all' }" @click="issueFilter = 'all'">全部</button>
           </div>
-          <button class="ui-btn" type="button" @click="loadIssues">刷新</button>
+          <button
+            class="h-8 rounded-md border border-[#d0d7de] px-3 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            type="button"
+            @click="loadIssues"
+          >
+            刷新
+          </button>
+          <button
+            v-if="auth.isLoggedIn"
+            class="h-8 rounded-md bg-[#2da44e] px-3 text-xs font-semibold text-white hover:bg-[#2c974b]"
+            type="button"
+            @click="issueFormOpen = !issueFormOpen"
+          >
+            {{ issueFormOpen ? '取消' : '新建工单' }}
+          </button>
         </div>
       </div>
 
-      <details v-if="auth.isLoggedIn" class="ui-card create-form" :open="!issues.length">
-        <summary>新建工单</summary>
-        <form class="ui-form" @submit.prevent="createIssue">
-          <select v-if="issueTemplates.length" v-model="selectedTemplate" class="ui-input" @change="onTemplateChange">
-            <option value="">选择模板（可选）</option>
-            <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
-          </select>
-          <div class="ui-field">
-            <label for="issue-title">标题</label>
-            <input id="issue-title" v-model="newTitle" class="ui-input" type="text" placeholder="简要描述问题" />
+      <form
+        v-if="auth.isLoggedIn && issueFormOpen"
+        class="mb-4 rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]"
+        @submit.prevent="createIssue"
+      >
+        <header class="border-b border-[#d0d7de] px-4 py-2.5 text-sm font-semibold text-[#1f2328] dark:border-[#30363d] dark:text-[#e6edf3]">
+          新建工单
+        </header>
+        <div class="flex flex-col gap-4 p-4">
+          <div class="flex flex-col gap-1.5">
+            <label for="issue-title" class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">
+              标题 <span class="text-[#cf222e]" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="issue-title"
+              v-model="newTitle"
+              class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+              :class="{ '!border-[#cf222e]': issueTitleTouched && !newTitle.trim() }"
+              type="text"
+              placeholder="简要描述问题"
+              @blur="issueTitleTouched = true"
+            />
+            <span v-if="issueTitleTouched && !newTitle.trim()" class="text-xs text-[#cf222e]">标题不能为空</span>
           </div>
-          <SavedReplies @insert="onInsertReply" />
-          <div class="ui-field">
-            <label for="issue-body">描述</label>
-            <textarea id="issue-body" v-model="newBody" class="ui-input" rows="4" placeholder="补充细节、复现步骤（支持 Markdown）" />
-          </div>
-          <p v-if="createError" class="ui-alert ui-alert-error">{{ createError }}</p>
-          <button class="ui-btn ui-btn-primary" type="submit" :disabled="creating">
-            <span v-if="creating" class="ui-spinner" aria-hidden="true" />
-            {{ creating ? '提交中…' : '创建工单' }}
-          </button>
-        </form>
-      </details>
 
-      <div v-if="issuesLoading" class="list-skeleton">
-        <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
+          <div v-if="issueTemplates.length" class="flex flex-col gap-1.5">
+            <label for="issue-template" class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">模板</label>
+            <select
+              id="issue-template"
+              v-model="selectedTemplate"
+              class="h-9 rounded-md border border-[#d0d7de] bg-white px-2 text-sm text-[#1f2328] dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#e6edf3]"
+              @change="onTemplateChange"
+            >
+              <option value="">选择模板（可选）</option>
+              <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <label for="issue-body" class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">描述</label>
+              <SavedReplies @insert="onInsertReply" />
+            </div>
+            <textarea
+              id="issue-body"
+              v-model="newBody"
+              class="rounded-md border border-[#d0d7de] bg-white px-3 py-2 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+              rows="6"
+              placeholder="补充细节、复现步骤（支持 Markdown）"
+            />
+            <span class="text-xs text-[#656d76]">支持 Markdown、代码块与任务列表</span>
+          </div>
+
+          <p v-if="createError" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">
+            {{ createError }}
+          </p>
+
+          <div class="flex gap-2">
+            <button
+              class="inline-flex h-8 items-center gap-2 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50"
+              type="submit"
+              :disabled="creating"
+            >
+              <span v-if="creating" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+              {{ creating ? '提交中…' : '创建工单' }}
+            </button>
+            <button
+              class="h-8 rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+              type="button"
+              @click="issueFormOpen = false"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div v-if="issuesLoading" class="flex flex-col gap-2">
+        <div v-for="i in 4" :key="i" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <SkeletonBlock :lines="2" />
+        </div>
       </div>
-      <p v-else-if="issuesError" class="ui-alert ui-alert-error">{{ issuesError }}</p>
+      <p v-else-if="issuesError" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ issuesError }}</p>
       <EmptyState
         v-else-if="!filteredIssues.length"
         icon="◎"
@@ -1007,18 +1090,32 @@ onUnmounted(() => {
         :description="issues.length ? '切换上方筛选条件查看其它状态的工单。' : '工单用于记录缺陷、功能建议与讨论。'"
         action-label="创建第一个工单"
         :show-action="auth.isLoggedIn && !issues.length"
-        @action="newTitle = ''"
+        @action="issueFormOpen = true"
       />
-      <ul v-else class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+      <ul v-else class="divide-y divide-[#d0d7de] overflow-hidden rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li v-for="i in filteredIssues" :key="i.ID" class="flex items-center gap-3 px-4 py-3 text-sm">
-          <span class="state-dot" :class="i.State === 'open' ? 'open' : 'closed'" :title="i.State === 'open' ? '开启' : '已关闭'" />
-          <div class="item-main">
-            <RouterLink class="truncate font-semibold text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]" :to="`/${owner}/${name}?tab=工单`">#{{ i.Number }} {{ i.Title }}</RouterLink>
-            <span class="text-xs text-[#656d76]">
+          <span
+            class="h-2.5 w-2.5 shrink-0 rounded-full"
+            :class="i.State === 'open' ? 'bg-[#10b981]' : 'bg-[#ef4444]'"
+            :title="i.State === 'open' ? '开启' : '已关闭'"
+          />
+          <div class="min-w-0 flex-1">
+            <RouterLink
+              class="block truncate font-semibold text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]"
+              :to="`/${owner}/${name}?tab=工单`"
+            >
+              #{{ i.Number }} {{ i.Title }}
+            </RouterLink>
+            <span class="block truncate text-xs text-[#656d76]">
               <template v-if="i.AuthorName">{{ i.AuthorName }} 创建于 </template>{{ relTime(i.CreatedAt) }}
             </span>
           </div>
-          <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="i.State === 'open' ? 'bg-[#10b981]/15 text-[#10b981]' : 'bg-[#ef4444]/15 text-[#ef4444]'">{{ i.State === 'open' ? '开启' : '已关闭' }}</span>
+          <span
+            class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+            :class="i.State === 'open' ? 'bg-[#10b981]/15 text-[#10b981]' : 'bg-[#ef4444]/15 text-[#ef4444]'"
+          >
+            {{ i.State === 'open' ? '开启' : '已关闭' }}
+          </span>
         </li>
       </ul>
     </div>

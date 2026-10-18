@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { errMessage } from '../utils/error'
-import TopNav from '../components/layout/TopNav.vue'
-import Sidebar from '../components/layout/Sidebar.vue'
+import AppLayout from '../components/layout/AppLayout.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 
@@ -919,18 +918,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="settings-page">
-    <TopNav variant="app" />
-    <div class="body">
-      <Sidebar />
-      <main class="settings">
-        <h2>用户设置</h2>
-        <nav class="tabs" role="tablist">
+  <AppLayout>
+    <div class="mx-auto w-full max-w-[960px]">
+        <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">用户设置</h2>
+        <nav class="mb-4 flex flex-wrap gap-1 border-b border-[#d0d7de] dark:border-[#30363d]" role="tablist">
           <button
             v-for="t in tabs"
             :key="t.key"
-            class="tab"
-            :class="{ active: active === t.key }"
+            class="h-10 border-b-2 px-3 text-sm"
+            :class="active === t.key
+              ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
+              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
             type="button"
             role="tab"
             :aria-selected="active === t.key"
@@ -941,8 +939,8 @@ onMounted(async () => {
         </nav>
 
         <!-- 个人资料 -->
-        <section v-if="active === 'profile'" class="card">
-          <p v-if="profileError" class="error">{{ profileError }}</p>
+        <section v-if="active === 'profile'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <p v-if="profileError" class="text-sm text-[#cf222e]">{{ profileError }}</p>
           <p v-if="profileOk" class="ok">{{ profileOk }}</p>
           <label>用户名<input :value="auth.user?.username" disabled /></label>
           <label>邮箱<input :value="auth.user?.email" disabled /></label>
@@ -950,27 +948,27 @@ onMounted(async () => {
           <label>简介<textarea v-model="profile.bio" rows="3" /></label>
           <label>网站<input v-model="profile.website" type="url" placeholder="https://" /></label>
           <label>位置<input v-model="profile.location" /></label>
-          <button class="primary" :disabled="profileSaving" @click="saveProfile">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="profileSaving" @click="saveProfile">
             {{ profileSaving ? '保存中…' : '保存' }}
           </button>
         </section>
 
         <!-- 密码 -->
-        <section v-else-if="active === 'password'" class="card">
-          <p v-if="pwError" class="error">{{ pwError }}</p>
+        <section v-else-if="active === 'password'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <p v-if="pwError" class="text-sm text-[#cf222e]">{{ pwError }}</p>
           <p v-if="pwOk" class="ok">{{ pwOk }}</p>
           <label>当前密码<input v-model="pw.current_password" type="password" autocomplete="current-password" /></label>
           <label>新密码<input v-model="pw.new_password" type="password" autocomplete="new-password" /></label>
           <label>两步验证码（如已启用）<input v-model="pw.totp_code" inputmode="numeric" /></label>
-          <button class="primary" :disabled="pwSaving" @click="changePassword">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="pwSaving" @click="changePassword">
             {{ pwSaving ? '提交中…' : '修改密码' }}
           </button>
         </section>
 
         <!-- SSH / GPG 密钥 -->
-        <section v-else-if="active === 'keys'" class="card">
+        <section v-else-if="active === 'keys'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>SSH 密钥</h3>
-          <p v-if="keysError" class="error">{{ keysError }}</p>
+          <p v-if="keysError" class="text-sm text-[#cf222e]">{{ keysError }}</p>
           <p v-if="keysLoading" class="muted">加载中…</p>
           <template v-else-if="keys.length">
             <table class="key-table">
@@ -998,8 +996,8 @@ onMounted(async () => {
                     </span>
                   </td>
                   <td class="center nowrap">
-                    <button class="ghost" type="button" @click="openEdit(k)">编辑</button>
-                    <button class="danger" type="button" @click="deleteKey(keyId(k))">删除</button>
+                    <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="openEdit(k)">编辑</button>
+                    <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" type="button" @click="deleteKey(keyId(k))">删除</button>
                   </td>
                 </tr>
               </tbody>
@@ -1018,14 +1016,14 @@ onMounted(async () => {
             <input v-model="newKey.can_sign" type="checkbox" />
             允许用于提交签名
           </label>
-          <button class="primary" :disabled="keyAdding" @click="addKey">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="keyAdding" @click="addKey">
             {{ keyAdding ? '添加中…' : '添加密钥' }}
           </button>
 
           <hr class="divider" />
 
           <h3>GPG 密钥</h3>
-          <p v-if="gpgError" class="error">{{ gpgError }}</p>
+          <p v-if="gpgError" class="text-sm text-[#cf222e]">{{ gpgError }}</p>
           <p v-if="gpgLoading" class="muted">加载中…</p>
           <template v-else-if="gpgKeys.length">
             <table class="key-table">
@@ -1043,7 +1041,7 @@ onMounted(async () => {
                   <td><code class="fingerprint">{{ gpgFingerprint(g) }}</code></td>
                   <td class="muted nowrap">{{ fmtTime(g.CreatedAt ?? g.created_at) }}</td>
                   <td class="center">
-                    <button class="danger" type="button" @click="deleteGpg(gpgId(g))">删除</button>
+                    <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" type="button" @click="deleteGpg(gpgId(g))">删除</button>
                   </td>
                 </tr>
               </tbody>
@@ -1060,14 +1058,14 @@ onMounted(async () => {
               placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
             />
           </label>
-          <button class="primary" :disabled="gpgAdding" @click="addGpg">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="gpgAdding" @click="addGpg">
             {{ gpgAdding ? '添加中…' : '添加 GPG 密钥' }}
           </button>
         </section>
 
         <!-- 访问令牌 -->
-        <section v-else-if="active === 'tokens'" class="card">
-          <p v-if="tokensError" class="error">{{ tokensError }}</p>
+        <section v-else-if="active === 'tokens'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <p v-if="tokensError" class="text-sm text-[#cf222e]">{{ tokensError }}</p>
           <div v-if="createdToken" class="token-callout">
             <p class="token-warn">请立即复制并妥善保存，令牌仅显示这一次。</p>
             <div class="token-row">
@@ -1085,7 +1083,7 @@ onMounted(async () => {
                   <strong>{{ tokenName(t) }}</strong>
                   <span class="muted">{{ tokenKind(t) }} · {{ tokenCreatedAt(t) }}</span>
                 </div>
-                <button class="danger" @click="revokeToken(tokenId(t))">吊销</button>
+                <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" @click="revokeToken(tokenId(t))">吊销</button>
               </li>
             </ul>
           </template>
@@ -1098,13 +1096,13 @@ onMounted(async () => {
               <option value="fine_grained">细粒度令牌</option>
             </select>
           </label>
-          <button class="primary" :disabled="tokenCreating" @click="createToken">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="tokenCreating" @click="createToken">
             {{ tokenCreating ? '生成中…' : '生成令牌' }}
           </button>
         </section>
 
         <!-- OAuth 应用 -->
-        <section v-else-if="active === 'oauth'" class="card">
+        <section v-else-if="active === 'oauth'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <div v-if="createdSecret" class="token-callout">
             <p class="token-warn">
               应用「{{ createdAppName }}」已创建。Client Secret 仅显示这一次，请立即复制保存。
@@ -1117,7 +1115,7 @@ onMounted(async () => {
           </div>
 
           <h3>我的应用</h3>
-          <p v-if="oauthAppsError" class="error">{{ oauthAppsError }}</p>
+          <p v-if="oauthAppsError" class="text-sm text-[#cf222e]">{{ oauthAppsError }}</p>
           <p v-if="oauthAppsLoading" class="muted">加载中…</p>
           <template v-else-if="oauthApps.length">
             <table class="key-table">
@@ -1144,7 +1142,7 @@ onMounted(async () => {
                     </div>
                   </td>
                   <td class="center nowrap">
-                    <button class="danger" type="button" @click="deleteApp(a.id)">删除</button>
+                    <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" type="button" @click="deleteApp(a.id)">删除</button>
                   </td>
                 </tr>
               </tbody>
@@ -1169,14 +1167,14 @@ onMounted(async () => {
               {{ s.label }}
             </label>
           </div>
-          <button class="primary" :disabled="appCreating" @click="createApp">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="appCreating" @click="createApp">
             {{ appCreating ? '创建中…' : '创建应用' }}
           </button>
 
           <hr class="divider" />
 
           <h3>已授权应用</h3>
-          <p v-if="oauthAuthsError" class="error">{{ oauthAuthsError }}</p>
+          <p v-if="oauthAuthsError" class="text-sm text-[#cf222e]">{{ oauthAuthsError }}</p>
           <p v-if="oauthAuthsLoading" class="muted">加载中…</p>
           <template v-else-if="oauthAuths.length">
             <table class="key-table">
@@ -1200,7 +1198,7 @@ onMounted(async () => {
                   <td class="muted nowrap">{{ fmtTime(g.created_at) }}</td>
                   <td class="center nowrap">
                     <button
-                      class="danger"
+                      class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50"
                       type="button"
                       :disabled="revokingAuth === g.app_id"
                       @click="revokeAuthorization(g.app_id)"
@@ -1216,8 +1214,8 @@ onMounted(async () => {
         </section>
 
         <!-- 两步验证 -->
-        <section v-else-if="active === 'totp'" class="card">
-          <p v-if="totpError" class="error">{{ totpError }}</p>
+        <section v-else-if="active === 'totp'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <p v-if="totpError" class="text-sm text-[#cf222e]">{{ totpError }}</p>
           <p v-if="totpOk" class="ok">{{ totpOk }}</p>
           <p>
             当前状态：
@@ -1225,14 +1223,14 @@ onMounted(async () => {
           </p>
 
           <template v-if="!auth.user?.totp_enabled">
-            <button class="primary" :disabled="totpBusy" @click="totpBegin">
+            <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="totpBusy" @click="totpBegin">
               {{ totpBusy ? '请稍候…' : '开始设置' }}
             </button>
             <template v-if="totpSecret">
               <label>密钥<code class="secret">{{ totpSecret }}</code></label>
               <label>otpauth URL<input :value="totpURL" disabled /></label>
               <label>输入认证器中的 6 位验证码<input v-model="totpCode" inputmode="numeric" /></label>
-              <button class="primary" :disabled="totpBusy || !totpCode" @click="totpEnable">
+              <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="totpBusy || !totpCode" @click="totpEnable">
                 {{ totpBusy ? '验证中…' : '启用两步验证' }}
               </button>
             </template>
@@ -1241,7 +1239,7 @@ onMounted(async () => {
           <template v-else>
             <label>验证码<input v-model="totpCode" inputmode="numeric" /></label>
             <label>当前密码<input v-model="totpPassword" type="password" /></label>
-            <button class="danger" :disabled="totpBusy" @click="totpDisable">
+            <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" :disabled="totpBusy" @click="totpDisable">
               {{ totpBusy ? '关闭中…' : '关闭两步验证' }}
             </button>
           </template>
@@ -1255,10 +1253,10 @@ onMounted(async () => {
         </section>
 
         <!-- 已删除的仓库 -->
-        <section v-else-if="active === 'deleted'" class="card">
+        <section v-else-if="active === 'deleted'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>已删除的仓库</h3>
           <span class="deleted-hint">已删除的仓库处于「已删除」状态，可在此恢复。</span>
-          <p v-if="deletedError" class="error">{{ deletedError }}</p>
+          <p v-if="deletedError" class="text-sm text-[#cf222e]">{{ deletedError }}</p>
           <p v-if="deletedOk" class="ok">{{ deletedOk }}</p>
           <p v-if="deletedLoading" class="muted">加载中…</p>
           <template v-else-if="deletedRepos.length">
@@ -1277,7 +1275,7 @@ onMounted(async () => {
                   <td class="center nowrap">
                     <span class="badge badge-deleted">已删除</span>
                     <button
-                      class="ghost"
+                      class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
                       type="button"
                       :disabled="restoringId === r.id"
                       @click="restoreRepo(r)"
@@ -1293,7 +1291,7 @@ onMounted(async () => {
         </section>
 
         <!-- 安全活动 -->
-        <section v-else-if="active === 'general'" class="card">
+        <section v-else-if="active === 'general'" class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>通用</h3>
           <label class="field">
             语言 / Language
@@ -1315,15 +1313,15 @@ onMounted(async () => {
             </select>
           </label>
           <p v-if="notifLoading" class="muted">加载中…</p>
-          <p v-if="notifError" class="error">{{ notifError }}</p>
+          <p v-if="notifError" class="text-sm text-[#cf222e]">{{ notifError }}</p>
           <p v-if="notifOk" class="ok">{{ notifOk }}</p>
-          <button class="primary" :disabled="notifSaving || notifLoading" @click="saveNotificationFrequency">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="notifSaving || notifLoading" @click="saveNotificationFrequency">
             {{ notifSaving ? '保存中…' : '保存通知频率' }}
           </button>
         </section>
-        <section v-else class="card">
+        <section v-else class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>我的活动</h3>
-          <p v-if="logsError" class="error">{{ logsError }}</p>
+          <p v-if="logsError" class="text-sm text-[#cf222e]">{{ logsError }}</p>
           <div class="activity-toolbar">
             <label class="inline">
               结果
@@ -1366,11 +1364,11 @@ onMounted(async () => {
           </template>
           <p v-else class="muted">暂无活动记录</p>
           <div class="pager">
-            <button class="ghost" type="button" :disabled="logsPage === 0 || logsLoading" @click="activityPrev">
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="logsPage === 0 || logsLoading" @click="activityPrev">
               上一页
             </button>
             <span class="muted">第 {{ logsPage + 1 }} 页</span>
-            <button class="ghost" type="button" :disabled="!logsHasNext || logsLoading" @click="activityNext">
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="!logsHasNext || logsLoading" @click="activityNext">
               下一页
             </button>
           </div>
@@ -1378,7 +1376,7 @@ onMounted(async () => {
           <hr class="divider" />
 
           <h3>登录设备</h3>
-          <p v-if="sessionsError" class="error">{{ sessionsError }}</p>
+          <p v-if="sessionsError" class="text-sm text-[#cf222e]">{{ sessionsError }}</p>
           <p v-if="sessionsOk" class="ok">{{ sessionsOk }}</p>
           <p v-if="sessionsLoading" class="muted">加载中…</p>
           <template v-else-if="sessions.length">
@@ -1404,7 +1402,7 @@ onMounted(async () => {
                     <span v-if="s.current" class="badge badge-success">当前设备</span>
                     <button
                       v-else
-                      class="danger"
+                      class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50"
                       type="button"
                       :disabled="revoking === s.id"
                       @click="revokeSession(s)"
@@ -1416,7 +1414,7 @@ onMounted(async () => {
               </tbody>
             </table>
             <button
-              class="danger"
+              class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50"
               type="button"
               :disabled="revokingAll"
               @click="revokeOthers"
@@ -1426,14 +1424,13 @@ onMounted(async () => {
           </template>
           <p v-else class="muted">暂无会话</p>
         </section>
-      </main>
     </div>
 
     <div v-if="editOpen" class="modal-backdrop" @click.self="closeEdit">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="key-edit-title">
         <h3 id="key-edit-title">编辑 SSH 密钥用途</h3>
         <p class="muted">{{ editTarget ? keyTitle(editTarget) : '' }}</p>
-        <p v-if="editError" class="error">{{ editError }}</p>
+        <p v-if="editError" class="text-sm text-[#cf222e]">{{ editError }}</p>
         <label class="check">
           <input v-model="editForm.can_authenticate" type="checkbox" />
           允许用于认证（Git clone/push/pull）
@@ -1443,384 +1440,13 @@ onMounted(async () => {
           允许用于提交签名
         </label>
         <div class="modal-actions">
-          <button class="ghost" type="button" :disabled="editBusy" @click="closeEdit">取消</button>
-          <button class="primary" type="button" :disabled="editBusy" @click="saveEdit">
+          <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="editBusy" @click="closeEdit">取消</button>
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="editBusy" @click="saveEdit">
             {{ editBusy ? '保存中…' : '保存' }}
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
+  
 </template>
-
-<style scoped>
-.body {
-  display: flex;
-  min-height: calc(100vh - 57px);
-}
-.settings {
-  flex: 1;
-  max-width: 720px;
-  padding: 1.5rem;
-  min-width: 0;
-}
-.settings h2 {
-  margin-top: 0;
-}
-.tabs {
-  display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-}
-.tab {
-  padding: 0.5rem 0.9rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.95rem;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-.tab:hover {
-  color: var(--color-fg);
-}
-.tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 600;
-}
-.card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  background: var(--card);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.card h3 {
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
-}
-.card h3:first-child {
-  margin-top: 0;
-}
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-}
-input,
-textarea,
-select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: inherit;
-}
-button.primary {
-  align-self: flex-start;
-  padding: 0.45rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: #fff;
-  font-size: 0.9rem;
-}
-button.primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-button.danger {
-  padding: 0.3rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid #d1242f;
-  background: transparent;
-  color: #d1242f;
-  font-size: 0.85rem;
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-}
-.li-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-.fingerprint {
-  font-size: 0.78rem;
-  color: var(--muted);
-  word-break: break-all;
-}
-.token-callout {
-  border: 1px solid var(--accent);
-  background: var(--accent-soft);
-  border-radius: 8px;
-  padding: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.token-warn {
-  margin: 0;
-  color: #7a4b00;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-.token-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.token-value {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--color-fg);
-  word-break: break-all;
-}
-.link {
-  align-self: flex-start;
-  background: none;
-  border: none;
-  color: var(--primary);
-  padding: 0;
-  font-size: 0.85rem;
-}
-.recovery {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.35rem;
-}
-.recovery code {
-  display: block;
-  padding: 0.3rem;
-  background: var(--card);
-  border-radius: 4px;
-  text-align: center;
-}
-.secret {
-  padding: 0.4rem 0.6rem;
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  word-break: break-all;
-}
-.error {
-  margin: 0;
-  color: #d1242f;
-  background: rgba(209, 36, 47, 0.08);
-  border: 1px solid rgba(209, 36, 47, 0.4);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
-}
-.ok {
-  margin: 0;
-  color: #1a7f37;
-  font-size: 0.9rem;
-}
-.muted {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.key-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.key-table th,
-.key-table td {
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0.6rem;
-  text-align: left;
-  vertical-align: middle;
-}
-.key-table th {
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.82rem;
-}
-.key-table .center {
-  text-align: center;
-}
-.nowrap {
-  white-space: nowrap;
-}
-.badge {
-  display: inline-block;
-  min-width: 1.4rem;
-  padding: 0.1rem 0.35rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-.badge-on {
-  background: var(--success-soft);
-  border: 1px solid var(--success);
-}
-.badge-off {
-  background: transparent;
-  border: 1px solid var(--border);
-  opacity: 0.7;
-}
-label.check {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-label.check input {
-  width: auto;
-  margin: 0;
-}
-.ghost {
-  padding: 0.3rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--color-fg);
-  font-size: 0.85rem;
-  margin-right: 0.4rem;
-}
-.ghost:hover:not(:disabled) {
-  background: var(--hover-bg);
-}
-.divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 0.75rem 0 0.25rem;
-  width: 100%;
-}
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  z-index: 50;
-}
-.modal {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  width: 100%;
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.modal h3 {
-  margin: 0;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-.modal-actions .ghost {
-  margin-right: 0;
-}
-.activity-toolbar {
-  display: flex;
-  justify-content: flex-end;
-}
-label.inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-.badge-success {
-  background: var(--success-soft);
-  border: 1px solid var(--success);
-  color: #1a7f37;
-}
-.badge-failure {
-  background: rgba(209, 36, 47, 0.12);
-  border: 1px solid #d1242f;
-  color: #d1242f;
-}
-.badge-denied {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: #7a4b00;
-}
-.badge-neutral {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.badge-deleted {
-  background: rgba(209, 36, 47, 0.12);
-  border: 1px solid rgba(209, 36, 47, 0.5);
-  color: #d1242f;
-  margin-right: 0.4rem;
-}
-.deleted-hint {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.scope-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.scope-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.35rem;
-}
-.scope-chip {
-  display: inline-block;
-  margin: 0 0.25rem 0.25rem 0;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--hover-bg, transparent);
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-.pager {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  justify-content: center;
-}
-@media (max-width: 768px) {
-  .body {
-    flex-direction: column;
-  }
-}
-</style>

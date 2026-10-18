@@ -53,6 +53,17 @@
 - 新增 `ErrorAlert.vue`：接口错误只在主内容区顶部渲染，绝不替换 Layout。
 - 待迁移（下一版本）：Explore、用户设置、管理后台、个人主页、组织设置（约 1566 行 scoped CSS）。
 
+## UI 重构（v0.11.2）
+
+- 按 GitHub Primer 结构（对照根目录 `github/` 抓取源码，该目录已 gitignore、不提交）重写：
+  顶栏 h-16、侧栏 294px、主区 max-w-1280、Tab h-10 / 2px 橙色下划线、卡片 rounded-md + 1px 边框、无阴影。
+- Dashboard 改为 GitHub 的 `col-md-4 col-lg-3` 式比例（左侧内容 3/4，右栏 1/4）。
+- 仓库页新增：Watch/Fork/Star 分体按钮、文件表头（提交人+message+hash+相对时间）、
+  文件类型彩色图标、README 独立卡片、About 侧栏、绿色「代码」按钮。
+- 新建工单表单：分组、必填红星、blur 校验、提交 loading、错误内联提示。
+- 个人主页 / 设置 / 管理后台 / 组织设置 / 探索 / 搜索：迁移 Tailwind，移除全部 scoped CSS。
+- CSS 总量：101.4 KB → 55.0 KB。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**

@@ -85,7 +85,7 @@ const unread = computed(() => notifications.unread)
 
 <template>
   <header
-    class="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-[#d0d7de] bg-white/90 px-4 backdrop-blur dark:border-[#30363d] dark:bg-[#161b22]/90 md:px-6"
+    class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-3 border-b border-[#d0d7de] bg-white px-4 dark:border-[#30363d] dark:bg-[#161b22] md:px-6"
   >
     <div class="flex min-w-0 items-center gap-3">
       <button

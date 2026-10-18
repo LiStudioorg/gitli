@@ -91,19 +91,25 @@ watch(
 </script>
 
 <template>
-  <div class="search-page">
+  <div class="min-h-screen bg-[#f6f8fa] dark:bg-[#0d1117]">
     <TopNav variant="app" />
-    <main class="content">
-      <header class="head">
-        <h2>搜索</h2>
-        <form class="search-box" @submit.prevent="submit">
-          <input v-model="input" type="search" placeholder="搜索仓库、Issue、用户..." aria-label="搜索" />
-          <button class="btn primary" type="submit">搜索</button>
+    <main class="mx-auto w-full max-w-[1000px] px-4 py-6 md:px-6">
+      <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">搜索</h2>
+        <form class="flex gap-2" @submit.prevent="submit">
+          <input
+            v-model="input"
+            type="search"
+            placeholder="搜索仓库、Issue、用户..."
+            aria-label="搜索"
+            class="h-8 w-72 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+          />
+          <button class="h-8 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b]" type="submit">搜索</button>
         </form>
       </header>
 
-      <div class="syntax-hint">
-        <span class="hint-label">语法提示</span>
+      <div class="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-[#d0d7de] bg-white px-3 py-2 text-xs text-[#656d76] dark:border-[#30363d] dark:bg-[#161b22]">
+        <span class="font-semibold">语法提示</span>
         <code>language:go</code>
         <code>is:open</code>
         <code>author:alice</code>
@@ -111,10 +117,10 @@ watch(
         <code>stars:&gt;100</code>
       </div>
 
-      <p v-if="error" class="error">{{ error }}</p>
-      <p v-else-if="loading" class="state">搜索中...</p>
-      <p v-else-if="!query" class="state">输入关键词开始搜索</p>
-      <p v-else-if="!hasResults" class="state">没有找到与「{{ query }}」相关的结果</p>
+      <p v-if="error" class="mb-3 rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
+      <p v-else-if="loading" class="py-10 text-center text-sm text-[#656d76]">搜索中…</p>
+      <p v-else-if="!query" class="py-10 text-center text-sm text-[#656d76]">输入关键词开始搜索</p>
+      <p v-else-if="!hasResults" class="py-10 text-center text-sm text-[#656d76]">没有找到与「{{ query }}」相关的结果</p>
 
       <template v-else>
         <section v-if="repos.length" class="group">
@@ -161,170 +167,3 @@ watch(
     </main>
   </div>
 </template>
-
-<style scoped>
-.search-page {
-  min-height: 100vh;
-}
-.content {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.head h2 {
-  margin: 0;
-}
-.search-box {
-  display: flex;
-  gap: 0.5rem;
-  flex: 1;
-  max-width: 460px;
-}
-.search-box input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--color-bg);
-  color: var(--color-fg);
-}
-.btn {
-  padding: 0.5rem 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--color-fg);
-  background: transparent;
-  cursor: pointer;
-}
-.btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.btn.primary:hover {
-  background: var(--primary-hover);
-}
-.syntax-hint {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.syntax-hint .hint-label {
-  font-weight: 600;
-}
-.syntax-hint code {
-  padding: 0.15rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--card);
-  color: var(--color-fg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.group {
-  margin-bottom: 2rem;
-}
-.group h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-}
-.count {
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--border);
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-.result-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.result {
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-.result .title {
-  color: var(--primary);
-  font-weight: 600;
-}
-.owner,
-.sep {
-  color: var(--muted);
-}
-.desc {
-  width: 100%;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.5;
-}
-.meta {
-  display: flex;
-  gap: 0.9rem;
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-.stars {
-  color: var(--accent);
-}
-.kind {
-  padding: 0.1rem 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-.title-text {
-  flex: 1;
-}
-.user-link {
-  color: var(--primary);
-  font-weight: 600;
-}
-.full-name {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.state-badge {
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-.state {
-  color: var(--muted);
-  padding: 1.5rem 0;
-}
-.error {
-  color: var(--accent);
-  font-size: 0.9rem;
-}
-</style>

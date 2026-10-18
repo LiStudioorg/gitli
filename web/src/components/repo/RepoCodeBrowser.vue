@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import api from '../../api/client'
 import MarkdownView from '../common/MarkdownView.vue'
 import SkeletonBlock from '../common/SkeletonBlock.vue'
+import FileIcon from '../icons/FileIcon.vue'
 
 const props = defineProps<{
   owner: string
@@ -22,6 +23,7 @@ interface TreeEntry {
   name: string
   size?: number
   hash: string
+  last_commit?: Commit
 }
 
 interface Commit {
@@ -66,13 +68,6 @@ const error = ref('')
 
 const currentPath = computed(() => pathStack.value.join('/'))
 const readmeName = computed(() => readme.value?.name ?? '')
-
-function sizeLabel(n?: number): string {
-  if (!n) return '—'
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / 1024 / 1024).toFixed(1)} MB`
-}
 
 function dateLabel(raw: string): string {
   const d = new Date(raw)
@@ -148,6 +143,24 @@ function changeBranch(e: Event) {
   emit('update:branch', value)
 }
 
+function joinPath(name: string): string {
+  return [currentPath.value, name].filter(Boolean).join('/')
+}
+
+function relTime(raw: string): string {
+  const d = new Date(raw)
+  if (Number.isNaN(d.getTime())) return ''
+  const diff = Math.max(0, Date.now() - d.getTime())
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return '刚刚'
+  if (min < 60) return `${min} 分钟前`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} 小时前`
+  const days = Math.floor(h / 24)
+  if (days < 30) return `${days} 天前`
+  return d.toLocaleDateString()
+}
+
 function copyPath() {
   const full = [props.branch, currentPath.value].filter(Boolean).join('/')
   void navigator.clipboard?.writeText(full)
@@ -167,284 +180,156 @@ onMounted(() => void loadTree())
 </script>
 
 <template>
-  <section class="browser">
-    <div class="toolbar">
-      <select class="branch-select" :value="branch" aria-label="选择分支" title="选择分支" @change="changeBranch">
+  <section class="flex flex-col gap-4">
+    <!-- 工具栏：分支 + 面包屑 -->
+    <div class="flex flex-wrap items-center gap-2">
+      <select
+        class="h-8 rounded-md border border-[#d0d7de] bg-white px-2 text-sm text-[#1f2328] outline-none focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#e6edf3]"
+        :value="branch"
+        aria-label="选择分支"
+        title="选择分支"
+        @change="changeBranch"
+      >
         <option v-for="b in branches.length ? branches : [branch]" :key="b" :value="b">{{ b }}</option>
       </select>
-      <nav class="breadcrumb">
-        <button type="button" class="crumb" @click="jumpTo(0)">{{ repo }}</button>
+      <nav class="flex min-w-0 flex-wrap items-center gap-0.5 text-sm" aria-label="路径">
+        <button
+          type="button"
+          class="truncate rounded px-1 font-semibold text-[#ea580c] hover:underline"
+          @click="jumpTo(0)"
+        >
+          {{ repo }}
+        </button>
         <template v-for="(p, i) in pathStack" :key="p + i">
-          <span class="sep">/</span>
-          <button type="button" class="crumb" @click="jumpTo(i + 1)">{{ p }}</button>
+          <span class="text-[#656d76]">/</span>
+          <button type="button" class="truncate rounded px-1 text-[#ea580c] hover:underline" @click="jumpTo(i + 1)">
+            {{ p }}
+          </button>
         </template>
       </nav>
-      <button type="button" class="chip" aria-label="复制当前路径" title="复制当前路径" @click="copyPath">复制路径</button>
+      <button
+        type="button"
+        class="ml-auto h-8 rounded-md border border-[#d0d7de] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+        aria-label="复制当前路径"
+        title="复制当前路径"
+        @click="copyPath"
+      >
+        复制路径
+      </button>
     </div>
 
-    <p v-if="error && !isEmptyRepo" class="error">{{ error }}</p>
-    <section v-else-if="isEmptyRepo" class="empty-repo">
-      <div class="empty-icon" aria-hidden="true">📦</div>
-      <h3>这是一个空仓库</h3>
-      <p class="muted">还没有任何提交。在本地推送第一个提交后，这里会显示文件列表与 README。</p>
-      <pre class="quickstart"><code>{{ quickstart }}</code></pre>
-      <button class="ui-btn" type="button" @click="copyQuickstart">
+    <p
+      v-if="error && !isEmptyRepo"
+      class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#1f2328]"
+    >
+      {{ error }}
+    </p>
+
+    <!-- 空仓库引导 -->
+    <section
+      v-else-if="isEmptyRepo"
+      class="flex flex-col items-center gap-2 rounded-md border border-dashed border-[#d0d7de] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
+    >
+      <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#ea580c]/10 text-xl" aria-hidden="true">📦</div>
+      <h3 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">这是一个空仓库</h3>
+      <p class="max-w-md text-sm text-[#656d76]">还没有任何提交。在本地推送第一个提交后，这里会显示文件列表与 README。</p>
+      <pre class="mt-2 w-full max-w-[620px] overflow-x-auto rounded-md border border-[#d0d7de] bg-[#f6f8fa] p-3 text-left font-mono text-xs leading-relaxed text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"><code>{{ quickstart }}</code></pre>
+      <button
+        type="button"
+        class="mt-1 h-8 rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+        @click="copyQuickstart"
+      >
         {{ copiedQuickstart ? '已复制' : '复制命令' }}
       </button>
     </section>
 
-    <div v-else-if="loading" class="skeleton-list">
-      <SkeletonBlock v-for="i in 5" :key="i" :lines="1" height="1.4rem" />
+    <!-- 加载骨架 -->
+    <div v-else-if="loading" class="flex flex-col gap-2 rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+      <div v-for="i in 6" :key="i" class="border-b border-[#d0d7de] p-3 last:border-0 dark:border-[#30363d]">
+        <SkeletonBlock :lines="1" height="1.1rem" />
+      </div>
     </div>
 
     <template v-else>
-      <div v-if="latestCommit" class="commit-bar">
-        <span class="avatar">{{ latestCommit.author?.[0]?.toUpperCase() ?? '?' }}</span>
-        <div class="commit-main">
-          <p class="commit-subject">{{ latestCommit.subject }}</p>
-          <p class="muted small">
+      <!-- 最新提交条（表头） -->
+      <div
+        v-if="latestCommit"
+        class="flex items-center gap-3 rounded-t-md border border-b-0 border-[#d0d7de] bg-[#f6f8fa] px-3 py-2.5 dark:border-[#30363d] dark:bg-[#161b22]"
+      >
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-xs font-semibold text-white">
+          {{ latestCommit.author?.[0]?.toUpperCase() ?? '?' }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-[#1f2328] dark:text-[#e6edf3]">{{ latestCommit.subject }}</p>
+          <p class="truncate text-xs text-[#656d76]">
             {{ latestCommit.author }} · {{ dateLabel(latestCommit.date) }}
-            <code class="hash">{{ latestCommit.short }}</code>
+            <code class="rounded bg-[#d0d7de]/40 px-1 font-mono dark:bg-[#30363d]">{{ latestCommit.short }}</code>
           </p>
         </div>
-        <RouterLink class="chip" :to="`/${owner}/${repo}?tab=活动`">历史</RouterLink>
+        <RouterLink
+          class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[#2da44e] px-3 text-xs font-semibold text-white hover:bg-[#2c974b]"
+          :to="`/${owner}/${repo}?tab=活动`"
+        >
+          <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M5 5.782V2.5h-.25a.75.75 0 0 1 0-1.5h6.5a.75.75 0 0 1 0 1.5H11v3.282l3.666 5.76C15.216 12.188 14.703 13 13.826 13H2.174c-.877 0-1.39-.811-.84-1.458Z" />
+          </svg>
+          代码
+        </RouterLink>
       </div>
 
-      <ul class="file-list">
-        <li v-if="currentPath" class="file-row" @click="jumpTo(pathStack.length - 1)">
-          <span class="fi">↰</span>
-          <span class="fname">..</span>
+      <!-- 文件列表 -->
+      <ul class="overflow-hidden rounded-b-md border border-t-0 border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]">
+        <li
+          v-if="currentPath"
+          class="flex cursor-pointer items-center gap-3 border-b border-[#d0d7de] px-3 py-2 text-sm hover:bg-[#f6f8fa] dark:border-[#30363d] dark:hover:bg-[#21262d]"
+          @click="jumpTo(pathStack.length - 1)"
+        >
+          <FileIcon name=".." type="parent" />
+          <span class="truncate font-medium text-[#1f2328] dark:text-[#e6edf3]">..</span>
         </li>
         <li
           v-for="entry in entries"
           :key="entry.hash + entry.name"
-          class="file-row"
-          :class="{ dir: entry.type === 'tree' }"
+          class="flex items-center gap-3 border-b border-[#d0d7de] px-3 py-2 text-sm last:border-0 dark:border-[#30363d]"
+          :class="entry.type === 'tree' ? 'cursor-pointer hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]' : ''"
           @click="enter(entry)"
         >
-          <span class="fi">{{ entry.type === 'tree' ? '📁' : entry.type === 'commit' ? '🔗' : '📄' }}</span>
-          <span class="fname" :class="{ clickable: entry.type === 'tree' }">{{ entry.name }}</span>
-          <span class="size">{{ entry.type === 'tree' ? '—' : sizeLabel(entry.size) }}</span>
-          <span class="msg">{{ entry.type === 'tree' ? '' : entry.hash.slice(0, 7) }}</span>
+          <FileIcon :name="entry.name" :type="entry.type" />
+          <RouterLink
+            v-if="entry.type !== 'tree'"
+            class="min-w-0 flex-1 truncate text-[#1f2328] hover:text-[#ea580c] hover:underline dark:text-[#e6edf3]"
+            :to="`/${owner}/${repo}?tab=代码&path=${encodeURIComponent(joinPath(entry.name))}`"
+          >
+            {{ entry.name }}
+          </RouterLink>
+          <span v-else class="min-w-0 flex-1 truncate font-medium text-[#1f2328] dark:text-[#e6edf3]">
+            {{ entry.name }}
+          </span>
+          <span class="hidden min-w-0 max-w-[45%] flex-[2] truncate text-xs text-[#656d76] sm:block">
+            {{ entry.last_commit?.subject ?? '' }}
+          </span>
+          <span class="hidden shrink-0 text-xs text-[#656d76] md:block">
+            {{ entry.last_commit ? relTime(entry.last_commit.date) : '' }}
+          </span>
         </li>
       </ul>
-      <p v-if="!entries.length" class="muted empty">仓库为空，或该分支还没有提交。</p>
+      <p v-if="!entries.length" class="py-8 text-center text-sm text-[#656d76]">仓库为空，或该分支还没有提交。</p>
 
-      <section v-if="readme && !currentPath" class="readme">
-        <header class="readme-head">
-          <span>📖 {{ readmeName }}</span>
+      <!-- README 独立卡片 -->
+      <section
+        v-if="readme && !currentPath"
+        class="mt-2 overflow-hidden rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]"
+      >
+        <header class="flex items-center gap-2 border-b border-[#d0d7de] px-4 py-2.5 dark:border-[#30363d]">
+          <svg class="h-4 w-4 text-[#656d76]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Z" />
+          </svg>
+          <span class="truncate text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ readmeName }}</span>
         </header>
-        <MarkdownView :source="readme.content" />
+        <div class="px-6 py-5">
+          <MarkdownView :source="readme.content" />
+        </div>
       </section>
     </template>
   </section>
 </template>
-
-<style scoped>
-.browser {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-.branch-select {
-  padding: 0.35rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--fg);
-}
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  flex-wrap: wrap;
-}
-.crumb {
-  border: none;
-  background: transparent;
-  color: var(--primary);
-  cursor: pointer;
-  font-size: 0.88rem;
-  padding: 0.1rem 0.2rem;
-}
-.sep {
-  color: var(--muted);
-}
-.chip {
-  padding: 0.3rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--fg);
-  font-size: 0.82rem;
-  cursor: pointer;
-  text-decoration: none;
-}
-.commit-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-}
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.8rem;
-}
-.commit-main {
-  flex: 1;
-  min-width: 0;
-}
-.commit-subject {
-  margin: 0;
-  font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.muted {
-  color: var(--muted);
-}
-.small {
-  font-size: 0.78rem;
-  margin: 0;
-}
-.hash {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: color-mix(in srgb, var(--border) 40%, transparent);
-  padding: 0 0.3rem;
-  border-radius: 4px;
-}
-.file-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.file-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.8rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.88rem;
-}
-.file-row:last-child {
-  border-bottom: none;
-}
-.file-row.dir {
-  cursor: pointer;
-}
-.file-row:hover {
-  background: color-mix(in srgb, var(--border) 25%, transparent);
-}
-.fi {
-  width: 1.1rem;
-  text-align: center;
-}
-.fname {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fname.clickable {
-  color: var(--primary);
-}
-.size,
-.msg {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.empty {
-  margin: 0.25rem 0;
-  font-size: 0.85rem;
-}
-.readme {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  overflow: hidden;
-}
-.readme-head {
-  padding: 0.55rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-.readme :deep(.markdown-body) {
-  padding: 1rem 1.1rem;
-}
-.empty-repo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-  padding: 2.5rem 1.5rem;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--card) 70%, transparent);
-}
-.empty-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  background: var(--color-primary-bg);
-}
-.empty-repo h3 {
-  margin: 0.2rem 0 0;
-  font-size: 1rem;
-}
-.quickstart {
-  width: 100%;
-  max-width: 620px;
-  margin: 0.75rem 0 0.25rem;
-  text-align: left;
-  background: color-mix(in srgb, var(--border) 28%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.9rem 1rem;
-  overflow-x: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8rem;
-  line-height: 1.65;
-}
-.skeleton-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.75rem;
-}
-.error {
-  color: #d1242f;
-  font-size: 0.85rem;
-}
-</style>

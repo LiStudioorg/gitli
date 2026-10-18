@@ -36,7 +36,7 @@ function go(path: string) {
     @click="ui.sidebarOpen = false"
   />
   <aside
-    class="fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r border-[#d0d7de] bg-white p-4 transition-transform dark:border-[#30363d] dark:bg-[#161b22] md:static md:z-auto md:translate-x-0"
+    class="fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-white p-4 pt-20 transition-transform dark:bg-[#161b22] md:static md:z-auto md:w-[294px] md:translate-x-0 md:pt-4"
     :class="ui.sidebarOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full md:shadow-none'"
     aria-label="侧边导航"
   >

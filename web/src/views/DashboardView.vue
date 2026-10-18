@@ -96,8 +96,8 @@ async function removeRepo(repo: Repo) {
       </div>
     </section>
 
-    <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-      <section class="min-w-0 lg:col-span-2">
+    <div class="grid grid-cols-1 items-start gap-6 md:grid-cols-4">
+      <section class="min-w-0 md:col-span-3">
         <header class="mb-3 flex items-baseline gap-2">
           <h2 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">动态流</h2>
           <span class="text-xs text-[#656d76]">你最近的仓库活动</span>
@@ -172,7 +172,7 @@ async function removeRepo(repo: Repo) {
         </section>
       </section>
 
-      <aside class="flex min-w-0 flex-col gap-4">
+      <aside class="flex min-w-0 flex-col gap-4 md:col-span-1">
         <RepoSidebarCard :repos="repos.myRepos" :username="auth.user?.username" @remove="removeRepo" />
         <ContributionGraph :activities="repos.activities" />
       </aside>

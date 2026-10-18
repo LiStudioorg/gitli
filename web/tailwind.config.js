@@ -10,6 +10,10 @@ export default {
         line: '#d0d7de',
         ink: '#1f2328',
         subtle: '#656d76',
+        brand: '#ea580c',
+        'brand-hover': '#c2410c',
+        'btn-green': '#2da44e',
+        'btn-green-hover': '#2c974b',
         danger: { bg: '#ffebe9', border: '#ff818266' },
       },
       fontFamily: {

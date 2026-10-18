@@ -59,7 +59,7 @@ async function submit() {
             v-model="name"
             placeholder="my-project"
             autocomplete="off"
-            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
             @blur="touched = true"
           />
           <span v-if="touched && disabledReason" class="text-xs text-[#cf222e]">{{ disabledReason }}</span>
@@ -69,7 +69,7 @@ async function submit() {
           <input
             v-model="description"
             placeholder="一句话介绍这个仓库"
-            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
           />
         </label>
         <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
@@ -80,7 +80,7 @@ async function submit() {
           <button
             type="submit"
             :disabled="loading"
-            class="inline-flex h-9 items-center rounded-md bg-[#ea580c] px-4 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50"
+            class="inline-flex h-9 items-center rounded-md bg-[#2da44e] px-4 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50"
           >
             {{ loading ? '创建中…' : '创建仓库' }}
           </button>

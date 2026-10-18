@@ -33,194 +33,68 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
 </script>
 
 <template>
-  <div class="clone-dropdown">
-    <button class="code-btn" type="button" aria-label="获取克隆地址" aria-expanded="false" @click="toggle">
-      <span class="angle">&lt;&gt;</span> 代码
-      <span class="caret">▾</span>
+  <div class="relative inline-block">
+    <button
+      class="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b]"
+      type="button"
+      aria-label="获取克隆地址"
+      :aria-expanded="open"
+      @click="toggle"
+    >
+      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M4.72.22a.75.75 0 0 1 1.06 0l1 .999a.75.75 0 0 1 0 1.061l-1.001 1A.75.75 0 0 1 4.72 2.22L5.19 1.75 4.72 1.28a.75.75 0 0 1 0-1.06ZM7.75 0h1v2.5h-1V0Zm-3.5 5.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" />
+      </svg>
+      代码
+      <span class="text-[10px] opacity-80" aria-hidden="true">▾</span>
     </button>
 
-    <div v-if="open" class="menu" @mouseleave="open = false">
-      <div class="tabs">
-        <button :class="{ active: tab === 'https' }" @click="tab = 'https'">HTTPS</button>
-        <button :class="{ active: tab === 'ssh' }" @click="tab = 'ssh'">SSH</button>
-        <button :class="{ active: tab === 'cli' }" @click="tab = 'cli'">CLI 工具</button>
+    <div
+      v-if="open"
+      class="absolute right-0 top-full z-50 mt-1.5 w-[360px] max-w-[calc(100vw-2rem)] rounded-md border border-[#d0d7de] bg-white p-4 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
+      @mouseleave="open = false"
+    >
+      <p class="mb-2 text-xs font-semibold text-[#656d76]">克隆</p>
+      <div class="mb-3 flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]">
+        <button
+          v-for="t in [{ k: 'https', l: 'HTTPS' }, { k: 'ssh', l: 'SSH' }, { k: 'cli', l: 'CLI' }]"
+          :key="t.k"
+          type="button"
+          class="flex-1 px-2 py-1.5 text-xs"
+          :class="tab === t.k ? 'bg-[#ea580c]/10 font-semibold text-[#ea580c]' : 'text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+          @click="tab = t.k as 'https' | 'ssh' | 'cli'"
+        >
+          {{ t.l }}
+        </button>
       </div>
 
-      <div class="section">
-        <template v-if="tab === 'https'">
-          <div class="url-row">
-            <code>{{ cloneInfo?.https ?? '—' }}</code>
-            <button class="copy" @click="copy(cloneInfo?.https ?? '', 'https')">
-              {{ copied === 'https' ? '已复制' : '复制' }}
-            </button>
-          </div>
-        </template>
-        <template v-else-if="tab === 'ssh'">
-          <div class="url-row">
-            <code>{{ cloneInfo?.ssh ?? '—' }}</code>
-            <button class="copy" @click="copy(cloneInfo?.ssh ?? '', 'ssh')">
-              {{ copied === 'ssh' ? '已复制' : '复制' }}
-            </button>
-          </div>
-        </template>
-        <template v-else>
-          <p class="placeholder-title">目前请使用上方 git clone/push 命令。gli 命令行工具尚未提供。</p>
-          <p class="placeholder-sub">届时可用：</p>
-          <pre class="placeholder-code">gli clone &lt;owner&gt;/&lt;repo&gt;
-gli issue list
-gli pr create</pre>
-        </template>
+      <div v-if="tab !== 'cli'" class="flex items-center gap-1.5">
+        <code class="min-w-0 flex-1 truncate rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-2 py-1.5 font-mono text-xs text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]">
+          {{ tab === 'https' ? (cloneInfo?.https ?? '—') : (cloneInfo?.ssh ?? '—') }}
+        </code>
+        <button
+          type="button"
+          class="inline-flex h-8 shrink-0 items-center rounded-md border border-[#d0d7de] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          @click="copy(tab === 'https' ? (cloneInfo?.https ?? '') : (cloneInfo?.ssh ?? ''), tab)"
+        >
+          {{ copied === tab ? '已复制' : '复制' }}
+        </button>
       </div>
+      <p v-else class="text-xs leading-relaxed text-[#656d76]">
+        目前请使用上方 git clone/push 命令。gli 命令行工具尚未提供。
+      </p>
 
-      <div class="section">
-        <p class="label">下载</p>
-        <div class="row">
-          <button class="chip accent" @click="download('zip')">下载 ZIP</button>
-          <button class="chip accent" @click="download('tar.gz')">下载 TAR.GZ</button>
-          <button class="chip accent" @click="download('bundle')">下载 BUNDLE</button>
-        </div>
+      <p class="mb-2 mt-4 text-xs font-semibold text-[#656d76]">下载源码</p>
+      <div class="flex flex-wrap gap-1.5">
+        <button
+          v-for="f in [{ k: 'zip', l: 'ZIP' }, { k: 'tar.gz', l: 'TAR.GZ' }, { k: 'bundle', l: 'BUNDLE' }]"
+          :key="f.k"
+          type="button"
+          class="h-7 rounded-md border border-[#d0d7de] px-2.5 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          @click="download(f.k as 'zip' | 'tar.gz' | 'bundle')"
+        >
+          {{ f.l }}
+        </button>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.clone-dropdown {
-  position: relative;
-  display: inline-block;
-}
-.code-btn {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--color-fg);
-  font-weight: 600;
-}
-.code-btn:hover {
-  background: var(--hover-bg);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.angle {
-  color: var(--primary);
-}
-.caret {
-  margin-left: 0.3rem;
-  color: var(--muted);
-}
-.menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 30;
-  width: 420px;
-  max-width: 90vw;
-  padding: 0.9rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-}
-.tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-.tabs button {
-  padding: 0.4rem 0.75rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-}
-.tabs button.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 600;
-}
-.section {
-  margin-bottom: 0.9rem;
-}
-.section:last-child {
-  margin-bottom: 0;
-}
-.label {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 0 0 0.4rem;
-}
-.url-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-.url-row code {
-  flex: 1;
-  padding: 0.45rem 0.6rem;
-  background: var(--color-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.82rem;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-.copy {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--primary);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--primary);
-  white-space: nowrap;
-}
-.copy:hover {
-  background: var(--primary-soft);
-}
-.placeholder-title {
-  color: var(--color-fg);
-  font-size: 0.9rem;
-  margin: 0 0 0.5rem;
-}
-.placeholder-sub {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 0 0 0.4rem;
-}
-.placeholder-code {
-  margin: 0;
-  padding: 0.6rem 0.75rem;
-  background: var(--color-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.82rem;
-  color: var(--primary);
-  overflow-x: auto;
-}
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.chip {
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-fg);
-  font-size: 0.85rem;
-}
-.chip:hover {
-  background: var(--hover-bg);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.chip.accent {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.chip.accent:hover {
-  background: var(--accent-soft);
-}
-</style>

@@ -2,8 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { apiStatus, errMessage as httpErrMessage } from '../utils/error'
-import TopNav from '../components/layout/TopNav.vue'
-import Sidebar from '../components/layout/Sidebar.vue'
+import AppLayout from '../components/layout/AppLayout.vue'
 import api from '../api/client'
 
 interface IPRule {
@@ -134,19 +133,16 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="settings-page">
-    <TopNav variant="app" />
-    <div class="body">
-      <Sidebar />
-      <main class="settings">
-        <h2>组织设置</h2>
-        <p class="org-name"><code>{{ org }}</code></p>
+  <AppLayout>
+    <div class="mx-auto w-full max-w-[900px]">
+        <h2 class="text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">组织设置</h2>
+        <p class="mb-4 truncate text-sm text-[#656d76]"><code>{{ org }}</code></p>
 
-        <section class="card">
+        <section class="flex flex-col gap-3 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>安全 · IP 白名单</h3>
 
-          <p v-if="error" class="error">{{ error }}</p>
-          <p v-if="listError" class="error">{{ listError }}</p>
+          <p v-if="error" class="text-sm text-[#cf222e]">{{ error }}</p>
+          <p v-if="listError" class="text-sm text-[#cf222e]">{{ listError }}</p>
           <p v-if="ok" class="ok">{{ ok }}</p>
 
           <div class="toggle-row">
@@ -194,7 +190,7 @@ onMounted(load)
                   <td class="muted nowrap">{{ fmtTime(r.created_at) }}</td>
                   <td class="center nowrap">
                     <button
-                      class="danger"
+                      class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50"
                       type="button"
                       :disabled="deletingId === r.id"
                       @click="deleteRule(r)"
@@ -211,7 +207,7 @@ onMounted(load)
           <hr class="divider" />
 
           <h3>添加规则</h3>
-          <p v-if="formError" class="error">{{ formError }}</p>
+          <p v-if="formError" class="text-sm text-[#cf222e]">{{ formError }}</p>
           <label>
             CIDR
             <input v-model="form.cidr" placeholder="192.168.1.0/24" autocomplete="off" />
@@ -224,179 +220,10 @@ onMounted(load)
             <input v-model="form.enabled" type="checkbox" />
             添加后立即启用
           </label>
-          <button class="primary" type="button" :disabled="adding" @click="addRule">
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="adding" @click="addRule">
             {{ adding ? '添加中…' : '添加' }}
           </button>
         </section>
-      </main>
     </div>
-  </div>
+  </AppLayout>
 </template>
-
-<style scoped>
-.body {
-  display: flex;
-  min-height: calc(100vh - 57px);
-}
-.settings {
-  flex: 1;
-  max-width: 720px;
-  padding: 1.5rem;
-  min-width: 0;
-}
-.settings h2 {
-  margin-top: 0;
-  margin-bottom: 0.25rem;
-}
-.org-name {
-  margin: 0 0 1rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  background: var(--card);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.card h3 {
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
-}
-.card h3:first-child {
-  margin-top: 0;
-}
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-}
-input {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: inherit;
-}
-button.primary {
-  align-self: flex-start;
-  padding: 0.45rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: #fff;
-  font-size: 0.9rem;
-}
-button.primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-button.danger {
-  padding: 0.3rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid #d1242f;
-  background: transparent;
-  color: #d1242f;
-  font-size: 0.85rem;
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-label.check {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-label.check input {
-  width: auto;
-  margin: 0;
-}
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.warning {
-  margin: 0;
-  color: #7a4b00;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.88rem;
-}
-.error {
-  margin: 0;
-  color: #d1242f;
-  background: rgba(209, 36, 47, 0.08);
-  border: 1px solid rgba(209, 36, 47, 0.4);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
-}
-.ok {
-  margin: 0;
-  color: #1a7f37;
-  font-size: 0.9rem;
-}
-.muted {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.key-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.key-table th,
-.key-table td {
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0.6rem;
-  text-align: left;
-  vertical-align: middle;
-}
-.key-table th {
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.82rem;
-}
-.key-table .center {
-  text-align: center;
-}
-.nowrap {
-  white-space: nowrap;
-}
-.badge {
-  display: inline-block;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-.badge-success {
-  background: var(--success-soft);
-  border: 1px solid var(--success);
-  color: #1a7f37;
-}
-.badge-neutral {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 0.75rem 0 0.25rem;
-  width: 100%;
-}
-@media (max-width: 768px) {
-  .body {
-    flex-direction: column;
-  }
-}
-</style>

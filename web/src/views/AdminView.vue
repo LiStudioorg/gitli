@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { errMessage } from '../utils/error'
-import TopNav from '../components/layout/TopNav.vue'
-import Sidebar from '../components/layout/Sidebar.vue'
+import AppLayout from '../components/layout/AppLayout.vue'
 import api from '../api/client'
 
 interface AdminStats {
@@ -859,18 +858,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-page">
-    <TopNav variant="app" />
-    <div class="body">
-      <Sidebar />
-      <main class="admin">
-        <h2>管理面板</h2>
-        <nav class="tabs" role="tablist">
+  <AppLayout>
+    <div class="mx-auto w-full max-w-[1100px]">
+        <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">管理面板</h2>
+        <nav class="mb-4 flex flex-wrap gap-1 border-b border-[#d0d7de] dark:border-[#30363d]" role="tablist">
           <button
             v-for="t in tabs"
             :key="t.key"
-            class="tab"
-            :class="{ active: active === t.key }"
+            class="h-10 border-b-2 px-3 text-sm"
+            :class="active === t.key
+              ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
+              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
             type="button"
             role="tab"
             :aria-selected="active === t.key"
@@ -887,8 +885,8 @@ onMounted(() => {
               <input v-model="usersQuery" type="search" placeholder="用户名或邮箱" aria-label="搜索用户" />
             </label>
             <div class="filter filter-actions">
-              <button class="btn primary" type="submit">搜索</button>
-              <button class="btn" type="button" @click="loadUsers">刷新</button>
+              <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit">搜索</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadUsers">刷新</button>
             </div>
           </form>
 
@@ -903,7 +901,7 @@ onMounted(() => {
             <button class="link-btn" type="button" @click="resetPassword = null">关闭</button>
           </p>
 
-          <p v-if="usersState.error" class="error">{{ usersState.error }}</p>
+          <p v-if="usersState.error" class="text-sm text-[#cf222e]">{{ usersState.error }}</p>
           <p v-if="usersState.loading" class="muted">加载中…</p>
           <div v-else-if="usersState.items.length" class="table-wrap">
             <table>
@@ -983,12 +981,12 @@ onMounted(() => {
               <input v-model="reposQuery" type="search" placeholder="仓库名称" aria-label="搜索仓库" />
             </label>
             <div class="filter filter-actions">
-              <button class="btn primary" type="submit">搜索</button>
-              <button class="btn" type="button" @click="loadRepos">刷新</button>
+              <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit">搜索</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRepos">刷新</button>
             </div>
           </form>
 
-          <p v-if="reposState.error" class="error">{{ reposState.error }}</p>
+          <p v-if="reposState.error" class="text-sm text-[#cf222e]">{{ reposState.error }}</p>
           <p v-if="reposState.loading" class="muted">加载中…</p>
           <div v-else-if="reposState.items.length" class="table-wrap">
             <table>
@@ -1043,7 +1041,7 @@ onMounted(() => {
             <p class="muted">
               按仓库 ID 永久删除仓库及其数据，<strong class="danger-text">此操作不可恢复</strong>（CLI 专属操作）。
             </p>
-            <p v-if="purgeError" class="error">{{ purgeError }}</p>
+            <p v-if="purgeError" class="text-sm text-[#cf222e]">{{ purgeError }}</p>
             <p v-if="purgeOk" class="notice">{{ purgeOk }}</p>
             <form class="purge-form" @submit.prevent="purgeRepo">
               <label class="filter">
@@ -1051,7 +1049,7 @@ onMounted(() => {
                 <input v-model="purgeRepoId" type="number" min="1" step="1" placeholder="仓库 ID" />
               </label>
               <div class="filter filter-actions">
-                <button class="btn primary" type="submit" :disabled="purging">
+                <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit" :disabled="purging">
                   {{ purging ? '删除中…' : '永久删除' }}
                 </button>
               </div>
@@ -1061,9 +1059,9 @@ onMounted(() => {
 
         <section v-else-if="active === 'orgs'" class="panel">
           <div class="panel-toolbar">
-            <button class="btn" type="button" @click="loadOrgs">刷新</button>
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadOrgs">刷新</button>
           </div>
-          <p v-if="orgsState.error" class="error">{{ orgsState.error }}</p>
+          <p v-if="orgsState.error" class="text-sm text-[#cf222e]">{{ orgsState.error }}</p>
           <p v-if="orgsState.loading" class="muted">加载中…</p>
           <div v-else-if="orgsState.items.length" class="table-wrap">
             <table>
@@ -1092,7 +1090,7 @@ onMounted(() => {
 
         <section v-else-if="active === 'system'" class="panel">
           <h3 class="panel-title">概览</h3>
-          <p v-if="statsError" class="error">{{ statsError }}</p>
+          <p v-if="statsError" class="text-sm text-[#cf222e]">{{ statsError }}</p>
           <p v-if="loadingStats" class="muted">加载中…</p>
           <template v-else-if="stats">
             <div class="cards">
@@ -1108,11 +1106,11 @@ onMounted(() => {
           <div class="subsection">
             <div class="panel-toolbar system-toolbar">
               <h3>系统运行状态</h3>
-              <button class="btn" type="button" :disabled="systemLoading" @click="loadSystem">
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="systemLoading" @click="loadSystem">
                 {{ systemLoading ? '刷新中…' : '刷新' }}
               </button>
             </div>
-            <p v-if="systemError" class="error">{{ systemError }}</p>
+            <p v-if="systemError" class="text-sm text-[#cf222e]">{{ systemError }}</p>
             <p v-if="systemLoading && !systemInfo" class="muted">加载中…</p>
             <div v-else-if="systemInfo" class="cards">
               <div v-for="c in systemCards" :key="c.label" class="stat-card">
@@ -1126,11 +1124,11 @@ onMounted(() => {
 
         <section v-else-if="active === 'runner'" class="panel">
           <div class="panel-toolbar">
-            <button class="btn primary" type="button" @click="openRunnerModal">新建 Runner</button>
-            <button class="btn" type="button" @click="loadRunners">刷新</button>
+            <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="openRunnerModal">新建 Runner</button>
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRunners">刷新</button>
           </div>
 
-          <p v-if="runnersError" class="error">{{ runnersError }}</p>
+          <p v-if="runnersError" class="text-sm text-[#cf222e]">{{ runnersError }}</p>
           <p v-if="runnersLoading" class="muted">加载中…</p>
           <div v-else-if="runners.length" class="table-wrap">
             <table>
@@ -1202,8 +1200,8 @@ onMounted(() => {
               <input v-model="auditFilters.to" type="datetime-local" @change="applyFilters" />
             </label>
             <div class="filter filter-actions">
-              <button class="btn" type="button" @click="applyFilters">查询</button>
-              <button class="btn" type="button" @click="loadAudit">刷新</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="applyFilters">查询</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadAudit">刷新</button>
             </div>
           </div>
 
@@ -1213,22 +1211,22 @@ onMounted(() => {
                 <option value="csv">CSV</option>
                 <option value="json">JSON</option>
               </select>
-              <button class="btn" type="button" @click="exportAudit">导出</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="exportAudit">导出</button>
             </div>
             <div class="archive-group">
               <label class="inline-field">
                 <span>保留天数</span>
                 <input v-model.number="archiveRetentionDays" type="number" min="1" />
               </label>
-              <button class="btn" type="button" :disabled="archiving" @click="archiveAudit">
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="archiving" @click="archiveAudit">
                 {{ archiving ? '归档中…' : '手动归档' }}
               </button>
             </div>
           </div>
           <p v-if="archiveMessage" class="notice">{{ archiveMessage }}</p>
-          <p v-if="archiveError" class="error">{{ archiveError }}</p>
+          <p v-if="archiveError" class="text-sm text-[#cf222e]">{{ archiveError }}</p>
 
-          <p v-if="auditError" class="error">{{ auditError }}</p>
+          <p v-if="auditError" class="text-sm text-[#cf222e]">{{ auditError }}</p>
           <p v-if="loadingAudit" class="muted">加载中…</p>
           <template v-else-if="auditLogs.length">
             <div class="table-wrap">
@@ -1283,16 +1281,16 @@ onMounted(() => {
               </table>
             </div>
             <div class="pagination">
-              <button class="btn" type="button" :disabled="auditOffset === 0" @click="prevPage">上一页</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditOffset === 0" @click="prevPage">上一页</button>
               <span class="muted">第 {{ Math.floor(auditOffset / PAGE_SIZE) + 1 }} 页</span>
-              <button class="btn" type="button" :disabled="auditLogs.length < PAGE_SIZE" @click="nextPage">下一页</button>
+              <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditLogs.length < PAGE_SIZE" @click="nextPage">下一页</button>
             </div>
           </template>
           <p v-else-if="!auditError" class="muted">暂无数据</p>
 
           <div class="subsection">
             <h3>统计（近 30 天）</h3>
-            <p v-if="auditStatsError" class="error">{{ auditStatsError }}</p>
+            <p v-if="auditStatsError" class="text-sm text-[#cf222e]">{{ auditStatsError }}</p>
             <p v-if="loadingAuditStats" class="muted">加载中…</p>
             <template v-else-if="auditStats">
               <div class="charts">
@@ -1346,7 +1344,7 @@ onMounted(() => {
 
           <div class="subsection">
             <h3>告警规则</h3>
-            <p v-if="alertRulesError" class="error">{{ alertRulesError }}</p>
+            <p v-if="alertRulesError" class="text-sm text-[#cf222e]">{{ alertRulesError }}</p>
             <p v-if="loadingAlertRules" class="muted">加载中…</p>
             <div v-else-if="alertRules.length" class="table-wrap">
               <table>
@@ -1417,19 +1415,18 @@ onMounted(() => {
                 <span>启用</span>
               </label>
               <div class="filter filter-actions">
-                <button class="btn primary" type="submit" :disabled="alertSaving">
+                <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit" :disabled="alertSaving">
                   {{ alertSaving ? '创建中…' : '新建规则' }}
                 </button>
               </div>
             </form>
-            <p v-if="alertFormError" class="error">{{ alertFormError }}</p>
+            <p v-if="alertFormError" class="text-sm text-[#cf222e]">{{ alertFormError }}</p>
           </div>
         </section>
 
         <section v-else class="panel">
           <p class="muted">暂无数据</p>
         </section>
-      </main>
     </div>
 
     <div v-if="runnerModal" class="modal-overlay" @click.self="closeRunnerModal">
@@ -1446,10 +1443,10 @@ onMounted(() => {
             <span>标签（逗号分隔）</span>
             <input v-model="runnerForm.labels" type="text" placeholder="linux, amd64, docker" />
           </label>
-          <p v-if="runnerFormError" class="error">{{ runnerFormError }}</p>
+          <p v-if="runnerFormError" class="text-sm text-[#cf222e]">{{ runnerFormError }}</p>
           <div class="modal-actions">
-            <button class="btn" type="button" @click="closeRunnerModal">取消</button>
-            <button class="btn primary" type="button" :disabled="runnerSaving" @click="createRunner">
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeRunnerModal">取消</button>
+            <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="runnerSaving" @click="createRunner">
               {{ runnerSaving ? '创建中…' : '创建' }}
             </button>
           </div>
@@ -1477,13 +1474,13 @@ onMounted(() => {
           <pre class="snippet">{{ runnerConfigSnippet(createdRunner) }}</pre>
           <div class="modal-actions">
             <button
-              class="btn"
+              class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
               type="button"
               @click="copyText(runnerConfigSnippet(createdRunner), 'snippet')"
             >
               {{ copiedKey === 'snippet' ? '已复制配置' : '复制配置' }}
             </button>
-            <button class="btn primary" type="button" @click="closeRunnerModal">完成</button>
+            <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="closeRunnerModal">完成</button>
           </div>
         </template>
       </div>
@@ -1508,625 +1505,15 @@ onMounted(() => {
           <span>标签（逗号分隔）</span>
           <input v-model="editForm.labels" type="text" />
         </label>
-        <p v-if="editError" class="error">{{ editError }}</p>
+        <p v-if="editError" class="text-sm text-[#cf222e]">{{ editError }}</p>
         <div class="modal-actions">
-          <button class="btn" type="button" @click="editModal = false">取消</button>
-          <button class="btn primary" type="button" :disabled="editSaving" @click="saveEdit">
+          <button class="inline-flex h-8 items-center rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="editModal = false">取消</button>
+          <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="editSaving" @click="saveEdit">
             {{ editSaving ? '保存中…' : '保存' }}
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
+  
 </template>
-
-<style scoped>
-.body {
-  display: flex;
-  min-height: calc(100vh - 57px);
-}
-.admin {
-  flex: 1;
-  padding: 1.5rem;
-  min-width: 0;
-}
-.admin h2 {
-  margin-top: 0;
-}
-.tabs {
-  display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-}
-.tab {
-  padding: 0.5rem 0.9rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.95rem;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-.tab:hover {
-  color: var(--color-fg);
-}
-.tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 600;
-}
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.75rem;
-}
-.stat-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  background: var(--card);
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.stat-value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--primary);
-}
-.stat-label {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.uptime {
-  margin-top: 1rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-th,
-td {
-  text-align: left;
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-th {
-  color: var(--muted);
-  font-weight: 600;
-  background: var(--color-bg);
-}
-tbody tr:last-child td {
-  border-bottom: none;
-}
-.error {
-  color: #d1242f;
-  background: rgba(209, 36, 47, 0.08);
-  border: 1px solid rgba(209, 36, 47, 0.4);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
-}
-.muted {
-  color: var(--muted);
-}
-.panel-toolbar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-.btn {
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--color-fg);
-  font: inherit;
-}
-.btn:hover {
-  background: var(--hover-bg);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.btn.primary:hover {
-  background: var(--primary-hover);
-  color: #fff;
-}
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-}
-.labels {
-  display: inline-flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-}
-.label {
-  padding: 0.05rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-.status {
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.status-active {
-  color: var(--success);
-  border-color: var(--success);
-  background: var(--success-soft);
-}
-.status-offline {
-  color: var(--muted);
-  border-color: var(--border);
-  background: var(--color-bg);
-}
-.status-disabled {
-  color: #d1242f;
-  border-color: rgba(209, 36, 47, 0.5);
-  background: rgba(209, 36, 47, 0.08);
-}
-.row-actions {
-  display: flex;
-  gap: 0.6rem;
-}
-.link-btn {
-  border: none;
-  background: transparent;
-  color: var(--primary);
-  font: inherit;
-  padding: 0;
-}
-.link-btn:hover {
-  text-decoration: underline;
-}
-.link-btn.danger {
-  color: #d1242f;
-}
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  padding: 1rem;
-}
-.modal {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  width: min(520px, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.modal h3 {
-  margin: 0 0 1rem;
-}
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.field input,
-.field select {
-  padding: 0.45rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font: inherit;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-.token-box {
-  border: 1px solid var(--accent);
-  background: var(--accent-soft);
-  border-radius: 8px;
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.token-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-.token-label {
-  font-size: 0.75rem;
-  color: var(--muted);
-  min-width: 62px;
-}
-.token-row code {
-  flex: 1;
-  word-break: break-all;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-}
-.snippet-label {
-  margin: 0.9rem 0 0.35rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.snippet {
-  margin: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  overflow-x: auto;
-  font-size: 0.82rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-bottom: 1rem;
-}
-.filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.filter input,
-.filter select {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font: inherit;
-}
-.filter-actions {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-.checkbox-field {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-}
-.export-group,
-.archive-group {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-.format-select {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font: inherit;
-}
-.inline-field {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.inline-field input {
-  width: 80px;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font: inherit;
-}
-.notice {
-  color: var(--success);
-  background: var(--success-soft);
-  border: 1px solid var(--success);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
-}
-.panel-toolbar {
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
-.clickable {
-  cursor: pointer;
-}
-.clickable:hover {
-  background: var(--hover-bg);
-}
-.result-success {
-  color: var(--success);
-  border-color: var(--success);
-  background: var(--success-soft);
-}
-.result-failure {
-  color: #d1242f;
-  border-color: rgba(209, 36, 47, 0.5);
-  background: rgba(209, 36, 47, 0.08);
-}
-.result-denied {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-.detail-row td {
-  background: var(--color-bg);
-  white-space: normal;
-}
-.detail {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
-}
-.detail-values {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-.value-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  min-width: 0;
-}
-.value-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-.value-pre {
-  margin: 0;
-  padding: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  overflow-x: auto;
-  max-height: 260px;
-  font-size: 0.8rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.detail-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.82rem;
-}
-.detail-meta > div {
-  display: flex;
-  gap: 0.6rem;
-  word-break: break-all;
-}
-.meta-label {
-  color: var(--muted);
-  min-width: 92px;
-}
-.err-text {
-  color: #d1242f;
-}
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.9rem;
-}
-.subsection {
-  margin-top: 2rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1.25rem;
-}
-.subsection h3 {
-  margin: 0 0 1rem;
-}
-.subsection h4 {
-  margin: 0 0 0.6rem;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-.charts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-}
-.chart-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  background: var(--card);
-  min-width: 0;
-}
-.bars {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.bar-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 40px;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-}
-.bar-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.bar-track {
-  height: 12px;
-  background: var(--color-bg);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.bar-fill {
-  display: block;
-  height: 100%;
-  background: var(--primary);
-  border-radius: 999px;
-}
-.bar-count {
-  text-align: right;
-  color: var(--muted);
-}
-.chart-svg {
-  width: 100%;
-}
-.chart-svg svg {
-  width: 100%;
-  height: 120px;
-  display: block;
-}
-.day-bar {
-  fill: var(--primary);
-}
-.axis {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin-top: 0.25rem;
-}
-.actor-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.actor-list li {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.82rem;
-  padding-bottom: 0.35rem;
-  border-bottom: 1px solid var(--border);
-}
-.alert-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-}
-.panel-title {
-  margin: 0 0 0.5rem;
-}
-.danger-text {
-  color: #d1242f;
-}
-.purge-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid rgba(209, 36, 47, 0.5);
-  border-radius: 8px;
-  background: var(--card);
-}
-.search-field input {
-  min-width: 240px;
-}
-.password-box {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-}
-.password-box code {
-  word-break: break-all;
-  padding: 0.1rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--color-bg);
-}
-.password-box .link-btn {
-  color: var(--color-fg);
-}
-.cli-hint {
-  margin-top: 1rem;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.cli-hint code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  padding: 0.1rem 0.35rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--color-bg);
-}
-.desc-cell {
-  white-space: normal;
-  max-width: 420px;
-}
-.system-toolbar {
-  align-items: center;
-}
-.system-toolbar h3 {
-  margin: 0;
-}
-.stat-value-sm {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-fg);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-@media (max-width: 768px) {
-  .body {
-    flex-direction: column;
-  }
-  .detail-values {
-    grid-template-columns: 1fr;
-  }
-  .search-field input {
-    min-width: 0;
-  }
-}
-</style>

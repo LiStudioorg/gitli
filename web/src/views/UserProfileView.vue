@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
+import ErrorAlert from '../components/common/ErrorAlert.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 
@@ -154,84 +155,116 @@ void loadProfile()
 </script>
 
 <template>
-  <div class="profile">
+  <div class="min-h-screen bg-[#f6f8fa] dark:bg-[#0d1117]">
     <TopNav variant="landing" />
-    <main class="content">
-      <p v-if="loading" class="state">加载中...</p>
-      <p v-else-if="error" class="state error">{{ error }}</p>
+    <main class="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6">
+      <div v-if="loading" class="flex flex-col gap-4">
+        <div class="flex gap-4 rounded-md border border-[#d0d7de] bg-white p-6 dark:border-[#30363d] dark:bg-[#161b22]">
+          <div class="h-20 w-20 shrink-0 animate-pulse rounded-full bg-[#d0d7de] dark:bg-[#30363d]" />
+          <div class="flex flex-1 flex-col gap-2">
+            <div class="h-5 w-40 animate-pulse rounded bg-[#d0d7de] dark:bg-[#30363d]" />
+            <div class="h-4 w-64 animate-pulse rounded bg-[#d0d7de] dark:bg-[#30363d]" />
+            <div class="h-4 w-32 animate-pulse rounded bg-[#d0d7de] dark:bg-[#30363d]" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-md border border-[#d0d7de] bg-white dark:border-[#30363d] dark:bg-[#161b22]" />
+        </div>
+      </div>
+
+      <ErrorAlert v-else-if="error" title="加载用户资料失败" :message="error" :dismissible="false" />
 
       <template v-else-if="profile">
-        <header class="head">
-          <span class="avatar">{{ initial(profile.user.username) }}</span>
-          <div class="identity">
-            <h1 class="username">{{ profile.user.username }}</h1>
-            <p v-if="profile.user.full_name" class="fullname">{{ profile.user.full_name }}</p>
-            <p v-if="profile.user.bio" class="bio">{{ profile.user.bio }}</p>
-            <ul class="facts">
-              <li v-if="profile.user.location">📍 {{ profile.user.location }}</li>
-              <li v-if="profile.user.website">
-                <a v-if="safeWebsite(profile.user.website)" :href="safeWebsite(profile.user.website)" target="_blank" rel="noopener noreferrer">🔗 {{ profile.user.website }}</a>
+        <!-- 资料头 -->
+        <section class="mb-6 flex flex-wrap items-start gap-5 rounded-md border border-[#d0d7de] bg-white p-6 dark:border-[#30363d] dark:bg-[#161b22]">
+          <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-2xl font-semibold text-white">
+            {{ initial(profile.user.username) }}
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-3">
+              <h1 class="truncate text-2xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ profile.user.username }}</h1>
+              <button
+                v-if="!isSelf && auth.isLoggedIn"
+                class="h-8 rounded-md border border-[#d0d7de] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+                :disabled="followLoading"
+                @click="toggleFollow"
+              >
+                {{ profile.is_following ? '取消关注' : '关注' }}
+              </button>
+            </div>
+            <p v-if="profile.user.full_name" class="truncate text-sm text-[#656d76]">{{ profile.user.full_name }}</p>
+            <p v-if="profile.user.bio" class="mt-2 break-words text-sm text-[#1f2328] dark:text-[#e6edf3]">{{ profile.user.bio }}</p>
+            <ul class="mt-2 flex flex-wrap gap-4 text-sm text-[#656d76]">
+              <li v-if="profile.user.location" class="truncate">📍 {{ profile.user.location }}</li>
+              <li v-if="profile.user.website" class="min-w-0 truncate">
+                <a v-if="safeWebsite(profile.user.website)" :href="safeWebsite(profile.user.website)" target="_blank" rel="noopener noreferrer" class="text-[#0969da] hover:underline">🔗 {{ profile.user.website }}</a>
                 <span v-else>🔗 {{ profile.user.website }}</span>
               </li>
             </ul>
+            <p v-if="followError" class="mt-2 text-sm text-[#cf222e]">{{ followError }}</p>
           </div>
-          <div class="actions">
-            <button
-              v-if="!isSelf && auth.isLoggedIn"
-              class="btn"
-              :class="{ primary: !profile.is_following }"
-              :disabled="followLoading"
-              @click="toggleFollow"
-            >
-              {{ profile.is_following ? '取消关注' : '关注' }}
-            </button>
-          </div>
-        </header>
+        </section>
 
-        <p v-if="followError" class="error">{{ followError }}</p>
-
-        <nav class="stats">
-          <span class="stat"><strong>{{ profile.repos.length }}</strong> 仓库</span>
-          <span class="stat"><strong>{{ profile.following }}</strong> 关注</span>
-          <span class="stat"><strong>{{ profile.followers }}</strong> 粉丝</span>
-        </nav>
-
-        <div class="tabs">
-          <button class="tab" :class="{ active: tab === 'repos' }" @click="tab = 'repos'">仓库</button>
-          <button class="tab" :class="{ active: tab === 'followers' }" @click="tab = 'followers'">粉丝</button>
-          <button class="tab" :class="{ active: tab === 'following' }" @click="tab = 'following'">关注</button>
+        <!-- 统计 -->
+        <div class="mb-4 flex flex-wrap gap-6 text-sm text-[#656d76]">
+          <span><strong class="text-[#1f2328] dark:text-[#e6edf3]">{{ profile.repos.length }}</strong> 仓库</span>
+          <span><strong class="text-[#1f2328] dark:text-[#e6edf3]">{{ profile.following }}</strong> 关注</span>
+          <span><strong class="text-[#1f2328] dark:text-[#e6edf3]">{{ profile.followers }}</strong> 粉丝</span>
         </div>
 
-        <section v-if="tab === 'repos'" class="panel">
-          <p v-if="!profile.repos.length" class="state">暂无仓库</p>
-          <div v-else class="grid">
-            <article v-for="r in profile.repos" :key="r.ID" class="card">
-              <h3 class="card-title">
-                <RouterLink :to="`/${profile.user.username}/${r.Name}`">
-                  <span class="owner">{{ profile.user.username }}</span><span class="sep">/</span><span class="name">{{ r.Name }}</span>
+        <!-- Tab -->
+        <nav class="mb-4 flex gap-1 border-b border-[#d0d7de] dark:border-[#30363d]">
+          <button
+            v-for="t in [{ k: 'repos', label: '仓库' }, { k: 'followers', label: '粉丝' }, { k: 'following', label: '关注' }]"
+            :key="t.k"
+            type="button"
+            class="h-11 border-b-2 px-3 text-sm"
+            :class="tab === t.k
+              ? 'border-[#ea580c] font-semibold text-[#1f2328] dark:text-[#e6edf3]'
+              : 'border-transparent text-[#656d76] hover:rounded-t-md hover:border-[#d0d7de] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]'"
+            @click="tab = t.k as 'repos' | 'followers' | 'following'"
+          >
+            {{ t.label }}
+          </button>
+        </nav>
+
+        <section v-if="tab === 'repos'">
+          <div v-if="!profile.repos.length" class="rounded-md border border-dashed border-[#d0d7de] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]">
+            <p class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">还没有仓库</p>
+            <p class="mt-1 text-sm text-[#656d76]">该用户尚未创建任何仓库。</p>
+          </div>
+          <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <article
+              v-for="r in profile.repos"
+              :key="r.ID"
+              class="flex flex-col rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
+            >
+              <h3 class="truncate text-base font-semibold">
+                <RouterLink :to="`/${profile.user.username}/${r.Name}`" class="text-[#0969da] hover:underline">
+                  {{ profile.user.username }}<span class="text-[#656d76]">/</span>{{ r.Name }}
                 </RouterLink>
               </h3>
-              <p class="desc">{{ r.Description || '暂无描述' }}</p>
-              <div class="meta">
-                <span class="branch" title="默认分支">⎇ {{ r.DefaultBranch || 'main' }}</span>
-                <span class="stars" title="Star 数">★ {{ r.StarsCount }}</span>
+              <p class="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-[#656d76]">{{ r.Description || '暂无描述' }}</p>
+              <div class="mt-3 flex items-center gap-4 text-xs text-[#656d76]">
+                <span class="truncate">⎇ {{ r.DefaultBranch || 'main' }}</span>
+                <span class="shrink-0">★ {{ r.StarsCount ?? 0 }}</span>
               </div>
             </article>
           </div>
         </section>
 
-        <section v-else class="panel">
-          <p v-if="listLoading" class="state">加载中...</p>
-          <p v-else-if="listError" class="state error">{{ listError }}</p>
-          <p v-else-if="!(tab === 'followers' ? followers : following).length" class="state">
+        <section v-else>
+          <p v-if="listLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</p>
+          <ErrorAlert v-else-if="listError" title="加载失败" :message="listError" :dismissible="false" />
+          <p v-else-if="!(tab === 'followers' ? followers : following).length" class="py-8 text-center text-sm text-[#656d76]">
             暂无{{ tab === 'followers' ? '粉丝' : '关注' }}
           </p>
-          <ul v-else class="user-list">
+          <ul v-else class="divide-y divide-[#d0d7de] overflow-hidden rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
             <li v-for="u in tab === 'followers' ? followers : following" :key="u.id">
-              <RouterLink class="user-link" :to="`/users/${u.username}`">
-                <span class="avatar sm">{{ initial(u.username) }}</span>
-                <span class="user-name">{{ u.username }}</span>
-                <span v-if="u.full_name" class="user-fullname">{{ u.full_name }}</span>
+              <RouterLink class="flex items-center gap-3 px-4 py-3 hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]" :to="`/users/${u.username}`">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-xs font-semibold text-white">{{ initial(u.username) }}</span>
+                <span class="truncate text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ u.username }}</span>
+                <span v-if="u.full_name" class="truncate text-sm text-[#656d76]">{{ u.full_name }}</span>
               </RouterLink>
             </li>
           </ul>
@@ -240,217 +273,3 @@ void loadProfile()
     </main>
   </div>
 </template>
-
-<style scoped>
-.profile {
-  min-height: 100vh;
-}
-.content {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-.head {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-}
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.avatar.sm {
-  width: 34px;
-  height: 34px;
-  font-size: 0.95rem;
-}
-.identity {
-  flex: 1;
-  min-width: 200px;
-}
-.username {
-  margin: 0;
-  font-size: 1.6rem;
-}
-.fullname {
-  margin: 0.15rem 0 0;
-  color: var(--muted);
-  font-size: 1.05rem;
-}
-.bio {
-  margin: 0.75rem 0 0;
-  color: var(--color-fg);
-  line-height: 1.5;
-}
-.facts {
-  list-style: none;
-  padding: 0;
-  margin: 0.6rem 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-.facts a {
-  color: var(--primary);
-}
-.actions {
-  align-self: center;
-}
-.btn {
-  padding: 0.5rem 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--color-fg);
-  background: transparent;
-  cursor: pointer;
-}
-.btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.btn.primary:hover {
-  background: var(--primary-hover);
-}
-.btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.stats {
-  display: flex;
-  gap: 1.5rem;
-  margin: 1.5rem 0;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.stats strong {
-  color: var(--color-fg);
-  font-size: 1rem;
-}
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
-.tab {
-  padding: 0.4rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-fg);
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-.tab.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-.card {
-  padding: 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.15);
-}
-.card-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.05rem;
-}
-.card-title a {
-  color: var(--primary);
-}
-.owner {
-  color: var(--muted);
-}
-.sep {
-  color: var(--muted);
-  margin: 0 0.15rem;
-}
-.name {
-  font-weight: 600;
-}
-.desc {
-  margin: 0 0 0.75rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  min-height: 1.35rem;
-}
-.meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.stars {
-  color: var(--accent);
-}
-.user-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.user-list li {
-  border-bottom: 1px solid var(--border);
-}
-.user-list li:last-child {
-  border-bottom: none;
-}
-.user-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0;
-}
-.user-name {
-  font-weight: 600;
-  color: var(--color-fg);
-}
-.user-fullname {
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-.state {
-  color: var(--muted);
-  padding: 1.5rem 0;
-}
-.error {
-  color: var(--accent);
-  font-size: 0.9rem;
-}
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .actions {
-    width: 100%;
-  }
-}
-</style>

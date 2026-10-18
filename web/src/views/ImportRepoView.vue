@@ -64,7 +64,7 @@ async function submit() {
             v-model="name"
             placeholder="my-imported-repo"
             autocomplete="off"
-            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
             @blur="touched = true"
           />
         </label>
@@ -74,7 +74,7 @@ async function submit() {
             v-model="sourceURL"
             placeholder="https://example.com/user/repo.git"
             autocomplete="off"
-            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            class="h-9 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
             @blur="touched = true"
           />
         </label>
@@ -83,7 +83,7 @@ async function submit() {
           <button
             type="submit"
             :disabled="loading"
-            class="inline-flex h-9 items-center rounded-md bg-[#ea580c] px-4 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50"
+            class="inline-flex h-9 items-center rounded-md bg-[#2da44e] px-4 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50"
           >
             {{ loading ? '处理中…' : '开始导入' }}
           </button>

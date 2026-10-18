@@ -289,3 +289,79 @@ func (s *Service) ShowFile(ctx context.Context, path, ref, file string) ([]byte,
 	}
 	return data, true
 }
+
+// LastCommitsByPath returns the most recent commit touching each entry of a
+// directory at ref, keyed by entry name. One `git log --name-only` walk is used
+// so a listing with hundreds of files still costs a single subprocess.
+func (s *Service) LastCommitsByPath(ctx context.Context, path, ref, subPath string) (map[string]Commit, error) {
+	if err := validateRef(ref); err != nil {
+		return nil, err
+	}
+	args := []string{
+		"log", "--format=%x01%H%x1f%h%x1f%an%x1f%aI%x1f%s%x1e", "--name-only", ref, "--",
+	}
+	if subPath != "" {
+		if err := validateSubPath(subPath); err != nil {
+			return nil, err
+		}
+		args = append(args, subPath)
+	}
+	out, err := s.runner.Run(ctx, path, args...)
+	if err != nil {
+		if isMissingObject(err) {
+			return map[string]Commit{}, nil
+		}
+		return nil, err
+	}
+	return parseLastCommitsByPath(out, subPath), nil
+}
+
+// parseLastCommitsByPath walks newest-first log output and records the first
+// commit seen for every file, giving the "last touched" commit per entry.
+func parseLastCommitsByPath(out, subPath string) map[string]Commit {
+	result := make(map[string]Commit)
+	prefix := ""
+	if subPath != "" {
+		prefix = strings.Trim(subPath, "/") + "/"
+	}
+	var current *Commit
+	for _, block := range strings.Split(out, "\x01") {
+		if block == "" {
+			continue
+		}
+		lines := strings.Split(block, "\n")
+		header := strings.TrimSuffix(lines[0], "\x1e")
+		fields := strings.Split(header, "\x1f")
+		if len(fields) < 5 {
+			continue
+		}
+		c := Commit{
+			Hash:      fields[0],
+			ShortHash: fields[1],
+			Author:    fields[2],
+			Date:      fields[3],
+			Subject:   fields[4],
+		}
+		current = &c
+		for _, ln := range lines[1:] {
+			ln = strings.TrimSpace(ln)
+			if ln == "" {
+				continue
+			}
+			name := strings.TrimPrefix(ln, prefix)
+			if name == "" {
+				continue
+			}
+			// Directories are not listed by --name-only; attribute a directory
+			// to the first commit that touched any file beneath it.
+			top := name
+			if i := strings.IndexByte(top, '/'); i >= 0 {
+				top = top[:i]
+			}
+			if _, seen := result[top]; !seen {
+				result[top] = *current
+			}
+		}
+	}
+	return result
+}

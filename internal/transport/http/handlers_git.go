@@ -45,7 +45,22 @@ func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ref": ref, "path": sub, "entries": entries, "is_empty": false})
+	// Attach the last commit touching each entry so the file list can show the
+	// message and relative time like a real code host (one git walk total).
+	type entryWithCommit struct {
+		git.TreeEntry
+		LastCommit *git.Commit `json:"last_commit,omitempty"`
+	}
+	commits, _ := s.deps.Git.LastCommitsByPath(r.Context(), path, ref, sub)
+	enriched := make([]entryWithCommit, 0, len(entries))
+	for _, e := range entries {
+		row := entryWithCommit{TreeEntry: e}
+		if c, ok := commits[e.Name]; ok {
+			row.LastCommit = &c
+		}
+		enriched = append(enriched, row)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ref": ref, "path": sub, "entries": enriched, "is_empty": false})
 }
 
 func (s *Server) handleBlob(w http.ResponseWriter, r *http.Request) {
