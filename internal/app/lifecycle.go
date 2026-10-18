@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
@@ -53,6 +55,10 @@ func (a *App) Serve(ctx context.Context) error {
 		a.Log.Error("database migration failed, refusing to start", "error", err)
 		return fmt.Errorf("migrate: %w", err)
 	}
+	if err := httptransport.SetTrustedProxies(a.Cfg.Server.TrustedProxies); err != nil {
+		return err
+	}
+	a.printBanner()
 	handler := httptransport.NewServer(a.Deps).Router()
 
 	if a.Cfg.Runner.Enabled && a.Deps.Runners != nil {
@@ -91,9 +97,14 @@ func (a *App) Serve(ctx context.Context) error {
 			a.Log.Warn("ssh init failed, continuing with HTTP only", "error", err)
 		} else {
 			sshSrv = builtin
-			if err := builtin.ListenAndServe(ctx); err != nil {
-				a.Log.Warn("ssh server stopped", "error", err)
-			}
+			// Run in a goroutine: ListenAndServe blocks until ctx is cancelled,
+			// and calling it inline would prevent signal handling from ever
+			// being registered.
+			go func(srv *sshdispatch.Server) {
+				if err := srv.ListenAndServe(ctx); err != nil {
+					a.Log.Warn("ssh server stopped", "error", err)
+				}
+			}(builtin)
 		}
 	} else {
 		a.Log.Info("SSH server disabled by config")
@@ -104,7 +115,9 @@ func (a *App) Serve(ctx context.Context) error {
 	defer stop()
 	<-sigCtx.Done()
 
-	a.Log.Info("shutting down")
+	a.Log.Warn(fmt.Sprintf("PID %d. Received signal. Shutting down gracefully...", os.Getpid()))
+
+	// Give in-flight requests (large clones/pushes) up to 10s to finish.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
@@ -112,10 +125,22 @@ func (a *App) Serve(ctx context.Context) error {
 		wg.Add(1)
 		go func(s *http.Server) {
 			defer wg.Done()
-			_ = s.Shutdown(shutdownCtx)
+			if err := s.Shutdown(shutdownCtx); err != nil {
+				a.Log.Warn("HTTP listener shutdown incomplete", "error", err)
+			}
+			a.Log.Info("HTTP Listener: " + s.Addr + " Closed")
 		}(srv)
 	}
 	wg.Wait()
+
+	if sshSrv != nil {
+		// The SSH server exits when its context is cancelled; the signal
+		// context above already triggered that.
+		a.Log.Info("SSH Listener: " + strings.Join(a.Cfg.Server.SSHListen, ",") + " Closed")
+	}
+
+	a.Log.Info("Background workers stopped")
+	a.Log.Info(fmt.Sprintf("PID %d Gitli Web Finished", os.Getpid()))
 	return nil
 }
 
@@ -133,6 +158,7 @@ func (a *App) startHTTP(ctx context.Context, handler http.Handler) ([]*http.Serv
 		}
 		srv := &http.Server{
 			Handler:           handler,
+			Addr:              ln.Addr().String(),
 			ReadHeaderTimeout: 15 * time.Second,
 		}
 		servers = append(servers, srv)
@@ -159,7 +185,9 @@ func (a *App) Close() error {
 		a.Deps.Audit.Stop()
 	}
 	if a.DB != nil {
-		return a.DB.Close()
+		err := a.DB.Close()
+		a.Log.Info("Database connection pool closed")
+		return err
 	}
 	return nil
 }

@@ -4,6 +4,8 @@ package http
 import (
 	"context"
 	"log/slog"
+	"net/http"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/config"
 	"github.com/LiStudioorg/gitli/internal/db"
@@ -153,3 +155,22 @@ func (d *Deps) ExternalBase() string { return d.External.HTTPBase }
 
 // HTTPSecure reports whether the external URL uses https.
 func (d *Deps) HTTPSecure() bool { return isHTTPS(d.External.HTTPBase) }
+
+// cookieSecure decides the Secure flag for a specific request. The external URL
+// is only a hint: behind a plain-HTTP reverse proxy (or on Termux served over
+// http://localhost) a Secure cookie would be silently dropped by the browser,
+// which shows up as "logged in, then logged out on refresh".
+func (d *Deps) cookieSecure(r *http.Request) bool {
+	if r == nil {
+		return d.HTTPSecure()
+	}
+	if r.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
+		return true
+	}
+	// Fall back to the configured external URL only when the request itself
+	// arrived over TLS-capable transport.
+	return d.HTTPSecure() && r.TLS != nil
+}

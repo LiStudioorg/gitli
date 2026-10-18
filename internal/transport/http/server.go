@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/LiStudioorg/gitli/internal/platform"
 	"github.com/LiStudioorg/gitli/internal/transport/http/middleware"
 	"github.com/LiStudioorg/gitli/internal/version"
 	"github.com/LiStudioorg/gitli/web"
@@ -17,8 +18,10 @@ import (
 
 // Server holds dependencies for the HTTP transport.
 type Server struct {
-	deps   *Deps
-	apiLim *middleware.RateLimiter
+	deps    *Deps
+	apiLim  *middleware.RateLimiter
+	regLim  *middleware.RateLimiter
+	gitAuth *gitAuthCache
 }
 
 // NewServer constructs the HTTP transport.
@@ -26,6 +29,9 @@ func NewServer(deps *Deps) *Server {
 	return &Server{
 		deps:   deps,
 		apiLim: middleware.NewRateLimiter(600, time.Minute),
+		// M-07: registration is a common abuse target; cap it far lower.
+		regLim:  middleware.NewRateLimiter(5, 10*time.Minute),
+		gitAuth: newGitAuthCache(),
 	}
 }
 
@@ -37,9 +43,12 @@ func (s *Server) Router() http.Handler {
 	r.Use(middleware.Recover(d.Log))
 	r.Use(middleware.SecurityHeaders(d.HTTPSecure()))
 	r.Use(middleware.CORS(d.ExternalBase()))
+	r.Use(middleware.Compress())
+	r.Use(middleware.IssueCSRF())
 	r.Use(s.usernameRedirect)
 
 	r.Get("/healthz", s.handleHealth)
+	r.Get("/readyz", s.handleReady)
 	r.Get("/metrics", s.handleMetrics)
 	if d.Cfg.Server.EnablePprof {
 		r.Mount("/debug/pprof", http.DefaultServeMux)
@@ -93,6 +102,10 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api := chi.NewRouter()
+	// M-08: per-IP request throttling for the whole API surface. The limiter
+	// was previously constructed but never mounted, leaving API endpoints
+	// unprotected against high-rate abuse.
+	api.Use(s.apiLim.Middleware(clientIP))
 	api.Use(middleware.SetupGuard(
 		func(ctx context.Context) (bool, error) { return d.Auth.IsInitialized(ctx) },
 		[]string{"/api/v1/version", "/api/v1/setup/status", "/api/v1/setup"},
@@ -141,7 +154,7 @@ func (s *Server) Router() http.Handler {
 	})
 
 	api.Route("/auth", func(ar chi.Router) {
-		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/register", s.handleRegister)
+		ar.With(middleware.MaxBody(middleware.BodyLimitTiny), s.regLim.Middleware(clientIP)).Post("/register", s.handleRegister)
 		ar.With(middleware.MaxBody(middleware.BodyLimitTiny)).Post("/login", s.handleLogin)
 		ar.Post("/logout", s.handleLogout)
 		ar.Get("/oidc/login", s.handleOIDCLogin)
@@ -279,6 +292,7 @@ func (s *Server) Router() http.Handler {
 		rr.With(middleware.MaxBody(middleware.BodyLimitLarge)).Post("/{owner}/{repo}/wiki", s.handleCreateWikiPage)
 		rr.With(middleware.MaxBody(middleware.BodyLimitLarge)).Put("/{owner}/{repo}/wiki/{slug}", s.handleUpdateWikiPage)
 		rr.Delete("/{owner}/{repo}/wiki/{slug}", s.handleDeleteWikiPage)
+		rr.Get("/{owner}/{repo}/activities", s.handleRepoActivities)
 		rr.Get("/{owner}/{repo}/releases", s.handleListReleases)
 		rr.Get("/{owner}/{repo}/releases/{tag}", s.handleGetRelease)
 		rr.Post("/{owner}/{repo}/releases", s.handleCreateRelease)
@@ -398,8 +412,16 @@ func (s *Server) Router() http.Handler {
 	r.Get("/api/v1/explore/topics/{topic}", s.handleTopic)
 	r.Get("/api/v1/explore/activity", s.handleExploreActivity)
 
+	r.NotFound(notFoundHandler)
 	web.Mount(r, d.Log)
 	return r
+}
+
+// notFoundHandler answers unmatched routes. Having an explicit handler (rather
+// than chi's default) gives the request logger a stable name to report instead
+// of "unknown" for 404s.
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotFound, "接口不存在")
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -408,6 +430,49 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// handleReady is the readiness probe: it reports whether the instance can
+// actually serve traffic (database reachable, git available, disk writable).
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	checks := map[string]any{}
+	ready := true
+
+	if err := s.deps.DB.PingContext(ctx); err != nil {
+		checks["database"] = "error: " + err.Error()
+		ready = false
+	} else {
+		checks["database"] = "ok"
+	}
+
+	if s.deps.GitCmd != nil {
+		if _, err := s.deps.GitCmd.Run(ctx, "", "--version"); err != nil {
+			checks["git"] = "error: " + err.Error()
+			ready = false
+		} else {
+			checks["git"] = "ok"
+		}
+	}
+
+	diskRoot := s.deps.Cfg.Storage.Repos
+	if total, free, err := platform.DiskUsage(diskRoot); err != nil {
+		checks["disk"] = "unknown"
+	} else {
+		checks["disk"] = map[string]any{"total_mb": total >> 20, "free_mb": free >> 20}
+		if total > 0 && free*100/total < 2 {
+			checks["disk_status"] = "low"
+		}
+	}
+
+	status := http.StatusOK
+	state := "ready"
+	if !ready {
+		status = http.StatusServiceUnavailable
+		state = "not_ready"
+	}
+	writeJSON(w, status, map[string]any{"status": state, "checks": checks})
 }
 
 func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {

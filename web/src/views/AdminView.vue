@@ -884,7 +884,7 @@ onMounted(() => {
           <form class="filters" @submit.prevent="loadUsers">
             <label class="filter search-field">
               <span>搜索用户</span>
-              <input v-model="usersQuery" type="search" placeholder="用户名或邮箱" />
+              <input v-model="usersQuery" type="search" placeholder="用户名或邮箱" aria-label="搜索用户" />
             </label>
             <div class="filter filter-actions">
               <button class="btn primary" type="submit">搜索</button>
@@ -980,7 +980,7 @@ onMounted(() => {
           <form class="filters" @submit.prevent="loadRepos">
             <label class="filter search-field">
               <span>搜索仓库</span>
-              <input v-model="reposQuery" type="search" placeholder="仓库名称" />
+              <input v-model="reposQuery" type="search" placeholder="仓库名称" aria-label="搜索仓库" />
             </label>
             <div class="filter filter-actions">
               <button class="btn primary" type="submit">搜索</button>
@@ -1564,7 +1564,7 @@ onMounted(() => {
 }
 .stat-card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
   display: flex;
@@ -1588,7 +1588,7 @@ onMounted(() => {
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 table {
   width: 100%;
@@ -1720,7 +1720,7 @@ tbody tr:last-child td {
 .modal {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 1.25rem;
   width: min(520px, 100%);
   max-height: 90vh;
@@ -1755,7 +1755,7 @@ tbody tr:last-child td {
 .token-box {
   border: 1px solid var(--accent);
   background: var(--accent-soft);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
@@ -1970,7 +1970,7 @@ tbody tr:last-child td {
 }
 .chart-card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
   min-width: 0;
@@ -2049,7 +2049,7 @@ tbody tr:last-child td {
   margin-top: 1rem;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
 }
 .panel-title {
@@ -2066,7 +2066,7 @@ tbody tr:last-child td {
   margin-top: 1rem;
   padding: 1rem;
   border: 1px solid rgba(209, 36, 47, 0.5);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
 }
 .search-field input {

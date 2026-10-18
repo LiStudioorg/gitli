@@ -34,11 +34,23 @@ func run(args []string) error {
 		if err := fs.Parse(args); err != nil {
 			return err
 		}
+		created, err := ensureConfigFile(*configPath)
+		if err != nil {
+			return err
+		}
+		if created {
+			fmt.Printf("未找到配置文件 %s，已自动生成默认配置（含随机加密密钥）。\n", *configPath)
+		} else if err := ensureConfiguredSecrets(*configPath); err != nil {
+			return err
+		}
 		cfg, err := config.Load(*configPath)
 		if err != nil {
 			return err
 		}
 		if err := refuseRoot(cfg); err != nil {
+			return err
+		}
+		if err := checkWeakSecrets(cfg); err != nil {
 			return err
 		}
 		return runServe(context.Background(), cfg, *configPath)
@@ -59,6 +71,8 @@ func run(args []string) error {
 		return nil
 	case "hook":
 		return runHookCommand(rest)
+	case "install":
+		return runInstall(rest)
 	case "backup":
 		return runBackupCommand(rest)
 	case "restore":
@@ -79,6 +93,13 @@ func run(args []string) error {
 		return err
 	}
 
+	if created, err := ensureConfigFile(*configPath); err != nil {
+		return err
+	} else if created {
+		fmt.Printf("未找到配置文件 %s，已自动生成默认配置（含随机加密密钥）。\n", *configPath)
+	} else if err := ensureConfiguredSecrets(*configPath); err != nil {
+		return err
+	}
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		return err
@@ -92,6 +113,9 @@ func run(args []string) error {
 
 	switch cmd {
 	case "serve", "server":
+		if err := checkWeakSecrets(cfg); err != nil {
+			return err
+		}
 		return runServe(ctx, cfg, *configPath)
 	case "migrate":
 		return runMigrate(ctx, cfg, *configPath)
@@ -288,7 +312,7 @@ func runImport(args []string) error {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
 	configPath := fs.String("config", "config.toml", "配置文件路径")
 	repoID := fs.Int64("repo-id", 0, "导入目标仓库 ID")
-	source := fs.String("source", "generic", "来源类型：github|gitlab|gitea|generic")
+	source := fs.String("source", "generic", "来源类型：hosted|generic")
 	url := fs.String("url", "", "来源仓库地址")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -429,6 +453,7 @@ func usage() {
   backup         备份数据
   restore        恢复数据
   hook           执行服务端 Git 钩子（由 git 调用）
+  install        安装为 systemd 系统服务（需 root；--print 仅输出 unit）
   version        显示版本信息
   help           显示本帮助
 

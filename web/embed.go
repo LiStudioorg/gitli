@@ -20,6 +20,16 @@ func FS() (fs.FS, error) {
 	return fs.Sub(distFS, "dist")
 }
 
+// setAssetCacheHeaders gives content-hashed build output an immutable cache
+// lifetime while keeping unhashed files revalidated.
+func setAssetCacheHeaders(w http.ResponseWriter, path string) {
+	if strings.HasPrefix(path, "assets/") {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		return
+	}
+	w.Header().Set("Cache-Control", "no-cache")
+}
+
 // Mount registers static asset and SPA fallback handlers on the router.
 func Mount(r chi.Router, log *slog.Logger) {
 	sub, err := FS()
@@ -38,6 +48,7 @@ func Mount(r chi.Router, log *slog.Logger) {
 		}
 		if f, err := sub.Open(path); err == nil {
 			_ = f.Close()
+			setAssetCacheHeaders(w, path)
 			fileServer.ServeHTTP(w, req)
 			return
 		}
@@ -47,6 +58,8 @@ func Mount(r chi.Router, log *slog.Logger) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// index.html must always revalidate so new deployments take effect.
+		w.Header().Set("Cache-Control", "no-cache")
 		_, _ = w.Write(index)
 	}))
 }

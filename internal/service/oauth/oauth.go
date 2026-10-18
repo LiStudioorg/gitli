@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -43,13 +44,39 @@ func New(st *store.Store) *Service {
 	return &Service{st: st}
 }
 
+// ValidateRedirectURIFormat enforces an absolute http(s) URL. Fragments are
+// rejected because the OAuth spec forbids them in redirect URIs.
+func ValidateRedirectURIFormat(raw string) error {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return fmt.Errorf("oauth: 无效的回调地址 %q", raw)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("oauth: 回调地址必须以 http:// 或 https:// 开头")
+	}
+	if u.Host == "" {
+		return fmt.Errorf("oauth: 回调地址缺少主机名")
+	}
+	if u.Fragment != "" {
+		return fmt.Errorf("oauth: 回调地址不能包含 # 片段")
+	}
+	return nil
+}
+
 // CreateApp registers an application and returns the one-time plaintext secret.
 func (s *Service) CreateApp(ctx context.Context, ownerID int64, name string, redirectURIs, scopes []string) (*App, string, error) {
 	if name == "" {
-		return nil, "", fmt.Errorf("oauth: name required")
+		return nil, "", fmt.Errorf("oauth: 必须填写应用名称")
 	}
 	if len(redirectURIs) == 0 {
-		return nil, "", fmt.Errorf("oauth: at least one redirect uri required")
+		return nil, "", fmt.Errorf("oauth: 至少需要一个回调地址")
+	}
+	// H-07: an unvalidated scheme allows "javascript:..." which executes in the
+	// authorize page origin, and arbitrary hosts enable open redirects.
+	for _, uri := range redirectURIs {
+		if err := ValidateRedirectURIFormat(uri); err != nil {
+			return nil, "", err
+		}
 	}
 	clientID, err := randID("glo_")
 	if err != nil {

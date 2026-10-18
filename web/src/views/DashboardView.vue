@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import TopNav from '../components/layout/TopNav.vue'
-import Sidebar from '../components/layout/Sidebar.vue'
+import AppLayout from '../components/layout/AppLayout.vue'
+import ErrorAlert from '../components/common/ErrorAlert.vue'
 import ActivityItem from '../components/common/ActivityItem.vue'
 import ContributionGraph from '../components/common/ContributionGraph.vue'
 import RepoSidebarCard from '../components/common/RepoSidebarCard.vue'
+import SkeletonBlock from '../components/common/SkeletonBlock.vue'
 import { useAuthStore, useNotificationStore, useRepoStore } from '../stores'
 import type { Repo } from '../stores'
 import { useSSE } from '../composables/useSSE'
@@ -15,6 +16,7 @@ const repos = useRepoStore()
 const notifications = useNotificationStore()
 const router = useRouter()
 const removing = ref<number | null>(null)
+const loading = ref(true)
 const removeError = ref('')
 
 useSSE({
@@ -27,11 +29,15 @@ onMounted(async () => {
     await router.replace({ path: '/login', query: { redirect: '/dashboard' } })
     return
   }
-  await Promise.all([
-    repos.fetchMyRepos().catch(() => undefined),
-    repos.fetchActivities().catch(() => undefined),
-    notifications.fetchAll().catch(() => undefined),
-  ])
+  try {
+    await Promise.all([
+      repos.fetchMyRepos().catch(() => undefined),
+      repos.fetchActivities().catch(() => undefined),
+      notifications.fetchAll().catch(() => undefined),
+    ])
+  } finally {
+    loading.value = false
+  }
 })
 
 const hasActivities = computed(() => repos.activities.length > 0)
@@ -59,209 +65,118 @@ async function removeRepo(repo: Repo) {
 </script>
 
 <template>
-  <div class="dashboard">
-    <TopNav variant="app" />
-    <div class="shell">
-      <Sidebar />
-      <main class="content">
-        <div class="columns">
-          <section class="main-col">
-            <header class="col-head">
-              <h2>动态流</h2>
-              <span class="muted">你最近的仓库活动</span>
-            </header>
+  <AppLayout>
+    <ErrorAlert v-if="removeError" title="操作失败" :message="removeError" @dismiss="removeError = ''" />
+    <ErrorAlert
+      v-if="notifications.error && !notifications.items.length"
+      title="通知加载失败"
+      :message="notifications.error"
+      @dismiss="notifications.error = ''"
+    />
 
-            <div v-if="hasActivities" class="feed">
-              <ActivityItem v-for="a in repos.activities" :key="a.id" :activity="a" />
-            </div>
-            <div v-else class="empty-state">
-              <p class="empty-title">还没有任何动态</p>
-              <p class="muted">创建仓库、推送代码或提交工单后，这里会显示你的活动记录。</p>
-              <RouterLink class="cta" to="/new/repo">创建第一个仓库</RouterLink>
-            </div>
+    <!-- 概览卡片：PC 三列，移动端单列 -->
+    <section class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <p class="text-xs font-medium text-[#656d76]">我的仓库</p>
+        <p class="mt-1 truncate text-xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">
+          {{ repos.myRepos.length }}
+        </p>
+      </div>
+      <div class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <p class="text-xs font-medium text-[#656d76]">未读通知</p>
+        <p class="mt-1 truncate text-xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">
+          {{ notifications.unread }}
+        </p>
+      </div>
+      <div class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+        <p class="text-xs font-medium text-[#656d76]">最近活动</p>
+        <p class="mt-1 truncate text-xl font-semibold text-[#1f2328] dark:text-[#e6edf3]">
+          {{ repos.activities.length }}
+        </p>
+      </div>
+    </section>
 
-            <section v-if="notifications.items.length" class="panel">
-              <header class="panel-head">
-                <h2>通知</h2>
-                <span v-if="notifications.unread" class="badge">{{ notifications.unread }}</span>
-              </header>
-              <p v-if="notifications.error" class="error">{{ notifications.error }}</p>
-              <ul class="notif-list">
-                <li v-for="n in notifications.items" :key="n.ID" :class="{ read: n.IsRead }">
-                  <span class="dot" :class="{ unread: !n.IsRead }" />
-                  <RouterLink v-if="n.URL" class="notif-title" :to="n.URL">{{ n.Title }}</RouterLink>
-                  <span v-else class="notif-title">{{ n.Title }}</span>
-                  <button v-if="!n.IsRead" class="link-btn" type="button" @click="markRead(n.ID)">
-                    标记已读
-                  </button>
-                </li>
-              </ul>
-            </section>
-          </section>
+    <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+      <section class="min-w-0 lg:col-span-2">
+        <header class="mb-3 flex items-baseline gap-2">
+          <h2 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">动态流</h2>
+          <span class="text-xs text-[#656d76]">你最近的仓库活动</span>
+        </header>
 
-          <aside class="side-col">
-            <RepoSidebarCard :repos="repos.myRepos" :username="auth.user?.username" @remove="removeRepo" />
-            <p v-if="removeError" class="error">{{ removeError }}</p>
-            <ContributionGraph :activities="repos.activities" />
-          </aside>
+        <div v-if="loading" class="flex flex-col gap-3">
+          <div
+            v-for="i in 4"
+            :key="i"
+            class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
+          >
+            <SkeletonBlock :lines="3" />
+          </div>
         </div>
-      </main>
+        <div v-else-if="hasActivities" class="flex flex-col gap-3">
+          <ActivityItem v-for="a in repos.activities" :key="a.id" :activity="a" />
+        </div>
+        <div
+          v-else
+          class="rounded-md border border-dashed border-[#d0d7de] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
+        >
+          <p class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">还没有任何动态</p>
+          <p class="mx-auto mt-1 max-w-md text-sm text-[#656d76]">
+            创建仓库、推送代码或提交工单后，这里会显示你的活动记录。
+          </p>
+          <RouterLink
+            to="/new/repo"
+            class="mt-4 inline-flex rounded-md bg-[#ea580c] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#c2410c]"
+          >
+            创建第一个仓库
+          </RouterLink>
+        </div>
+
+        <section
+          v-if="notifications.items.length"
+          class="mt-6 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]"
+        >
+          <header class="mb-2 flex items-center gap-2">
+            <h2 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">通知</h2>
+            <span
+              v-if="notifications.unread"
+              class="rounded-full bg-[#ea580c] px-2 py-0.5 text-xs font-semibold text-white"
+            >
+              {{ notifications.unread }}
+            </span>
+          </header>
+          <ul class="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+            <li
+              v-for="n in notifications.items"
+              :key="n.ID"
+              class="flex items-center gap-2 py-2 text-sm"
+              :class="{ 'opacity-60': n.IsRead }"
+            >
+              <span
+                class="h-2 w-2 shrink-0 rounded-full"
+                :class="n.IsRead ? 'bg-transparent' : 'bg-[#ea580c]'"
+              />
+              <RouterLink v-if="n.URL" :to="n.URL" class="min-w-0 flex-1 truncate text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]">
+                {{ n.Title }}
+              </RouterLink>
+              <span v-else class="min-w-0 flex-1 truncate text-[#1f2328] dark:text-[#e6edf3]">{{ n.Title }}</span>
+              <button
+                v-if="!n.IsRead"
+                type="button"
+                class="shrink-0 text-xs font-medium text-[#ea580c] hover:underline"
+                @click="markRead(n.ID)"
+              >
+                标记已读
+              </button>
+            </li>
+          </ul>
+        </section>
+      </section>
+
+      <aside class="flex min-w-0 flex-col gap-4">
+        <RepoSidebarCard :repos="repos.myRepos" :username="auth.user?.username" @remove="removeRepo" />
+        <ContributionGraph :activities="repos.activities" />
+      </aside>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
-<style scoped>
-.shell {
-  display: flex;
-  min-height: calc(100vh - 57px);
-}
-.content {
-  flex: 1;
-  min-width: 0;
-  padding: 1.5rem;
-}
-.columns {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(260px, 3fr);
-  gap: 1.5rem;
-  align-items: start;
-  max-width: 1200px;
-}
-.col-head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin-bottom: 0.9rem;
-}
-.col-head h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-.feed {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.side-col {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  position: sticky;
-  top: 1.5rem;
-}
-.empty-state {
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  padding: 2rem 1.25rem;
-  text-align: center;
-  background: var(--card);
-}
-.empty-title {
-  margin: 0 0 0.35rem;
-  font-weight: 600;
-}
-.muted {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.cta {
-  display: inline-block;
-  margin-top: 0.9rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
-  background: var(--primary);
-  color: #fff;
-  text-decoration: none;
-  font-size: 0.86rem;
-}
-.panel {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--card);
-  padding: 0.9rem 1rem;
-  margin-top: 1.5rem;
-}
-.panel-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.panel-head h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 0.4rem;
-  border-radius: 999px;
-  background: var(--accent, #f59e0b);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.notif-list {
-  list-style: none;
-  padding: 0;
-  margin: 0.75rem 0 0;
-}
-.notif-list li {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-}
-.notif-list li:last-child {
-  border-bottom: none;
-}
-.notif-list li.read {
-  opacity: 0.6;
-}
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: transparent;
-  flex-shrink: 0;
-}
-.dot.unread {
-  background: var(--primary);
-}
-.notif-title {
-  flex: 1;
-  min-width: 0;
-  color: var(--fg);
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-a.notif-title:hover {
-  color: var(--primary);
-}
-.link-btn {
-  border: none;
-  background: transparent;
-  color: var(--primary);
-  font-size: 0.78rem;
-  cursor: pointer;
-  padding: 0;
-}
-.error {
-  color: #d1242f;
-  font-size: 0.82rem;
-}
-@media (max-width: 960px) {
-  .columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .side-col {
-    position: static;
-  }
-}
-</style>

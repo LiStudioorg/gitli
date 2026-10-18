@@ -52,7 +52,7 @@ function repoLink(r: Repo): string {
         {{ t.label }}
       </button>
     </nav>
-    <input v-model="query" class="search" type="search" placeholder="过滤仓库..." />
+    <input v-model="query" class="search" type="search" placeholder="过滤仓库..." aria-label="过滤仓库" />
     <ul v-if="filtered.length" class="list">
       <li v-for="r in filtered" :key="r.id">
         <span class="repo-icon" aria-hidden="true">{{ r.is_fork ? '⑂' : r.is_private ? '🔒' : '📦' }}</span>
@@ -76,7 +76,7 @@ function repoLink(r: Repo): string {
 <style scoped>
 .card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
 }

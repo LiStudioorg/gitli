@@ -28,7 +28,7 @@ func (s *Server) handleOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	nonce, _ := oidc.RandomState()
 	// Persist state/verifier/nonce in short-lived cookies for the callback.
-	secure := s.deps.HTTPSecure()
+	secure := s.deps.cookieSecure(r)
 	setShortCookie(w, "gitli_oidc_state", state, secure)
 	setShortCookie(w, "gitli_oidc_verifier", verifier, secure)
 	setShortCookie(w, "gitli_oidc_nonce", nonce, secure)
@@ -92,7 +92,7 @@ func (s *Server) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   s.deps.HTTPSecure(),
+		Secure:   s.deps.cookieSecure(r),
 		MaxAge:   30 * 24 * 3600,
 	})
 	uid := u.ID

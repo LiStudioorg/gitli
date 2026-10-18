@@ -17,3 +17,12 @@ export function errMessage(e: unknown, fallback = '未知错误'): string {
 export function apiStatus(e: unknown): number | undefined {
   return axios.isAxiosError(e) ? e.response?.status : undefined
 }
+
+/**
+ * 稳定错误码。后端文案会随语言调整，客户端必须匹配 code 而非 error 文本。
+ */
+export function apiCode(e: unknown): string {
+  if (!axios.isAxiosError(e)) return ''
+  const data = e.response?.data as { code?: string } | undefined
+  return data?.code ?? ''
+}

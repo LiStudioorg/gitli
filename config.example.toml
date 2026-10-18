@@ -145,7 +145,7 @@ salt_length = 16
 key_length = 32
 
 # 密码最小长度。默认：12。低于该长度拒绝注册/改密。
-min_length = 12
+min_length = 8
 
 # 是否启用 HaveIBeenPwned k-匿名弱密码检测（会向 api.pwnedpasswords.com 发起请求）。
 # 可选值：true / false。默认：false
@@ -311,10 +311,11 @@ maven_max_artifact_mb = 100
 # -----------------------------------------------------------------------------
 # 所有 Git 调用均带超时、白名单环境变量，且禁止 shell 字符串拼接。
 [git]
-# git 可执行文件路径。留空则自动从 PATH 查找。
-# 生产环境推荐显式指定，例如 "/usr/bin/git"，避免 PATH 被篡改。
+# git 可执行文件路径。留空则自动查找（Linux/macOS 用 PATH，
+# Android/Termux 使用固定路径，因为系统 seccomp 禁止 PATH 遍历）。
+# 生产环境推荐显式指定，例如 "/usr/bin/git"。
 # 默认：""（自动查找）
-bin = "/usr/bin/git"
+bin = ""
 
 # 单次 git 调用超时（秒）。默认：300
 timeout_seconds = 300
@@ -360,7 +361,24 @@ max_connections = 32
 level = "info"
 
 # 日志格式。可选值：text / json。默认：text
+# 生产环境推荐 json，便于日志采集。
 format = "text"
+
+# 日志文件路径。留空则输出到标准错误（由 systemd/docker 收集）。
+# 设置后按大小自动轮转，避免写满磁盘。
+file = ""
+
+# 单个日志文件的最大体积（MB）。默认：100
+max_size_mb = 100
+
+# 保留的历史日志文件数量。默认：5
+max_backups = 5
+
+# 历史日志保留天数。默认：30
+max_age_days = 30
+
+# 是否压缩历史日志。默认：false
+compress = false
 
 
 # -----------------------------------------------------------------------------

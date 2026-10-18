@@ -62,12 +62,17 @@ const features = [
   margin: 0 auto;
 }
 .hero {
+  position: relative;
   text-align: center;
-  padding: 4.5rem 1.5rem 3rem;
+  padding: 5rem 1.5rem 3.5rem;
+  background:
+    radial-gradient(900px 320px at 50% -20%, var(--primary-soft), transparent 68%);
+  border-radius: 0 0 28px 28px;
 }
 .hero h1 {
-  font-size: 2.4rem;
-  line-height: 1.3;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.28;
+  letter-spacing: -0.02em;
   margin: 0 0 1rem;
 }
 .subtitle {
@@ -81,27 +86,57 @@ const features = [
   display: flex;
   gap: 0.75rem;
   justify-content: center;
+  flex-wrap: wrap;
 }
 .btn {
-  padding: 0.6rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.6rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.98rem;
+  font-weight: 600;
   color: var(--color-fg);
+  background: var(--card);
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+}
+.btn:hover {
+  background: var(--hover-bg);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+.btn:active {
+  transform: translateY(1px);
 }
 .btn.primary {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .btn.primary:hover {
   background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #fff;
 }
 .features {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
   padding: 1.5rem;
+}
+.features > * {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.features > *:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
 .about {
   text-align: center;

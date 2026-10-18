@@ -69,6 +69,16 @@ jobs:
           npm ci
           npm run build
 
+      - name: Verify committed dist matches source
+        run: |
+          # web/dist is embedded in the binary, so a stale commit silently ships
+          # old UI code. Fail loudly when npm run build produced different files.
+          if ! git diff --quiet -- web/dist; then
+            echo "web/dist is out of date; run 'cd web && npm run build' and commit the result"
+            git --no-pager diff --stat -- web/dist
+            exit 1
+          fi
+
       - name: Build (verify embed)
         run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o gitli .
 

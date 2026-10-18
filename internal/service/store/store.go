@@ -5,6 +5,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/db"
 )
@@ -51,3 +52,19 @@ func (s *Store) ExecAffectedOr(ctx context.Context, notFound error, query string
 	}
 	return nil
 }
+
+// EscapeLike escapes SQL LIKE wildcards so user input is matched literally.
+// Callers still use a parameterised query; this only neutralises % and _.
+// The backslash is escaped first because it is the escape character itself.
+func EscapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, "%", `\%`)
+	s = strings.ReplaceAll(s, "_", `\_`)
+	return s
+}
+
+// ContainsPattern builds a "%value%" pattern with wildcards escaped.
+func ContainsPattern(s string) string { return "%" + EscapeLike(s) + "%" }
+
+// PrefixPattern builds a "value%" pattern with wildcards escaped.
+func PrefixPattern(s string) string { return EscapeLike(s) + "%" }

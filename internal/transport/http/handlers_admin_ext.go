@@ -77,7 +77,22 @@ func (s *Server) handleAdminSetActive(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.auditAction(r, u.ID, "admin.user.disable", "success")
+	// A deactivated account must not keep working through cached credentials
+	// or existing sessions.
+	if !*req.Active {
+		if s.gitAuth != nil {
+			s.gitAuth.invalidateUser(id)
+		}
+		if err := s.deps.Auth.RevokeAllSessions(r.Context(), id); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+	if *req.Active {
+		s.auditAction(r, u.ID, "admin.user.enable", "success")
+	} else {
+		s.auditAction(r, u.ID, "admin.user.disable", "success")
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "active": *req.Active})
 }
 
@@ -101,6 +116,9 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if s.gitAuth != nil {
+		s.gitAuth.invalidateUser(u.ID)
+	}
 	s.auditAction(r, u.ID, "admin.user.reset_password", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"password": tmp})
 }
@@ -121,6 +139,14 @@ func (s *Server) handleAdminReset2FA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Users.ResetTOTP(r.Context(), id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if s.gitAuth != nil {
+		s.gitAuth.invalidateUser(id)
+	}
+	// Force re-login: an attacker holding a session should not survive a 2FA reset.
+	if err := s.deps.Auth.RevokeAllSessions(r.Context(), id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

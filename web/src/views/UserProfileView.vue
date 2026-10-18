@@ -46,6 +46,18 @@ const auth = useAuthStore()
 const username = computed(() => route.params.username as string)
 
 const profile = ref<ProfileResponse | null>(null)
+
+// Only http(s) links are rendered as anchors; anything else (notably
+// javascript:) is shown as plain text so a profile cannot execute script.
+function safeWebsite(url: string | undefined): string {
+  if (!url) return ''
+  try {
+    const parsed = new URL(url, window.location.origin)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : ''
+  } catch {
+    return ''
+  }
+}
 const loading = ref(false)
 const error = ref('')
 
@@ -72,7 +84,14 @@ async function loadProfile() {
   error.value = ''
   try {
     const { data } = await api.get<ProfileResponse>(`/users/${username.value}`)
-    profile.value = data
+    // Defensive normalisation: a null repos array would crash template
+    // evaluation and leave the whole page blank.
+    profile.value = {
+      ...data,
+      repos: data.repos ?? [],
+      followers: data.followers ?? 0,
+      following: data.following ?? 0,
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载用户信息失败'
     profile.value = null
@@ -151,7 +170,8 @@ void loadProfile()
             <ul class="facts">
               <li v-if="profile.user.location">📍 {{ profile.user.location }}</li>
               <li v-if="profile.user.website">
-                <a :href="profile.user.website" target="_blank" rel="noopener">🔗 {{ profile.user.website }}</a>
+                <a v-if="safeWebsite(profile.user.website)" :href="safeWebsite(profile.user.website)" target="_blank" rel="noopener noreferrer">🔗 {{ profile.user.website }}</a>
+                <span v-else>🔗 {{ profile.user.website }}</span>
               </li>
             </ul>
           </div>
@@ -349,7 +369,7 @@ void loadProfile()
 .card {
   padding: 1.2rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
   transition: border-color 0.15s, box-shadow 0.15s;
 }

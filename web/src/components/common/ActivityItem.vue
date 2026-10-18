@@ -78,7 +78,7 @@ function relativeTime(raw: string): string {
   gap: 0.85rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
   transition: border-color 0.15s;
 }

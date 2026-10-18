@@ -183,9 +183,17 @@ func (s *Server) authenticateGitBasic(r *http.Request) (*domain.User, bool) {
 		}
 		return target, true
 	}
+	if s.gitAuth != nil {
+		if cached, ok := s.gitAuth.get(username, password); ok {
+			return cached, true
+		}
+	}
 	u, err := s.deps.Auth.VerifyPassword(ctx, username, password)
 	if err != nil {
 		return nil, false
+	}
+	if s.gitAuth != nil {
+		s.gitAuth.put(username, password, u)
 	}
 	return u, true
 }

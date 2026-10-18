@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import CloneDropdown from '../components/repo/CloneDropdown.vue'
 import RepoCodeBrowser from '../components/repo/RepoCodeBrowser.vue'
+import RepoReleases from '../components/repo/RepoReleases.vue'
+import RepoActivity from '../components/repo/RepoActivity.vue'
+import RepoWiki from '../components/repo/RepoWiki.vue'
 import DeployKeys from '../components/repo/DeployKeys.vue'
 import RepoDangerZone from '../components/repo/RepoDangerZone.vue'
 import LanguageStats from '../components/repo/LanguageStats.vue'
 import SavedReplies from '../components/common/SavedReplies.vue'
-import { useShortcuts } from '../composables/useShortcuts'
+import SkeletonBlock from '../components/common/SkeletonBlock.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 import { REPO_TABS, TABS, isRepoTab, type RepoTab } from '../constants/tabs'
@@ -18,6 +22,9 @@ interface RepoResponse {
   repo: Repo
   languages: LanguageStat[]
   license: string
+  is_empty?: boolean
+  has_readme?: boolean
+  readme_filename?: string
 }
 
 interface IssueTemplate {
@@ -35,12 +42,13 @@ interface PrTemplate {
 }
 
 const route = useRoute()
-useShortcuts(() => `${route.params.owner}/${route.params.repo}`)
 const auth = useAuthStore()
 const owner = route.params.owner as string
 const name = route.params.repo as string
 
 const repo = ref<Repo | null>(null)
+const readmeFilename = ref('')
+const repoIsEmpty = ref(false)
 const license = ref('')
 const languages = ref<LanguageStat[]>([])
 const cloneInfo = ref<CloneInfo | null>(null)
@@ -56,8 +64,16 @@ if (isRepoTab(initialTab)) {
 
 const issues = ref<Issue[]>([])
 const pulls = ref<Pull[]>([])
+const issuesLoaded = ref(false)
+const pullsLoaded = ref(false)
 const issuesError = ref('')
 const pullsError = ref('')
+const issueFilter = ref<'open' | 'closed' | 'all'>('open')
+const pullFilter = ref<'open' | 'closed' | 'all'>('open')
+const diffOpen = ref<number | null>(null)
+const diffText = ref('')
+const diffLoading = ref(false)
+const diffMessage = ref('')
 const issuesLoading = ref(false)
 const pullsLoading = ref(false)
 
@@ -281,12 +297,82 @@ async function cancelJob(job: WorkflowJob) {
   }
 }
 
+const filteredIssues = computed(() =>
+  issues.value.filter((i) => issueFilter.value === 'all' || i.State === issueFilter.value),
+)
+const filteredPulls = computed(() =>
+  pulls.value.filter((p) => pullFilter.value === 'all' || p.State === pullFilter.value),
+)
+
+function formatSize(kb: number): string {
+  if (!kb) return '0 B'
+  if (kb < 1024) return `${kb} KB`
+  if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(1)} MB`
+  return `${(kb / 1024 / 1024).toFixed(1)} GB`
+}
+
+function relTime(raw: string): string {
+  const d = new Date(raw.endsWith('Z') || raw.includes('+') ? raw : raw.replace(' ', 'T') + 'Z')
+  if (Number.isNaN(d.getTime())) return raw
+  const diff = Math.max(0, Date.now() - d.getTime())
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return '刚刚'
+  if (min < 60) return `${min} 分钟前`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} 小时前`
+  const days = Math.floor(h / 24)
+  if (days < 30) return `${days} 天前`
+  return d.toLocaleDateString()
+}
+
+// 行级配色：新增绿、删除红、hunk 头蓝、文件头加粗。
+function diffLineClass(line: string): string {
+  if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('diff ')) return 'meta'
+  if (line.startsWith('@@')) return 'hunk'
+  if (line.startsWith('+')) return 'add'
+  if (line.startsWith('-')) return 'del'
+  return ''
+}
+
+async function toggleDiff(p: Pull) {
+  if (diffOpen.value === p.ID) {
+    diffOpen.value = null
+    return
+  }
+  diffOpen.value = p.ID
+  diffText.value = ''
+  diffMessage.value = ''
+  diffLoading.value = true
+  try {
+    const { data } = await api.get(`/repos/${owner}/${name}/diff`, {
+      params: { base: p.BaseBranch, head: p.HeadBranch },
+      responseType: 'text',
+      transformResponse: [(v) => v],
+    })
+    if (typeof data === 'string' && data.trim().startsWith('{')) {
+      const parsed = JSON.parse(data)
+      if (parsed.too_large) {
+        diffMessage.value = parsed.message || '变更内容过大，请在本地查看或下载'
+      } else {
+        diffText.value = data
+      }
+    } else {
+      diffText.value = data || ''
+    }
+  } catch {
+    diffMessage.value = '无法加载变更内容'
+  } finally {
+    diffLoading.value = false
+  }
+}
+
 async function loadIssues() {
   issuesLoading.value = true
   issuesError.value = ''
   try {
     const { data } = await api.get<Issue[]>('/issues', { params: { owner, repo: name } })
     issues.value = data ?? []
+    issuesLoaded.value = true
   } catch {
     issuesError.value = '加载工单失败'
     issues.value = []
@@ -301,6 +387,7 @@ async function loadPulls() {
   try {
     const { data } = await api.get<Pull[]>('/pulls', { params: { owner, repo: name } })
     pulls.value = data ?? []
+    pullsLoaded.value = true
   } catch {
     pullsError.value = '加载合并请求失败'
     pulls.value = []
@@ -744,11 +831,11 @@ async function markAnswer(comment: DiscussionComment) {
 function selectTab(tab: RepoTab) {
   activeTab.value = tab
   if (tab === '工单') {
-    if (!issues.value.length && !issuesLoading.value) loadIssues()
+    if (!issuesLoaded.value && !issuesLoading.value) loadIssues()
     loadIssueTemplates()
   }
   if (tab === '合并请求') {
-    if (!pulls.value.length && !pullsLoading.value) loadPulls()
+    if (!pullsLoaded.value && !pullsLoading.value) loadPulls()
     loadPrTemplate()
   }
   if (tab === '工作流' && !workflowsLoaded.value && !workflowsLoading.value) loadWorkflows()
@@ -768,6 +855,8 @@ onMounted(async () => {
     languages.value = data.languages ?? []
     license.value = data.license ?? ''
     selectedBranch.value = data.repo.default_branch || 'main'
+    readmeFilename.value = data.readme_filename ?? ''
+    repoIsEmpty.value = data.is_empty === true
   } catch {
     repo.value = null
   }
@@ -791,27 +880,36 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="repo-page">
+  <div class="flex min-h-screen flex-col bg-[#f6f8fa] dark:bg-[#0d1117]">
     <TopNav variant="app" />
 
-    <header class="repo-header">
-      <div class="title-row">
-        <span class="repo-icon">&lt;/&gt;</span>
-        <h2>{{ owner }} / {{ name }}</h2>
-        <span v-if="repo?.is_private" class="badge private">私有</span>
-        <span v-if="repo?.archived" class="badge archived">Archived</span>
-        <div class="actions">
-          <button class="chip">Watch 1</button>
-          <button class="chip accent">Star 1</button>
-          <button class="chip">Fork 0</button>
+    <header class="border-b border-[#d0d7de] bg-white px-4 pt-4 dark:border-[#30363d] dark:bg-[#161b22] md:px-6">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#ea580c]/10 text-xs font-bold text-[#ea580c]" aria-hidden="true">&#9679;</span>
+        <h2 class="min-w-0 truncate text-base font-semibold text-[#1f2328] dark:text-[#e6edf3] md:text-lg">
+          <RouterLink :to="`/${owner}`" class="text-[#ea580c] hover:underline">{{ owner }}</RouterLink>
+          <span class="mx-0.5 font-normal text-[#656d76]">/</span>
+          <span class="break-all">{{ name }}</span>
+        </h2>
+        <span v-if="repo?.is_private" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">私有</span>
+        <span v-if="repo?.archived" class="rounded-full border border-[#d0d7de] px-2 py-0.5 text-xs text-[#656d76] dark:border-[#30363d]">已归档</span>
+        <div class="ml-auto flex flex-wrap gap-1.5">
+          <button class="rounded-md border border-[#d0d7de] px-2.5 py-1 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">星标 {{ repo?.StarsCount ?? 0 }}</button>
+          <button class="rounded-md border border-[#d0d7de] px-2.5 py-1 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]">派生 {{ repo?.ForksCount ?? 0 }}</button>
         </div>
       </div>
-      <p v-if="repo?.archived" class="archived-hint">此仓库已归档，只读</p>
-      <nav class="repo-tabs">
+      <p v-if="repo?.archived" class="mt-2 rounded-md border border-[#ff818266] bg-[#fff8c5] px-3 py-1.5 text-xs text-[#9a6700]">
+        此仓库已归档，只读
+      </p>
+      <nav class="mt-3 flex gap-0.5 overflow-x-auto">
         <button
           v-for="t in tabs"
           :key="t"
-          :class="{ active: t === activeTab }"
+          type="button"
+          class="shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors"
+          :class="t === activeTab
+            ? 'border-[#ea580c] font-semibold text-[#ea580c]'
+            : 'border-transparent text-[#656d76] hover:bg-[#f6f8fa] hover:text-[#1f2328] dark:hover:bg-[#21262d] dark:hover:text-[#e6edf3]'"
           @click="selectTab(t)"
         >
           {{ t }}
@@ -819,13 +917,13 @@ onUnmounted(() => {
       </nav>
     </header>
 
-    <div class="repo-meta">
+    <div class="flex items-center gap-4 border-b border-[#d0d7de] bg-white px-4 py-1.5 text-xs text-[#656d76] dark:border-[#30363d] dark:bg-[#161b22] md:px-6">
       <span>{{ branches.length }} 分支</span>
     </div>
 
-    <div v-if="activeTab === '代码'" class="repo-body">
-      <main class="main-col">
-        <div class="toolbar-actions">
+    <div v-if="activeTab === '代码'" class="grid min-w-0 grid-cols-1 items-start gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <main class="min-w-0">
+        <div class="mb-3 flex justify-end">
           <CloneDropdown :owner="owner" :repo="name" :clone-info="cloneInfo" />
         </div>
 
@@ -834,107 +932,173 @@ onUnmounted(() => {
           :owner="owner"
           :repo="name"
           :branches="branches"
+          :readme-filename="readmeFilename"
         />
       </main>
 
-      <aside class="side-col">
-        <section class="card">
-          <h4>描述</h4>
-          <p>{{ repo?.description || '本仓库为镜像仓库...' }}</p>
+      <aside class="flex min-w-0 flex-col gap-4">
+        <section v-if="repo?.description || license" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <h4>关于</h4>
+          <p v-if="repo?.description">{{ repo.description }}</p>
+          <p v-else class="muted">暂无描述</p>
           <span v-if="license" class="license-badge">{{ license }}</span>
         </section>
-        <section class="card">
-          <h4>管理主题</h4>
-          <div class="tags">
-            <span class="tag">自述文档</span>
-            <span class="tag">AGPL-3.0</span>
-          </div>
-          <p class="size">2.1 MiB</p>
-          <p class="social">1 点赞 · 1 关注</p>
-        </section>
-        <section class="card">
-          <h4>发布</h4>
-          <span class="tag accent">LiCore v0.9.11 最新</span>
-        </section>
-        <section class="card">
+        <section v-if="languages.length" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h4>语言</h4>
           <LanguageStats :languages="languages" />
+        </section>
+        <section v-if="repo && (repo.SizeKB ?? 0) > 0" class="rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+          <h4>仓库信息</h4>
+          <p class="size">{{ formatSize(repo.SizeKB ?? 0) }}</p>
+          <p class="social">{{ repo.StarsCount ?? 0 }} 星标 · {{ repo.ForksCount ?? 0 }} 派生</p>
         </section>
       </aside>
     </div>
 
-    <div v-else-if="activeTab === '工单'" class="tab-panel">
-      <div class="panel-head">
+    <div v-else-if="activeTab === '工单'" class="p-4 md:p-6">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>工单</h3>
-        <button class="chip" @click="loadIssues">刷新</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]" role="group" aria-label="按状态筛选工单">
+            <button type="button" :class="{ active: issueFilter === 'open' }" @click="issueFilter = 'open'">
+              开启 {{ issues.filter((i) => i.State === 'open').length }}
+            </button>
+            <button type="button" :class="{ active: issueFilter === 'closed' }" @click="issueFilter = 'closed'">
+              已关闭 {{ issues.filter((i) => i.State !== 'open').length }}
+            </button>
+            <button type="button" :class="{ active: issueFilter === 'all' }" @click="issueFilter = 'all'">全部</button>
+          </div>
+          <button class="ui-btn" type="button" @click="loadIssues">刷新</button>
+        </div>
       </div>
 
-      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createIssue">
-        <h4>新建工单</h4>
-        <select
-          v-if="issueTemplates.length"
-          v-model="selectedTemplate"
-          class="form-input"
-          @change="onTemplateChange"
-        >
-          <option value="">选择模板（可选）</option>
-          <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
-        </select>
-        <input v-model="newTitle" type="text" placeholder="标题" class="form-input" />
-        <SavedReplies @insert="onInsertReply" />
-        <textarea v-model="newBody" rows="3" placeholder="描述（可选）" class="form-input" />
-        <p v-if="createError" class="error">{{ createError }}</p>
-        <button class="chip primary" type="submit" :disabled="creating">
-          {{ creating ? '提交中...' : '创建' }}
-        </button>
-      </form>
+      <details v-if="auth.isLoggedIn" class="ui-card create-form" :open="!issues.length">
+        <summary>新建工单</summary>
+        <form class="ui-form" @submit.prevent="createIssue">
+          <select v-if="issueTemplates.length" v-model="selectedTemplate" class="ui-input" @change="onTemplateChange">
+            <option value="">选择模板（可选）</option>
+            <option v-for="tpl in issueTemplates" :key="tpl.path" :value="tpl.name">{{ tpl.name }}</option>
+          </select>
+          <div class="ui-field">
+            <label for="issue-title">标题</label>
+            <input id="issue-title" v-model="newTitle" class="ui-input" type="text" placeholder="简要描述问题" />
+          </div>
+          <SavedReplies @insert="onInsertReply" />
+          <div class="ui-field">
+            <label for="issue-body">描述</label>
+            <textarea id="issue-body" v-model="newBody" class="ui-input" rows="4" placeholder="补充细节、复现步骤（支持 Markdown）" />
+          </div>
+          <p v-if="createError" class="ui-alert ui-alert-error">{{ createError }}</p>
+          <button class="ui-btn ui-btn-primary" type="submit" :disabled="creating">
+            <span v-if="creating" class="ui-spinner" aria-hidden="true" />
+            {{ creating ? '提交中…' : '创建工单' }}
+          </button>
+        </form>
+      </details>
 
-      <p v-if="issuesError" class="error">{{ issuesError }}</p>
-      <ul v-if="issues.length" class="item-list">
-        <li v-for="i in issues" :key="i.ID" class="item-row">
-          <span class="num">#{{ i.Number }}</span>
-          <span class="item-title">{{ i.Title }}</span>
-          <span class="state" :class="i.State">{{ i.State }}</span>
+      <div v-if="issuesLoading" class="list-skeleton">
+        <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
+      </div>
+      <p v-else-if="issuesError" class="ui-alert ui-alert-error">{{ issuesError }}</p>
+      <EmptyState
+        v-else-if="!filteredIssues.length"
+        icon="◎"
+        :title="issues.length ? '该状态下没有工单' : '还没有工单'"
+        :description="issues.length ? '切换上方筛选条件查看其它状态的工单。' : '工单用于记录缺陷、功能建议与讨论。'"
+        action-label="创建第一个工单"
+        :show-action="auth.isLoggedIn && !issues.length"
+        @action="newTitle = ''"
+      />
+      <ul v-else class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+        <li v-for="i in filteredIssues" :key="i.ID" class="flex items-center gap-3 px-4 py-3 text-sm">
+          <span class="state-dot" :class="i.State === 'open' ? 'open' : 'closed'" :title="i.State === 'open' ? '开启' : '已关闭'" />
+          <div class="item-main">
+            <RouterLink class="truncate font-semibold text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]" :to="`/${owner}/${name}?tab=工单`">#{{ i.Number }} {{ i.Title }}</RouterLink>
+            <span class="text-xs text-[#656d76]">
+              <template v-if="i.AuthorName">{{ i.AuthorName }} 创建于 </template>{{ relTime(i.CreatedAt) }}
+            </span>
+          </div>
+          <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="i.State === 'open' ? 'bg-[#10b981]/15 text-[#10b981]' : 'bg-[#ef4444]/15 text-[#ef4444]'">{{ i.State === 'open' ? '开启' : '已关闭' }}</span>
         </li>
       </ul>
-      <p v-else-if="!issuesLoading && !issuesError" class="empty">暂无工单</p>
     </div>
 
-    <div v-else-if="activeTab === '合并请求'" class="tab-panel">
-      <div class="panel-head">
+    <div v-else-if="activeTab === '合并请求'" class="p-4 md:p-6">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>合并请求</h3>
-        <button class="chip" @click="loadPulls">刷新</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex overflow-hidden rounded-md border border-[#d0d7de] dark:border-[#30363d]" role="group" aria-label="按状态筛选合并请求">
+            <button type="button" :class="{ active: pullFilter === 'open' }" @click="pullFilter = 'open'">
+              开启 {{ pulls.filter((p) => p.State === 'open' && !p.Merged).length }}
+            </button>
+            <button type="button" :class="{ active: pullFilter === 'closed' }" @click="pullFilter = 'closed'">
+              已合并 {{ pulls.filter((p) => p.Merged).length }} / 其他
+            </button>
+            <button type="button" :class="{ active: pullFilter === 'all' }" @click="pullFilter = 'all'">全部</button>
+          </div>
+          <button class="ui-btn" type="button" @click="loadPulls">刷新</button>
+        </div>
       </div>
-      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent>
-        <h4>新建合并请求</h4>
-        <textarea
-          v-model="prBody"
-          rows="5"
-          placeholder="描述（可选）"
-          class="form-input"
-          :disabled="prTemplateLoading"
-        />
-      </form>
-      <p v-if="pullsError" class="error">{{ pullsError }}</p>
-      <ul v-if="pulls.length" class="item-list">
-        <li v-for="p in pulls" :key="p.ID" class="item-row">
-          <span class="num">#{{ p.Number }}</span>
-          <span class="item-title">{{ p.Title }}</span>
-          <span class="state" :class="p.State">{{ p.State }}</span>
+
+      <p v-if="pullsError" class="ui-alert ui-alert-error">{{ pullsError }}</p>
+      <div v-if="pullsLoading" class="list-skeleton">
+        <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
+      </div>
+      <EmptyState
+        v-else-if="!filteredPulls.length"
+        icon="⇄"
+        :title="pulls.length ? '该状态下没有合并请求' : '还没有合并请求'"
+        :description="pulls.length ? '切换上方筛选条件查看其它状态。' : '从功能分支向主干发起合并请求，即可在此评审与合并。'"
+        :action-label="pulls.length ? '' : '查看分支与克隆方式'"
+        :show-action="!pulls.length"
+        @action="activeTab = '代码'"
+      />
+      <ul v-else class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
+        <li v-for="p in filteredPulls" :key="p.ID" class="item-wrap">
+          <div class="flex items-center gap-3 px-4 py-3 text-sm">
+            <span class="state-dot" :class="p.Merged ? 'merged' : p.State === 'open' ? 'open' : 'closed'" />
+            <div class="item-main">
+              <button class="truncate text-left font-semibold text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]" type="button" @click="toggleDiff(p)">
+                #{{ p.Number }} {{ p.Title }}
+              </button>
+              <span class="text-xs text-[#656d76]">
+                {{ p.HeadBranch }} → {{ p.BaseBranch }}
+                <template v-if="p.AuthorName"> · {{ p.AuthorName }}</template>
+                · {{ relTime(p.CreatedAt) }}
+              </span>
+            </div>
+            <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="p.Merged ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : p.State === 'open' ? 'bg-[#10b981]/15 text-[#10b981]' : 'bg-[#ef4444]/15 text-[#ef4444]'">
+              {{ p.Merged ? '已合并' : p.State === 'open' ? '开启' : '已关闭' }}
+            </span>
+            <button class="ui-btn" type="button" @click="toggleDiff(p)">
+              {{ diffOpen === p.ID ? '收起' : '查看变更' }}
+            </button>
+          </div>
+          <div v-if="diffOpen === p.ID" class="diff">
+            <p v-if="diffLoading" class="muted">正在加载变更…</p>
+            <p v-else-if="diffMessage" class="ui-alert">{{ diffMessage }}</p>
+            <pre v-else-if="diffText" class="mt-2 max-h-[420px] overflow-auto rounded-md bg-[#f6f8fa] p-3 font-mono text-xs leading-relaxed dark:bg-[#0d1117]"><code><span
+              v-for="(line, idx) in diffText.split('\n')"
+              :key="idx"
+              class="diff-line"
+              :class="diffLineClass(line)"
+            >{{ line || ' ' }}
+</span></code></pre>
+            <p v-else class="muted">该合并请求没有文本变更。</p>
+          </div>
         </li>
       </ul>
-      <p v-else-if="!pullsLoading && !pullsError" class="empty">暂无合并请求</p>
     </div>
 
-    <div v-else-if="activeTab === '工作流'" class="tab-panel">
-      <div class="panel-head">
+    <div v-else-if="activeTab === '工作流'" class="p-4 md:p-6">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>工作流</h3>
-        <button class="chip" @click="loadWorkflows">刷新</button>
+        <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="loadWorkflows">刷新</button>
       </div>
 
       <p v-if="workflowsError" class="error">{{ workflowsError }}</p>
-      <div v-if="workflowsLoading" class="empty">加载中…</div>
-      <ul v-else-if="workflows.length" class="item-list">
+      <div v-if="workflowsLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
+      <ul v-else-if="workflows.length" class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li
           v-for="j in workflows"
           :key="j.id"
@@ -942,7 +1106,7 @@ onUnmounted(() => {
           :class="{ selected: selectedJob?.id === j.id }"
           @click="openLog(j)"
         >
-          <span class="state" :class="j.status">{{ statusLabel(j.status) }}</span>
+          <span class="shrink-0 rounded-full bg-[#f6f8fa] px-2 py-0.5 text-xs font-medium text-[#656d76] dark:bg-[#21262d]">{{ statusLabel(j.status) }}</span>
           <span class="mono">{{ shortSha(j.commit_sha) }}</span>
           <span class="wf-ref">{{ j.ref || '-' }}</span>
           <span class="wf-path">{{ j.workflow_path || '-' }}</span>
@@ -958,29 +1122,29 @@ onUnmounted(() => {
           </button>
         </li>
       </ul>
-      <p v-else-if="!workflowsError" class="empty">暂无工作流任务</p>
+      <p v-else-if="!workflowsError" class="py-8 text-center text-sm text-[#656d76]">暂无工作流任务</p>
 
       <div v-if="selectedJob" class="log-panel">
         <div class="log-head">
           <strong>任务 #{{ selectedJob.id }} 日志</strong>
           <span class="log-status">{{ statusLabel(selectedJob.status) }}</span>
-          <button class="chip" type="button" @click="closeLog">关闭</button>
+          <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeLog">关闭</button>
         </div>
         <p v-if="logError" class="error">{{ logError }}</p>
         <pre class="log-view">{{ logLines.join('\n') }}</pre>
       </div>
     </div>
 
-    <div v-else-if="activeTab === '依赖'" class="tab-panel">
-      <div class="panel-head">
+    <div v-else-if="activeTab === '依赖'" class="p-4 md:p-6">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>依赖</h3>
         <div class="dep-actions">
-          <button class="chip" type="button" :disabled="dependenciesLoading" @click="loadDependencies">
+          <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="dependenciesLoading" @click="loadDependencies">
             刷新列表
           </button>
           <button
             v-if="auth.isLoggedIn"
-            class="chip primary"
+            class="rounded-md bg-[#ea580c] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50"
             type="button"
             :disabled="dependenciesRefreshing"
             @click="refreshDependencies"
@@ -993,7 +1157,7 @@ onUnmounted(() => {
       <p v-if="dependenciesError" class="error">{{ dependenciesError }}</p>
       <p v-if="dependencyMessage" class="dep-ok">{{ dependencyMessage }}</p>
 
-      <div v-if="dependenciesLoading" class="empty">加载中…</div>
+      <div v-if="dependenciesLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
       <div v-else-if="dependencyEntries().length" class="dep-groups">
         <section v-for="[eco, items] in dependencyEntries()" :key="eco" class="dep-group">
           <header class="dep-group-head">
@@ -1008,32 +1172,32 @@ onUnmounted(() => {
           </ul>
         </section>
       </div>
-      <p v-else-if="!dependenciesError" class="empty">
+      <p v-else-if="!dependenciesError" class="py-8 text-center text-sm text-[#656d76]">
         未发现依赖清单（支持 go.mod / package.json / pom.xml / requirements.txt）
       </p>
     </div>
 
-    <div v-else-if="activeTab === '项目'" class="tab-panel">
-      <div class="panel-head">
+    <div v-else-if="activeTab === '项目'" class="p-4 md:p-6">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>项目</h3>
-        <button class="chip" type="button" :disabled="projectsLoading" @click="loadProjects">
+        <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="projectsLoading" @click="loadProjects">
           刷新
         </button>
       </div>
 
       <p v-if="projectsError" class="error">{{ projectsError }}</p>
 
-      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createProject">
+      <form v-if="auth.isLoggedIn" class="mb-4" @submit.prevent="createProject">
         <h4>新建项目</h4>
         <input v-model="projectForm.name" type="text" placeholder="项目名称" class="form-input" />
         <input v-model="projectForm.description" type="text" placeholder="描述（可选）" class="form-input" />
         <p v-if="projectFormError" class="error">{{ projectFormError }}</p>
-        <button class="chip primary" type="submit" :disabled="projectCreating">
+        <button class="rounded-md bg-[#ea580c] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50" type="submit" :disabled="projectCreating">
           {{ projectCreating ? '创建中...' : '创建项目' }}
         </button>
       </form>
 
-      <div v-if="projectsLoading" class="empty">加载中…</div>
+      <div v-if="projectsLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
       <template v-else>
         <div v-if="projects.length" class="project-picker">
           <span class="muted-label">选择项目：</span>
@@ -1041,7 +1205,7 @@ onUnmounted(() => {
             v-for="p in projects"
             :key="p.id"
             type="button"
-            class="chip"
+            class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
             :class="{ 'chip-active': p.id === selectedProjectId }"
             @click="selectProject(p.id)"
           >
@@ -1050,7 +1214,7 @@ onUnmounted(() => {
         </div>
 
         <p v-if="boardError" class="error">{{ boardError }}</p>
-        <div v-if="boardLoading" class="empty">加载看板中…</div>
+        <div v-if="boardLoading" class="py-8 text-center text-sm text-[#656d76]">加载看板中…</div>
         <div v-else-if="board" class="kanban">
           <section v-for="col in board.columns" :key="col.id" class="kanban-col">
             <header class="kanban-col-head">
@@ -1088,22 +1252,28 @@ onUnmounted(() => {
                 placeholder="新增卡片标题"
                 class="form-input"
               />
-              <button class="chip primary" type="submit" :disabled="cardAdding === col.id">
+              <button class="rounded-md bg-[#ea580c] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50" type="submit" :disabled="cardAdding === col.id">
                 添加
               </button>
             </form>
           </section>
         </div>
-        <p v-else-if="!projects.length && !projectsError" class="empty">
-          暂无项目，请先创建
-        </p>
+        <EmptyState
+          v-else-if="!projects.length && !projectsError"
+          icon="🗂"
+          title="还没有项目看板"
+          description="用看板把工单和合并请求按阶段组织起来，便于跟踪进度。"
+          action-label="创建项目看板"
+          :show-action="auth.isLoggedIn"
+          @action="activeTab = '项目'"
+        />
       </template>
     </div>
 
-    <div v-else-if="activeTab === '讨论'" class="tab-panel">
-      <div class="panel-head">
+    <div v-else-if="activeTab === '讨论'" class="p-4 md:p-6">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3>讨论</h3>
-        <button class="chip" type="button" :disabled="discussionsLoading" @click="loadDiscussions">
+        <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="discussionsLoading" @click="loadDiscussions">
           刷新
         </button>
       </div>
@@ -1111,7 +1281,7 @@ onUnmounted(() => {
       <div class="cat-chips">
         <button
           type="button"
-          class="chip"
+          class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
           :class="{ 'chip-active': selectedCategory === '' }"
           @click="filterCategory('')"
         >
@@ -1121,7 +1291,7 @@ onUnmounted(() => {
           v-for="c in discussionCategories"
           :key="c.id"
           type="button"
-          class="chip"
+          class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
           :class="{ 'chip-active': selectedCategory === c.id }"
           :title="c.description"
           @click="filterCategory(c.id)"
@@ -1130,7 +1300,7 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="createDiscussion">
+      <form v-if="auth.isLoggedIn" class="mb-4" @submit.prevent="createDiscussion">
         <h4>发起讨论</h4>
         <input v-model="discussionForm.title" type="text" placeholder="标题" class="form-input" />
         <select v-model="discussionForm.category_id" class="form-input">
@@ -1139,14 +1309,14 @@ onUnmounted(() => {
         </select>
         <textarea v-model="discussionForm.body" rows="3" placeholder="内容（可选）" class="form-input" />
         <p v-if="discussionFormError" class="error">{{ discussionFormError }}</p>
-        <button class="chip primary" type="submit" :disabled="discussionCreating">
+        <button class="rounded-md bg-[#ea580c] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50" type="submit" :disabled="discussionCreating">
           {{ discussionCreating ? '提交中...' : '创建讨论' }}
         </button>
       </form>
 
       <p v-if="discussionsError" class="error">{{ discussionsError }}</p>
-      <div v-if="discussionsLoading" class="empty">加载中…</div>
-      <ul v-else-if="discussions.length" class="item-list">
+      <div v-if="discussionsLoading" class="py-8 text-center text-sm text-[#656d76]">加载中…</div>
+      <ul v-else-if="discussions.length" class="divide-y divide-[#d0d7de] rounded-md border border-[#d0d7de] bg-white dark:divide-[#30363d] dark:border-[#30363d] dark:bg-[#161b22]">
         <li
           v-for="d in discussions"
           :key="d.id"
@@ -1155,22 +1325,30 @@ onUnmounted(() => {
           @click="openDiscussion(d)"
         >
           <span class="tag">{{ categoryLabel(d.category_id) }}</span>
-          <span class="item-title">{{ d.title }}</span>
+          <span class="truncate font-semibold text-[#1f2328] hover:text-[#ea580c] dark:text-[#e6edf3]">{{ d.title }}</span>
           <span v-if="d.is_answered" class="state answered">已回答</span>
           <span class="when">{{ fmtDate(d.created_at) }}</span>
         </li>
       </ul>
-      <p v-else-if="!discussionsError" class="empty">暂无讨论</p>
+      <EmptyState
+        v-else-if="!discussionsError"
+        icon="💬"
+        title="还没有讨论"
+        description="讨论适合开放式话题、答疑和方案评审。"
+        action-label="发起第一个讨论"
+        :show-action="auth.isLoggedIn"
+        @action="activeTab = '讨论'"
+      />
 
       <div v-if="selectedDiscussionId !== null" class="discussion-detail">
         <p v-if="discussionDetailError" class="error">{{ discussionDetailError }}</p>
-        <div v-if="discussionDetailLoading" class="empty">加载详情中…</div>
+        <div v-if="discussionDetailLoading" class="py-8 text-center text-sm text-[#656d76]">加载详情中…</div>
         <template v-else-if="discussionDetail">
           <div class="disc-head">
             <h4>{{ discussionDetail.discussion.title }}</h4>
             <span class="tag">{{ categoryLabel(discussionDetail.discussion.category_id) }}</span>
             <span v-if="discussionDetail.discussion.is_answered" class="state answered">已回答</span>
-            <button class="chip" type="button" @click="closeDiscussion">关闭</button>
+            <button class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeDiscussion">关闭</button>
           </div>
           <div class="disc-body">{{ discussionDetail.discussion.body || '（无内容）' }}</div>
 
@@ -1191,7 +1369,7 @@ onUnmounted(() => {
                 <span v-if="c.is_answer" class="state answered">答案</span>
                 <button
                   v-if="isAnswerable(discussionDetail.discussion) && !c.is_answer && auth.isLoggedIn"
-                  class="chip"
+                  class="rounded-md border border-[#d0d7de] px-3 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
                   type="button"
                   :disabled="answerBusy === c.id"
                   @click="markAnswer(c)"
@@ -1202,11 +1380,11 @@ onUnmounted(() => {
               <p class="comment-body">{{ c.body }}</p>
             </li>
           </ul>
-          <p v-else class="empty">暂无评论</p>
+          <p v-else class="py-8 text-center text-sm text-[#656d76]">暂无评论</p>
 
-          <form v-if="auth.isLoggedIn" class="create-form" @submit.prevent="addComment">
+          <form v-if="auth.isLoggedIn" class="mb-4" @submit.prevent="addComment">
             <textarea v-model="commentBody" rows="3" placeholder="写下你的评论..." class="form-input" />
-            <button class="chip primary" type="submit" :disabled="commentAdding || !commentBody.trim()">
+            <button class="rounded-md bg-[#ea580c] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50" type="submit" :disabled="commentAdding || !commentBody.trim()">
               {{ commentAdding ? '提交中...' : '发表评论' }}
             </button>
           </form>
@@ -1214,7 +1392,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-else-if="activeTab === '设置'" class="tab-panel">
+    <div v-else-if="activeTab === '设置'" class="p-4 md:p-6">
       <DeployKeys :owner="owner" :repo="name" />
       <RepoDangerZone
         v-if="auth.isLoggedIn"
@@ -1225,642 +1403,20 @@ onUnmounted(() => {
       />
     </div>
 
-    <div v-else class="tab-panel">
-      <p class="placeholder">「{{ activeTab }}」即将推出</p>
+    <div v-else-if="activeTab === '发布'" class="p-4 md:p-6">
+      <RepoReleases :owner="owner" :repo="name" />
+    </div>
+
+    <div v-else-if="activeTab === '活动'" class="p-4 md:p-6">
+      <RepoActivity :owner="owner" :repo="name" />
+    </div>
+
+    <div v-else-if="activeTab === '百科'" class="p-4 md:p-6">
+      <RepoWiki :owner="owner" :repo="name" />
+    </div>
+
+    <div v-else class="p-4 md:p-6">
+      <p class="placeholder">未知页面：{{ activeTab }}</p>
     </div>
   </div>
 </template>
-
-<style scoped>
-.repo-page {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.repo-header {
-  padding: 1rem 1.5rem 0;
-}
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.repo-icon {
-  color: var(--primary);
-  font-weight: 700;
-}
-.title-row h2 {
-  margin: 0;
-  font-size: 1.3rem;
-}
-.badge.private {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-.actions {
-  margin-left: auto;
-  display: flex;
-  gap: 0.4rem;
-}
-.repo-tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-top: 0.9rem;
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-.repo-tabs button {
-  padding: 0.5rem 0.8rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-}
-.repo-tabs button.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 600;
-}
-.repo-meta {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.code-search {
-  margin-left: auto;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-}
-.repo-body {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.5rem;
-  padding: 1.25rem 1.5rem;
-  align-items: start;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-.branch-select {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--color-fg);
-  font-weight: 600;
-}
-.chip {
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--color-fg);
-}
-.chip:hover {
-  background: var(--hover-bg);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.chip.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.chip.primary:hover {
-  background: var(--primary-hover);
-  color: #fff;
-}
-.chip.accent {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.file-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-  background: var(--card);
-}
-.row:last-child {
-  border-bottom: none;
-}
-.row:hover {
-  background: var(--hover-bg);
-}
-.fname {
-  font-weight: 600;
-  min-width: 160px;
-}
-.msg {
-  flex: 1;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.when {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.toolbar-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
-}
-.readme {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  background: var(--card);
-}
-.side-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-.card {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.9rem 1rem;
-  background: var(--card);
-}
-.card h4 {
-  margin: 0 0 0.55rem;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.card p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-.tags {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.5rem;
-}
-.tag {
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-.tag.accent {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-.size,
-.social {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin-top: 0.3rem;
-}
-@media (max-width: 900px) {
-  .repo-body {
-    grid-template-columns: 1fr;
-  }
-}
-.tab-panel {
-  padding: 1.25rem 1.5rem;
-}
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-.panel-head h3 {
-  margin: 0;
-}
-.create-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 1.25rem;
-  background: var(--card);
-}
-.create-form h4 {
-  margin: 0 0 0.25rem;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-.form-input {
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font: inherit;
-  resize: vertical;
-}
-.create-form .chip.primary {
-  align-self: flex-start;
-}
-.item-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.item-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--card);
-  font-size: 0.9rem;
-}
-.item-row:last-child {
-  border-bottom: none;
-}
-.item-row:hover {
-  background: var(--hover-bg);
-}
-.item-row .num {
-  color: var(--muted);
-  font-weight: 600;
-}
-.item-title {
-  flex: 1;
-}
-.state {
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-.state.open {
-  border-color: var(--success);
-  color: var(--success);
-  background: var(--success-soft);
-}
-.placeholder {
-  color: var(--muted);
-  text-align: center;
-  padding: 3rem 0;
-}
-.error {
-  color: var(--accent);
-  font-size: 0.85rem;
-}
-.dep-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.dep-ok {
-  color: var(--success);
-  font-size: 0.85rem;
-}
-.dep-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.dep-group {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--card);
-}
-.dep-group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--hover-bg);
-}
-.dep-count {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-.dep-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.dep-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.88rem;
-}
-.dep-row:last-child {
-  border-bottom: none;
-}
-.dep-row:hover {
-  background: var(--hover-bg);
-}
-.dep-name {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-weight: 600;
-}
-.dep-version {
-  color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-}
-.empty {
-  color: var(--muted);
-}
-.wf-row {
-  cursor: pointer;
-}
-.wf-row.selected {
-  background: var(--hover-bg);
-}
-.wf-row .state {
-  min-width: 56px;
-  text-align: center;
-}
-.wf-row .state.success {
-  border-color: var(--success);
-  color: var(--success);
-  background: var(--success-soft);
-}
-.wf-row .state.failed,
-.wf-row .state.cancelled {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-.wf-row .state.running,
-.wf-row .state.pending {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-soft);
-}
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-}
-.wf-ref,
-.wf-path {
-  flex: 1;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.wf-duration {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.wf-runner {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.chip.danger {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.chip.danger:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.log-panel {
-  margin-top: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--card);
-}
-.log-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-}
-.log-head .chip {
-  margin-left: auto;
-}
-.log-status {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.chip-active {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-soft);
-}
-.project-picker {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.muted-label {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.kanban {
-  display: flex;
-  gap: 0.9rem;
-  overflow-x: auto;
-  align-items: flex-start;
-  padding-bottom: 0.5rem;
-}
-.kanban-col {
-  flex: 0 0 260px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--card);
-  display: flex;
-  flex-direction: column;
-}
-.kanban-col-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--hover-bg);
-}
-.kanban-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0.6rem;
-  min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.kanban-card {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  cursor: grab;
-  font-size: 0.9rem;
-}
-.kanban-card:active {
-  cursor: grabbing;
-}
-.kanban-card-title {
-  flex: 1;
-  word-break: break-word;
-}
-.card-del {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0 0.2rem;
-}
-.card-del:hover {
-  color: var(--accent);
-}
-.kanban-empty {
-  color: var(--muted);
-  font-size: 0.82rem;
-  text-align: center;
-  padding: 0.5rem 0;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-}
-.kanban-add {
-  display: flex;
-  gap: 0.4rem;
-  padding: 0.6rem;
-  border-top: 1px solid var(--border);
-}
-.kanban-add .form-input {
-  flex: 1;
-  min-width: 0;
-}
-.cat-chips {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.disc-row {
-  cursor: pointer;
-}
-.disc-row.selected {
-  background: var(--hover-bg);
-}
-.state.answered {
-  border-color: var(--success);
-  color: var(--success);
-  background: var(--success-soft);
-}
-.discussion-detail {
-  margin-top: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
-  background: var(--card);
-}
-.disc-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-.disc-head h4 {
-  margin: 0;
-  flex: 1;
-}
-.disc-body {
-  white-space: pre-wrap;
-  margin: 0.9rem 0;
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-.disc-comments-title {
-  margin: 1rem 0 0.5rem;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.comment-list {
-  list-style: none;
-  margin: 0 0 1rem;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.comment {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  background: var(--color-bg);
-}
-.comment.answer {
-  border-color: var(--success);
-}
-.comment-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-.comment-head .chip {
-  margin-left: auto;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-}
-.comment-body {
-  margin: 0.4rem 0 0;
-  white-space: pre-wrap;
-  font-size: 0.9rem;
-}
-.log-view {
-  margin: 0;
-  padding: 0.75rem 0.9rem;
-  max-height: 380px;
-  overflow: auto;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-</style>

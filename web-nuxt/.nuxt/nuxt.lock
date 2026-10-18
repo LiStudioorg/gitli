@@ -1,0 +1,10 @@
+{
+  "pid": 10928,
+  "startedAt": 1792229799403,
+  "interactive": false,
+  "command": "dev",
+  "cwd": "D:/code/gitli/web-nuxt",
+  "port": 5174,
+  "hostname": "::1",
+  "url": "http://[::1]:5174"
+}

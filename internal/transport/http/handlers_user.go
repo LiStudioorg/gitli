@@ -68,6 +68,18 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	// Drop this user's cached Git Basic credentials so the old password stops
+	// working immediately instead of lingering for gitAuthTTL.
+	if s.gitAuth != nil {
+		s.gitAuth.invalidateUser(u.ID)
+	}
+	// M-02: revoke other sessions; the current one stays valid.
+	if c, err := r.Cookie("gitli_session"); err == nil {
+		if err := s.deps.Auth.RevokeOtherSessions(r.Context(), u.ID, c.Value); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
 	s.auditAction(r, u.ID, "user.password_change", "success")
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }

@@ -116,6 +116,12 @@ func (s *Service) CreateTeam(ctx context.Context, p CreateTeamParams) (int64, er
 	return id, nil
 }
 
+// ErrCrossOrg rejects operations that would cross organization boundaries.
+var ErrCrossOrg = errors.New("rbac: team belongs to another organization")
+
+// ErrTeamNotFound indicates a missing team.
+var ErrTeamNotFound = errors.New("rbac: team not found")
+
 // ReparentTeam changes a team's parent, rejecting cycles and excessive depth.
 func (s *Service) ReparentTeam(ctx context.Context, teamID int64, newParent *int64) error {
 	if newParent != nil {
@@ -133,6 +139,15 @@ func (s *Service) ReparentTeam(ctx context.Context, teamID int64, newParent *int
 		}
 		if desc {
 			return ErrCycle
+		}
+		// The parent must belong to the same organization, otherwise an org
+		// admin could re-parent a team into an org they do not control.
+		parentOrg, err := s.teamOrg(ctx, *newParent)
+		if err != nil {
+			return ErrTeamNotFound
+		}
+		if parentOrg != orgID {
+			return ErrCrossOrg
 		}
 		if err := s.validateNesting(ctx, orgID, teamID, *newParent); err != nil {
 			return err
@@ -426,3 +441,12 @@ func cacheKey(userID int64, req Requirement) string {
 	return strconv.FormatInt(userID, 10) + ":" + strconv.FormatInt(req.RepoID, 10) + ":" +
 		req.Resource + ":" + req.Action
 }
+
+// ErrRoleNotFound indicates the requested role does not exist.
+var ErrRoleNotFound = errors.New("rbac: role not found")
+
+// ErrRoleScope rejects roles that are not scoped to the target organization.
+var ErrRoleScope = errors.New("rbac: role belongs to another organization")
+
+// ErrPrivilegeEscalation rejects granting permissions the actor does not hold.
+var ErrPrivilegeEscalation = errors.New("rbac: cannot grant permissions you do not hold")

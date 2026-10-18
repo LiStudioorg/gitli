@@ -14,6 +14,13 @@ func (s *Service) ArchiveStream(ctx context.Context, path, ref, format string) (
 	if ref == "" {
 		ref = "HEAD"
 	}
+	// H-01: ref flows into the git argv. Without this check a value such as
+	// "--output=/var/lib/gitli/gitli.db" would be parsed as an option and
+	// truncate arbitrary files. ValidateRef rejects leading '-' and control
+	// characters.
+	if err := validateRef(ref); err != nil {
+		return nil, nil, err
+	}
 	args, err := archiveArgs(ref, format)
 	if err != nil {
 		return nil, nil, err
@@ -34,11 +41,13 @@ func (s *Service) ArchiveStream(ctx context.Context, path, ref, format string) (
 
 func archiveArgs(ref, format string) ([]string, error) {
 	switch format {
+	// "--" terminates option parsing so a ref can never be treated as a flag.
 	case "zip":
-		return []string{"archive", "--format=zip", "--prefix=", ref}, nil
+		return []string{"archive", "--format=zip", "--prefix=", "--", ref}, nil
 	case "tar.gz", "targz", "tgz":
-		return []string{"archive", "--format=tar.gz", ref}, nil
+		return []string{"archive", "--format=tar.gz", "--", ref}, nil
 	case "bundle":
+		// `bundle create` writes to stdout; the ref is already validated above.
 		return []string{"bundle", "create", "-", ref}, nil
 	default:
 		return nil, fmt.Errorf("git: unsupported archive format %q", format)

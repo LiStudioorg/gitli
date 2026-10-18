@@ -128,7 +128,7 @@ async function toggleArchive() {
   flex-direction: column;
   gap: 0.5rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.25rem;
   background: var(--card);

@@ -1,44 +1,68 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import api from '../api/client'
+import { useAuthStore } from '../stores'
+import { errMessage } from '../utils/error'
+import { useToast } from '../composables/useToast'
+import LogoIcon from '../components/icons/LogoIcon.vue'
 
-const router = useRouter()
+const auth = useAuthStore()
+const toast = useToast()
+
 const siteName = ref('gitli')
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const error = ref('')
 const loading = ref(false)
 
-const disabledReason = computed(() => {
-  if (!username.value) return '请填写管理员用户名'
-  if (!email.value) return '请填写邮箱'
-  if (password.value.length < 8) return '密码至少 8 位'
-  return ''
+const emailError = computed(() => {
+  const v = email.value.trim()
+  if (!v) return ''
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : '请输入有效的邮箱地址'
 })
+
+const passwordError = computed(() => {
+  if (!password.value) return ''
+  return password.value.length >= 8 ? '' : '密码至少 8 位'
+})
+
+const confirmError = computed(() => {
+  if (!confirmPassword.value) return ''
+  return confirmPassword.value === password.value ? '' : '两次输入的密码不一致'
+})
+
+const canSubmit = computed(
+  () =>
+    siteName.value.trim() !== '' &&
+    username.value.trim() !== '' &&
+    email.value.trim() !== '' &&
+    password.value.length >= 8 &&
+    confirmPassword.value === password.value &&
+    !emailError.value,
+)
 
 async function submit() {
   error.value = ''
-  if (!username.value || !email.value) {
-    error.value = '请填写用户名和邮箱'
-    return
-  }
-  if (password.value.length < 8) {
-    error.value = '密码至少 8 位'
+  if (!canSubmit.value) {
+    error.value = emailError.value || passwordError.value || confirmError.value || '请完整填写表单'
     return
   }
   loading.value = true
   try {
     await api.post('/setup', {
-      site_name: siteName.value,
-      username: username.value,
-      email: email.value,
+      site_name: siteName.value.trim(),
+      username: username.value.trim(),
+      email: email.value.trim(),
       password: password.value,
     })
-    router.push({ path: '/login', query: { username: username.value } })
-  } catch (e: any) {
-    error.value = e?.response?.data?.error ?? '初始化失败，请重试'
+    // 创建成功后直接登录，用户无需再手动输入一次刚设置的密码。
+    await auth.login(username.value.trim(), password.value)
+    toast.success('初始化完成，欢迎使用 gitli')
+    window.location.assign('/dashboard')
+  } catch (e) {
+    error.value = errMessage(e, '初始化失败，请重试')
   } finally {
     loading.value = false
   }
@@ -46,68 +70,86 @@ async function submit() {
 </script>
 
 <template>
-  <main class="setup">
-    <h1>初始化 gitli</h1>
-    <p class="subtitle">创建第一个管理员账号。完成后本页面将自动锁定。</p>
-    <form @submit.prevent="submit">
-      <label>
-        站点名称
-        <input v-model="siteName" placeholder="gitli" />
-      </label>
-      <label>
-        管理员用户名
-        <input v-model="username" placeholder="admin" autocomplete="username" />
-      </label>
-      <label>
-        邮箱
-        <input v-model="email" type="email" placeholder="admin@example.com" autocomplete="email" />
-      </label>
-      <label>
-        密码
-        <input v-model="password" type="password" placeholder="密码（至少 8 位）" autocomplete="new-password" />
-      </label>
-      <button type="submit" :disabled="loading">{{ loading ? '创建中…' : '创建管理员' }}</button>
-    </form>
-    <p v-if="error" class="error">{{ error }}</p>
-    <p v-else-if="disabledReason" class="hint">{{ disabledReason }}</p>
+  <main class="flex min-h-screen items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.12),transparent_70%)] px-4 py-12">
+    <section class="w-full max-w-[460px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
+      <div class="mb-4 flex items-center justify-center [&_svg]:h-11 [&_svg]:w-11"><LogoIcon /></div>
+      <h1>初始化 gitli</h1>
+      <p class="mb-5 mt-1 text-sm text-[#656d76]">创建第一个管理员账号并设置站点名称。完成后本页面会自动锁定。</p>
+
+      <form class="ui-form" @submit.prevent="submit" novalidate>
+        <div class="ui-field">
+          <label for="setup-site">站点名称</label>
+          <input id="setup-site" v-model="siteName" class="ui-input" type="text" placeholder="gitli" required />
+        </div>
+
+        <div class="ui-field">
+          <label for="setup-username">管理员用户名</label>
+          <input
+            id="setup-username"
+            v-model="username"
+            class="ui-input"
+            type="text"
+            autocomplete="username"
+            placeholder="admin"
+            required
+          />
+        </div>
+
+        <div class="ui-field">
+          <label for="setup-email">邮箱</label>
+          <input
+            id="setup-email"
+            v-model="email"
+            class="ui-input"
+            :class="{ '!border-[#cf222e]': emailError }"
+            type="email"
+            autocomplete="email"
+            placeholder="admin@example.com"
+            required
+          />
+          <span v-if="emailError" class="ui-error">{{ emailError }}</span>
+        </div>
+
+        <div class="ui-field">
+          <label for="setup-password">密码</label>
+          <input
+            id="setup-password"
+            v-model="password"
+            class="ui-input"
+            :class="{ '!border-[#cf222e]': passwordError }"
+            type="password"
+            autocomplete="new-password"
+            placeholder="至少 8 位"
+            required
+          />
+          <span v-if="passwordError" class="ui-error">{{ passwordError }}</span>
+        </div>
+
+        <div class="ui-field">
+          <label for="setup-confirm">确认密码</label>
+          <input
+            id="setup-confirm"
+            v-model="confirmPassword"
+            class="ui-input"
+            :class="{ '!border-[#cf222e]': confirmError }"
+            type="password"
+            autocomplete="new-password"
+            placeholder="再次输入密码"
+            required
+          />
+          <span v-if="confirmError" class="ui-error">{{ confirmError }}</span>
+        </div>
+
+        <p v-if="error" class="ui-alert ui-alert-error" role="alert">{{ error }}</p>
+
+        <button class="ui-btn ui-btn-primary ui-btn-block ui-btn-lg" type="submit" :disabled="loading">
+          <span v-if="loading" class="ui-spinner" aria-hidden="true" />
+          {{ loading ? '创建中…' : '创建管理员并进入' }}
+        </button>
+      </form>
+
+      <p class="mt-4 text-center text-xs text-[#656d76]">该账号拥有最高管理权限，请妥善保管密码。</p>
+    </section>
   </main>
 </template>
 
-<style scoped>
-.setup {
-  max-width: 400px;
-  margin: 4rem auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding: 0 1rem;
-}
-.subtitle {
-  color: var(--muted, #57606a);
-  font-size: 0.9rem;
-}
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-}
-input,
-button {
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-}
-.error {
-  color: #d1242f;
-}
-.hint {
-  color: var(--muted, #57606a);
-  font-size: 0.85rem;
-}
-</style>

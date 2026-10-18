@@ -75,10 +75,12 @@ func (s *Service) List(ctx context.Context, repoID int64, state string, limit, o
 		rows *sql.Rows
 		err  error
 	)
+	cols := `i.id, i.repo_id, i.number, i.title, i.body, i.author_id, i.state, i.milestone_id, i.closed_at, i.created_at, i.updated_at, COALESCE(u.username, '')`
+	base := ` FROM issues i LEFT JOIN users u ON u.id = i.author_id WHERE i.repo_id = ?`
 	if state == "" {
-		rows, err = s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT id, repo_id, number, title, body, author_id, state, milestone_id, closed_at, created_at, updated_at FROM issues WHERE repo_id = ? ORDER BY number DESC LIMIT ? OFFSET ?`), repoID, limit, offset)
+		rows, err = s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT `+cols+base+` ORDER BY i.number DESC LIMIT ? OFFSET ?`), repoID, limit, offset)
 	} else {
-		rows, err = s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT id, repo_id, number, title, body, author_id, state, milestone_id, closed_at, created_at, updated_at FROM issues WHERE repo_id = ? AND state = ? ORDER BY number DESC LIMIT ? OFFSET ?`), repoID, state, limit, offset)
+		rows, err = s.st.DB.QueryContext(ctx, s.st.Rebind(`SELECT `+cols+base+` AND i.state = ? ORDER BY i.number DESC LIMIT ? OFFSET ?`), repoID, state, limit, offset)
 	}
 	if err != nil {
 		return nil, err
@@ -87,7 +89,7 @@ func (s *Service) List(ctx context.Context, repoID int64, state string, limit, o
 	var out []*domain.Issue
 	for rows.Next() {
 		var i domain.Issue
-		if err := rows.Scan(&i.ID, &i.RepoID, &i.Number, &i.Title, &i.Body, &i.AuthorID, &i.State, &i.MilestoneID, &i.ClosedAt, &i.CreatedAt, &i.UpdatedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.RepoID, &i.Number, &i.Title, &i.Body, &i.AuthorID, &i.State, &i.MilestoneID, &i.ClosedAt, &i.CreatedAt, &i.UpdatedAt, &i.AuthorName); err != nil {
 			return nil, err
 		}
 		out = append(out, &i)

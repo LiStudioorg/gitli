@@ -230,7 +230,7 @@ onMounted(() => {
   overflow-y: auto;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   padding: 0.35rem;
 }
@@ -282,7 +282,7 @@ onMounted(() => {
 }
 .manage {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   background: var(--card);
   display: flex;

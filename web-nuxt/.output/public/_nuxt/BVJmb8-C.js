@@ -1,0 +1,1 @@
+import{r as e}from"./DTa3sSAx.js";function t(t,n=`未知错误`){if(e.isAxiosError(t)){let e=t.response?.data;return e?.error?e.error:t.response?.status?`请求失败（HTTP ${t.response.status}）`:t.message}return t instanceof Error?t.message:n}function n(t){return e.isAxiosError(t)?t.response?.status:void 0}export{t as n,n as t};

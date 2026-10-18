@@ -1,5 +1,7 @@
 # AGENTS.md — gitli AI Agent 工作手册
 
+> 🚫 **红线约束（最高优先级）：这是一个完全独立自研的项目。所有代码、注释、文档、UI 中，严禁出现任何其他同类开源项目（如 Gitea、GitLab、Forgejo）的名字！一旦发现，视为严重违规。**
+
 > ⚠️ **如果上下文丢失，请立刻读取 `ROADMAP.md` 和 `STATUS.md` 继续 E2E 测试。**
 
 本文件面向所有参与开发 gitli 的 AI Agent 与人类工程师，是最高优先级的工作准则。
@@ -18,7 +20,7 @@ go build -o gitli # 成功
 
 ## 1. 项目定位
 
-gitli 是一个**轻量级、自研的 Git 服务平台**，目标是在单台低配服务器上提供 GitHub / GitLab / Gitea / Forgejo 级别的核心能力：
+gitli 是一个**轻量级、自研的 Git 服务平台**，目标是在单台低配服务器上提供 自托管 Git 服务平台的核心能力：
 
 - Git 托管（HTTP + SSH，clone/push/pull）
 - 用户 / 组织 / 团队 / 权限

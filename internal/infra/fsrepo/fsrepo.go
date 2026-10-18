@@ -25,14 +25,32 @@ func New(root string) *Layout {
 // Root returns the configured root directory.
 func (l *Layout) Root() string { return l.root }
 
-// Path returns the bare repository path for owner/name.
+// Path returns the bare repository path for owner/name. The result is always
+// contained under Root, which is asserted defensively even though sanitize
+// already strips separators and "..".
 func (l *Layout) Path(owner, name string) string {
-	return filepath.Join(l.root, sanitize(owner), sanitize(name)+".git")
+	p := filepath.Join(l.root, sanitize(owner), sanitize(name)+".git")
+	if !containedIn(l.root, p) {
+		// Unreachable by construction; fail closed rather than escape root.
+		return filepath.Join(l.root, "_invalid_", "_invalid_.git")
+	}
+	return p
+}
+
+// containedIn reports whether target stays inside root after cleaning.
+func containedIn(root, target string) bool {
+	cleanRoot := filepath.Clean(root)
+	cleanTarget := filepath.Clean(target)
+	return cleanTarget == cleanRoot || strings.HasPrefix(cleanTarget, cleanRoot+string(filepath.Separator))
 }
 
 // OwnerDir returns the directory that holds an owner's repositories.
 func (l *Layout) OwnerDir(owner string) string {
-	return filepath.Join(l.root, sanitize(owner))
+	p := filepath.Join(l.root, sanitize(owner))
+	if !containedIn(l.root, p) {
+		return filepath.Join(l.root, "_invalid_")
+	}
+	return p
 }
 
 // Exists reports whether a repository directory exists.

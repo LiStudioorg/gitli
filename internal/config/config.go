@@ -150,6 +150,10 @@ type ServerConfig struct {
 	SSHExternal     string   `toml:"ssh_external"`
 	AllowRoot       bool     `toml:"allow_root"`
 	EnablePprof     bool     `toml:"pprof"`
+	MemoryLimitMB   int      `toml:"memory_limit_mb"`
+	// TrustedProxies lists CIDRs whose X-Forwarded-For header is honoured.
+	// Empty means XFF is ignored entirely (the safe default).
+	TrustedProxies []string `toml:"trusted_proxies"`
 
 	// Deprecated single-address fields, accepted for backward compatibility.
 	HTTP        string `toml:"http"`
@@ -272,6 +276,12 @@ type PackageLimits struct {
 type LogConfig struct {
 	Level  string `toml:"level"`
 	Format string `toml:"format"`
+	// File enables file logging with rotation. Empty keeps logs on stderr.
+	File       string `toml:"file"`
+	MaxSizeMB  int    `toml:"max_size_mb"`
+	MaxBackups int    `toml:"max_backups"`
+	MaxAgeDays int    `toml:"max_age_days"`
+	Compress   bool   `toml:"compress"`
 }
 
 // MailConfig configures outbound SMTP.

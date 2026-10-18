@@ -47,7 +47,41 @@ const options: Options = {
   },
 }
 
+// GFM task lists ("- [ ] item") are not part of core markdown-it, so render the
+// checkbox form with a small rule instead of adding another dependency.
+function taskListPlugin(mdit: MarkdownIt) {
+  mdit.core.ruler.after('inline', 'gfm-task-list', (state) => {
+    const tokens = state.tokens
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type !== 'inline') continue
+      const parent = tokens[i - 1]
+      if (!parent || parent.type !== 'paragraph_open') continue
+      const token = tokens[i]
+      const match = /^\[([ xX])\]\s+/.exec(token.content)
+      if (!match) continue
+      const checked = match[1] !== ' '
+      token.content = token.content.slice(match[0].length)
+      const cls = checked ? 'task-list-item-checked' : 'task-list-item'
+      tokens[i - 1].attrJoin('class', cls)
+      // Escape the marker into plain text: enabling html_inline would reopen
+      // raw-HTML XSS, so we never emit HTML tokens here.
+      const box = new state.Token('text', '', 0)
+      box.content = checked ? '☑ ' : '☐ '
+      token.children = token.children ?? []
+      token.children.unshift(box)
+    }
+    return true
+  })
+}
+
 const md = new MarkdownIt(options)
+// Raw HTML stays disabled: task list markers are rendered as plain text.
+md.use(taskListPlugin)
+
+// Defence in depth: even with html:false, reject dangerous URL schemes that a
+// user could put in a Markdown link or an autolinked string.
+const safeLink = /^(https?:|mailto:|\/|#|\.{0,2}\/)/i
+md.validateLink = (url: string): boolean => safeLink.test(url.trim())
 
 const html = computed(() => md.render(props.source || ''))
 </script>

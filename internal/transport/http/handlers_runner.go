@@ -106,12 +106,18 @@ func (s *Server) handleRunnerNextJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRunnerJobLogs(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.runnerAuth(w, r); !ok {
+	rr, ok := s.runnerAuth(w, r)
+	if !ok {
 		return
 	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的任务 ID")
+		return
+	}
+	// Runner isolation: only the runner a job was assigned to may append logs.
+	if job, jerr := s.deps.Runners.JobByID(r.Context(), jobID); jerr != nil || job.RunnerID != rr.RunnerID {
+		writeError(w, http.StatusForbidden, "该任务不属于当前 Runner")
 		return
 	}
 	// Stream the request body in bounded chunks to avoid unbounded memory.
@@ -153,12 +159,19 @@ type runnerResultReq struct {
 }
 
 func (s *Server) handleRunnerJobResult(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.runnerAuth(w, r); !ok {
+	rr, ok := s.runnerAuth(w, r)
+	if !ok {
 		return
 	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的任务 ID")
+		return
+	}
+	// Runner isolation: a runner may only report results for its own jobs,
+	// otherwise one compromised runner could forge another's outcome.
+	if job, jerr := s.deps.Runners.JobByID(r.Context(), jobID); jerr != nil || job.RunnerID != rr.RunnerID {
+		writeError(w, http.StatusForbidden, "该任务不属于当前 Runner")
 		return
 	}
 	var req runnerResultReq
@@ -177,9 +190,21 @@ func (s *Server) handleRunnerJobResult(w http.ResponseWriter, r *http.Request) {
 
 // handleRunnerJobLogStream streams stored logs via SSE for the web UI.
 func (s *Server) handleRunnerJobLogStream(w http.ResponseWriter, r *http.Request) {
+	// H-02: logs may contain secrets, so require read access to THIS repo and
+	// verify the job actually belongs to it. Without these checks any visitor
+	// could enumerate job IDs and read the whole instance's CI output.
+	rp, _, ok := s.loadRepoAndPerm(w, r, domain.PermRead)
+	if !ok {
+		return
+	}
 	jobID, err := pathInt(r, "id")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "无效的任务 ID")
+		return
+	}
+	job, err := s.deps.Runners.JobByID(r.Context(), jobID)
+	if err != nil || job.RepoID != rp.ID {
+		writeError(w, http.StatusNotFound, "任务不存在")
 		return
 	}
 	flusher, ok := w.(http.Flusher)

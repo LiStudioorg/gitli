@@ -181,7 +181,7 @@ onMounted(() => load(true))
       <header class="head">
         <h2>探索</h2>
         <form v-if="activeTab === 'repos'" class="search-box" @submit.prevent="search">
-          <input v-model="query" type="search" placeholder="按仓库名称搜索..." />
+          <input v-model="query" type="search" placeholder="按仓库名称搜索..." aria-label="按仓库名称搜索" />
           <button class="btn primary" type="submit">搜索</button>
         </form>
       </header>
@@ -413,7 +413,7 @@ onMounted(() => load(true))
 .card {
   padding: 1.2rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card);
   transition: border-color 0.15s, box-shadow 0.15s;
 }

@@ -22,13 +22,31 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err?.response?.status === 412 && err.response.data?.code === 'setup_required') {
-      if (location.pathname !== '/setup') {
-        location.assign('/setup')
+    const status = err?.response?.status
+    if (status === 412 && err.response.data?.code === 'setup_required') {
+      if (location.pathname !== '/setup') location.assign('/setup')
+      return Promise.reject(err)
+    }
+    if (status === 401) {
+      // Only session loss matters here. A 401 from /auth/login is the user's
+      // own wrong password and is reported inline by the login form.
+      const url = String(err.config?.url ?? '')
+      const isLoginAttempt = url.includes('/auth/login')
+      if (!isLoginAttempt && !location.pathname.startsWith('/login') && !location.pathname.startsWith('/setup')) {
+        void notifyExpired()
       }
     }
     return Promise.reject(err)
   },
 )
+
+async function notifyExpired() {
+  const { useToast } = await import('../composables/useToast')
+  useToast().error('登录已过期，请重新登录')
+  const redirect = encodeURIComponent(location.pathname + location.search)
+  window.setTimeout(() => {
+    location.assign(`/login?redirect=${redirect}`)
+  }, 400)
+}
 
 export default api

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
+	"github.com/LiStudioorg/gitli/internal/infra/secutil"
 	"github.com/LiStudioorg/gitli/internal/service/store"
 )
 
@@ -34,8 +35,11 @@ type Service struct {
 func New(st *store.Store) *Service {
 	return &Service{
 		st: st,
+		// Dial-time IP filtering blocks DNS rebinding; redirects are refused
+		// outright so a 302 cannot bounce the request into the internal network.
 		client: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout:   15 * time.Second,
+			Transport: secutil.NewSafeHTTPClient(15*time.Second, 0).Transport,
 			CheckRedirect: func(*http.Request, []*http.Request) error {
 				return http.ErrUseLastResponse
 			},

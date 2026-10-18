@@ -97,6 +97,27 @@ func ValidateOutboundURL(raw string, blockPrivate bool) error {
 	return nil
 }
 
+// BlockedHost reports whether host resolves to a loopback, private, link-local
+// or unspecified address. Unresolvable names are treated as blocked because the
+// caller cannot verify where they point.
+func BlockedHost(host string) bool {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return true
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return false
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+			ip.IsPrivate() || ip.IsUnspecified() {
+			return true
+		}
+	}
+	return false
+}
+
 // SafeJoin joins base and elem, returning an error if the result escapes base.
 func SafeJoin(base string, elem ...string) (string, error) {
 	joined := filepath.Join(append([]string{base}, elem...)...)

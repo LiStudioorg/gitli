@@ -63,7 +63,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.auditLogin(r, nil, "login", false)
 		if errors.Is(err, auth.ErrTOTPRequired) {
-			writeError(w, http.StatusUnauthorized, "需要两步验证码")
+			writeErrorCode(w, http.StatusUnauthorized, "需要两步验证码", "totp_required")
+			return
+		}
+		if errors.Is(err, auth.ErrAccountInactive) {
+			writeErrorCode(w, http.StatusForbidden, "账号已被停用", "account_disabled")
 			return
 		}
 		writeError(w, http.StatusUnauthorized, "用户名或密码错误")
@@ -76,7 +80,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   s.deps.HTTPSecure(),
+		Secure:   s.deps.cookieSecure(r),
 		MaxAge:   30 * 24 * 3600,
 	})
 	// 登录响应必须是完整公开档案：前端 auth store 直接把响应体写入 user 状态并置

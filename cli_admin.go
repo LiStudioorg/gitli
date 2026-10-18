@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/term"
@@ -14,6 +15,7 @@ import (
 	"github.com/LiStudioorg/gitli/internal/app"
 	"github.com/LiStudioorg/gitli/internal/config"
 	"github.com/LiStudioorg/gitli/internal/domain"
+	"github.com/LiStudioorg/gitli/internal/infra/backup"
 	"github.com/LiStudioorg/gitli/internal/service/audit"
 )
 
@@ -28,23 +30,19 @@ func runAdmin(args []string) error {
 		adminUsage()
 		return nil
 	}
-	fs := flag.NewFlagSet("admin "+group, flag.ContinueOnError)
-	configPath := fs.String("config", "config.toml", "配置文件路径")
-	// group-specific flags are parsed by subhandlers; parse global flags here.
-	if err := fs.Parse(rest); err != nil {
-		return err
-	}
-	cfg, err := config.Load(*configPath)
+	// Pull only the global --config flag; everything else belongs to the
+	// group handler, so a normal flag.FlagSet parse would reject it.
+	configPath, sub := splitConfigFlag(rest)
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		return err
 	}
-	a, err := app.New(context.Background(), cfg, *configPath)
+	a, err := app.New(context.Background(), cfg, configPath)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = a.Close() }()
 	ctx := context.Background()
-	sub := fs.Args()
 
 	switch group {
 	case "user":
@@ -83,12 +81,67 @@ func runAdmin(args []string) error {
 	case "audit":
 		return adminAudit(ctx, a, sub)
 	case "backup":
-		fmt.Println("use `gitli backup --out <file>` to create a backup")
-		return nil
+		return adminBackup(a, sub)
 	default:
 		adminUsage()
 		return fmt.Errorf("未知的管理分组 %q", group)
 	}
+}
+
+// adminBackup is the `gitli admin backup` entry point. It mirrors the
+// top-level backup command but lives under admin for operator convenience.
+// splitConfigFlag extracts --config/-config from args and returns the value
+// plus the remaining arguments, preserving their order.
+func splitConfigFlag(args []string) (string, []string) {
+	path := "config.toml"
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--config" || a == "-config":
+			if i+1 < len(args) {
+				path = args[i+1]
+				i++
+			}
+		case strings.HasPrefix(a, "--config="):
+			path = strings.TrimPrefix(a, "--config=")
+		case strings.HasPrefix(a, "-config="):
+			path = strings.TrimPrefix(a, "-config=")
+		default:
+			out = append(out, a)
+		}
+	}
+	return path, out
+}
+
+func adminBackup(a *app.App, args []string) error {
+	fs := flag.NewFlagSet("admin backup", flag.ContinueOnError)
+	out := fs.String("out", "", "输出归档文件（.tar.gz 或 .tar.gz.enc）")
+	encrypt := fs.Bool("encrypt", false, "加密归档（密钥来自 GITLI_BACKUP_KEY）")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *out == "" {
+		return fmt.Errorf("用法：gitli admin backup --out <文件> [--encrypt]")
+	}
+	opts := backup.Options{SourceDir: a.Cfg.Storage.Repos, OutputFile: *out, Encrypt: *encrypt}
+	if i := strings.LastIndex(a.Cfg.Database.DSN, "/"); a.Cfg.Database.Driver == "sqlite" && i > 0 {
+		opts.SourceDir = a.Cfg.Database.DSN[:i]
+	} else if d := filepath.Dir(a.Cfg.Storage.Repos); d != "" {
+		opts.SourceDir = d
+	}
+	if *encrypt {
+		key, err := backupKey()
+		if err != nil {
+			return err
+		}
+		opts.Key = key
+	}
+	if err := backup.Create(context.Background(), opts); err != nil {
+		return err
+	}
+	fmt.Printf("备份已写入 %s\n", *out)
+	return nil
 }
 
 func adminUser(ctx context.Context, a *app.App, args []string) error {

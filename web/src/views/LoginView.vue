@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import { useAuthStore } from '../stores'
-import { apiStatus, errMessage } from '../utils/error'
+import { apiCode, apiStatus, errMessage } from '../utils/error'
+import { useToast } from '../composables/useToast'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 
-const username = ref('')
+const username = ref(typeof route.query.username === 'string' ? route.query.username : '')
 const password = ref('')
 const totpCode = ref('')
 const needsTOTP = ref(false)
@@ -18,22 +21,28 @@ const loading = ref(false)
 
 async function submit() {
   error.value = ''
+  if (!username.value.trim() || !password.value) {
+    error.value = '请输入用户名和密码'
+    return
+  }
   loading.value = true
   try {
-    await auth.login(username.value, password.value, totpCode.value)
-    const redirect = (route.query.redirect as string) || '/dashboard'
-    router.push(redirect)
+    await auth.login(username.value.trim(), password.value, totpCode.value)
+    toast.success('登录成功')
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
+    await router.push(redirect)
   } catch (e) {
-    if (apiStatus(e) === 401 && errMessage(e) === 'totp_required') {
+    if (apiStatus(e) === 401 && apiCode(e) === 'totp_required') {
       needsTOTP.value = true
       error.value = '请输入两步验证码'
     } else {
-      error.value = '用户名或密码错误'
+      error.value = errMessage(e, '用户名或密码错误')
     }
   } finally {
     loading.value = false
   }
 }
+
 function loginWithSAML() {
   window.location.href = '/api/v1/auth/saml/login'
 }
@@ -46,66 +55,70 @@ function loginWithOIDC() {
 <template>
   <div>
     <TopNav />
-    <main class="login">
-      <h2>登录</h2>
-      <form @submit.prevent="submit">
-        <input v-model="username" placeholder="用户名" autocomplete="username" />
-        <input v-model="password" type="password" placeholder="密码" autocomplete="current-password" />
-        <input v-if="needsTOTP" v-model="totpCode" placeholder="两步验证码" inputmode="numeric" />
-        <button type="submit" :disabled="loading">登录</button>
-      </form>
-      <div class="divider"><span>或</span></div>
-      <button type="button" class="secondary" @click="loginWithSAML">通过 SAML 登录</button>
-      <button type="button" class="secondary" @click="loginWithOIDC">通过 OIDC 登录</button>
-      <p v-if="error" class="error">{{ error }}</p>
+    <main class="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.10),transparent_70%)] px-4 py-10">
+      <section class="w-full max-w-[420px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
+        <h1>登录 gitli</h1>
+        <p class="mb-5 mt-1 text-sm text-[#656d76]">使用你的账号继续</p>
+
+        <form class="ui-form" @submit.prevent="submit">
+          <div class="ui-field">
+            <label for="login-username">用户名</label>
+            <input
+              id="login-username"
+              v-model="username"
+              class="ui-input"
+              type="text"
+              autocomplete="username"
+              placeholder="请输入用户名"
+              required
+            />
+          </div>
+
+          <div class="ui-field">
+            <label for="login-password">密码</label>
+            <input
+              id="login-password"
+              v-model="password"
+              class="ui-input"
+              type="password"
+              autocomplete="current-password"
+              placeholder="请输入密码"
+              required
+            />
+          </div>
+
+          <div v-if="needsTOTP" class="ui-field">
+            <label for="login-totp">两步验证码</label>
+            <input
+              id="login-totp"
+              v-model="totpCode"
+              class="ui-input"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              placeholder="6 位验证码"
+            />
+          </div>
+
+          <p v-if="error" class="ui-alert ui-alert-error" role="alert">{{ error }}</p>
+
+          <button class="ui-btn ui-btn-primary ui-btn-block ui-btn-lg" type="submit" :disabled="loading">
+            <span v-if="loading" class="ui-spinner" aria-hidden="true" />
+            {{ loading ? '登录中…' : '登录' }}
+          </button>
+        </form>
+
+        <div class="ui-divider"><span>或</span></div>
+
+        <div class="flex flex-col gap-2">
+          <button class="ui-btn ui-btn-block" type="button" @click="loginWithSAML">通过 SAML 登录</button>
+          <button class="ui-btn ui-btn-block" type="button" @click="loginWithOIDC">通过 OIDC 登录</button>
+        </div>
+
+        <p class="mt-6 text-center text-sm text-[#656d76]">
+          还没有账号？<RouterLink to="/register" class="font-semibold text-[#ea580c] hover:underline">注册</RouterLink>
+        </p>
+      </section>
     </main>
   </div>
 </template>
 
-<style scoped>
-.login {
-  max-width: 320px;
-  margin: 4rem auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-input,
-button {
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-}
-.error {
-  color: #d1242f;
-}
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: var(--muted, #6e7781);
-  font-size: 0.8rem;
-}
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border, #d0d7de);
-}
-button.secondary {
-  background: transparent;
-  border: 1px solid var(--border, #d0d7de);
-  color: var(--color-fg, inherit);
-  cursor: pointer;
-}
-button.secondary:hover {
-  border-color: var(--primary, #0969da);
-  color: var(--primary, #0969da);
-}
-</style>

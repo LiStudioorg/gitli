@@ -27,19 +27,9 @@ builds:
       - linux_amd64
       - linux_arm64
       - linux_arm_7
-      - linux_386
       - darwin_amd64
       - darwin_arm64
       - windows_amd64
-      - windows_arm64
-      - windows_386
-      - freebsd_amd64
-      - freebsd_arm64
-      - freebsd_386
-      - freebsd_arm_7
-      - openbsd_amd64
-      - openbsd_arm64
-      - netbsd_amd64
 
 archives:
   - id: gitli
@@ -87,8 +77,19 @@ release:
   prerelease: auto
   name_template: "gitli {{ .Version }}"
   header: |
-    > ⚠️ **v0.1.x 为早期 Alpha 版本**：后端核心功能已就绪，
-    > 前端页面仍在完善中。请勿用于生产环境。
+    ## 本次亮点
+
+    - 🔒 **包含 v0.10.1 的全部高危安全修复**：Git 归档参数注入、CI 日志匿名越权、
+      systemd 硬编码主密钥、CI 产物越权删除、OAuth 回调协议校验、X-Forwarded-For 信任、
+      停用账号绕过、密码爆破、RBAC 越权、Webhook SSRF 等。
+    - ✨ 新增：生产级文本日志格式（带处理函数 `file:line(func)` 定位、终端颜色高亮、
+      慢请求自动升级为 WARN/ERROR），并保留 `format = "json"` 供日志采集。
+    - ✨ 新增：优雅停机，重启/停止时等待在途 Git 传输完成（最长 10 秒），不再中断用户。
+    - ✨ 新增：启动横幅（版本 / Go 版本 / 运行模式 / 配置路径 / 数据目录 / Git 版本）
+      与弱密钥自动检测（拒绝公开示例值与低熵密钥）。
+
+    > 升级提示：若你曾使用旧 systemd 模板中的示例密钥，请重新生成
+    > `GITLI_CRYPTO_KEY` / `GITLI_PEPPER`，并重置 2FA 与 CI Secrets。
 
 changelog:
   use: github

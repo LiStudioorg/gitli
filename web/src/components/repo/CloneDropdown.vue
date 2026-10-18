@@ -34,7 +34,7 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
 
 <template>
   <div class="clone-dropdown">
-    <button class="code-btn" @click="toggle">
+    <button class="code-btn" type="button" aria-label="获取克隆地址" aria-expanded="false" @click="toggle">
       <span class="angle">&lt;&gt;</span> 代码
       <span class="caret">▾</span>
     </button>
@@ -64,7 +64,7 @@ function download(format: 'zip' | 'tar.gz' | 'bundle') {
           </div>
         </template>
         <template v-else>
-          <p class="placeholder-title">gli 命令行工具即将推出，敬请期待。</p>
+          <p class="placeholder-title">目前请使用上方 git clone/push 命令。gli 命令行工具尚未提供。</p>
           <p class="placeholder-sub">届时可用：</p>
           <pre class="placeholder-code">gli clone &lt;owner&gt;/&lt;repo&gt;
 gli issue list
@@ -119,7 +119,7 @@ gli pr create</pre>
   padding: 0.9rem;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 .tabs {

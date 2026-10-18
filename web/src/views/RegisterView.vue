@@ -1,47 +1,77 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import TopNav from '../components/layout/TopNav.vue'
 import { useAuthStore } from '../stores'
 import { errMessage } from '../utils/error'
+import api from '../api/client'
+import { useToast } from '../composables/useToast'
 
 const auth = useAuthStore()
 const router = useRouter()
+const toast = useToast()
+
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const error = ref('')
 const loading = ref(false)
 
-const disabledReason = computed(() => {
-  if (!username.value) return '请填写用户名'
-  if (!email.value) return '请填写邮箱'
-  if (password.value.length < 8) return '密码至少 8 位'
+const usernameError = computed(() => {
+  const v = username.value.trim()
+  if (!v) return ''
+  if (!/^[A-Za-z0-9._-]{2,39}$/.test(v)) return '用户名为 2–39 位字母、数字、点、下划线或连字符'
   return ''
 })
 
+const emailError = computed(() => {
+  const v = email.value.trim()
+  if (!v) return ''
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return '请输入有效的邮箱地址'
+  return ''
+})
+
+const passwordError = computed(() => {
+  if (!password.value) return ''
+  if (password.value.length < 12) return '密码至少 12 位'
+  return ''
+})
+
+const confirmError = computed(() => {
+  if (!confirmPassword.value) return ''
+  if (confirmPassword.value !== password.value) return '两次输入的密码不一致'
+  return ''
+})
+
+const canSubmit = computed(
+  () =>
+    username.value.trim() !== '' &&
+    email.value.trim() !== '' &&
+    password.value.length >= 12 &&
+    confirmPassword.value === password.value &&
+    !usernameError.value &&
+    !emailError.value,
+)
+
 async function submit() {
   error.value = ''
-  if (!username.value || !email.value) {
-    error.value = '请填写用户名和邮箱'
-    return
-  }
-  if (password.value.length < 8) {
-    error.value = '密码至少 8 位'
+  if (!canSubmit.value) {
+    error.value = usernameError.value || emailError.value || passwordError.value || confirmError.value || '请完整填写表单'
     return
   }
   loading.value = true
   try {
-    const { default: api } = await import('../api/client')
     await api.post('/auth/register', {
-      username: username.value,
-      email: email.value,
+      username: username.value.trim(),
+      email: email.value.trim(),
       password: password.value,
     })
-    await auth.login(username.value, password.value)
-    router.push('/dashboard')
+    await auth.login(username.value.trim(), password.value)
+    toast.success('注册成功，已自动登录')
+    await router.push('/dashboard')
   } catch (e) {
-    error.value = errMessage(e, '注册失败')
+    error.value = errMessage(e, '注册失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -51,44 +81,84 @@ async function submit() {
 <template>
   <div>
     <TopNav />
-    <main class="register">
-      <h2>注册</h2>
-      <form @submit.prevent="submit">
-        <input v-model="username" placeholder="用户名" autocomplete="username" />
-        <input v-model="email" type="email" placeholder="邮箱" autocomplete="email" />
-        <input v-model="password" type="password" placeholder="密码（至少 8 位）" autocomplete="new-password" />
-        <button type="submit" :disabled="loading">{{ loading ? '注册中…' : '注册' }}</button>
-      </form>
-      <p v-if="disabledReason && !error" class="hint">{{ disabledReason }}</p>
-      <p v-if="error" class="error">{{ error }}</p>
+    <main class="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.10),transparent_70%)] px-4 py-10">
+      <section class="w-full max-w-[440px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
+        <h1>创建账号</h1>
+        <p class="mb-5 mt-1 text-sm text-[#656d76]">加入 gitli，开始托管你的代码</p>
+
+        <form class="ui-form" @submit.prevent="submit" novalidate>
+          <div class="ui-field">
+            <label for="reg-username">用户名</label>
+            <input
+              id="reg-username"
+              v-model="username"
+              class="ui-input"
+              :class="{ '!border-[#cf222e]': usernameError }"
+              type="text"
+              autocomplete="username"
+              placeholder="例如 alice"
+              required
+            />
+            <span v-if="usernameError" class="ui-error">{{ usernameError }}</span>
+          </div>
+
+          <div class="ui-field">
+            <label for="reg-email">邮箱</label>
+            <input
+              id="reg-email"
+              v-model="email"
+              class="ui-input"
+              :class="{ '!border-[#cf222e]': emailError }"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
+            <span v-if="emailError" class="ui-error">{{ emailError }}</span>
+          </div>
+
+          <div class="ui-field">
+            <label for="reg-password">密码</label>
+            <input
+              id="reg-password"
+              v-model="password"
+              class="ui-input"
+              :class="{ '!border-[#cf222e]': passwordError }"
+              type="password"
+              autocomplete="new-password"
+              placeholder="至少 12 位"
+              required
+            />
+            <span v-if="passwordError" class="ui-error">{{ passwordError }}</span>
+            <span v-else class="ui-help">建议混合字母、数字与符号</span>
+          </div>
+
+          <div class="ui-field">
+            <label for="reg-confirm">确认密码</label>
+            <input
+              id="reg-confirm"
+              v-model="confirmPassword"
+              class="ui-input"
+              :class="{ '!border-[#cf222e]': confirmError }"
+              type="password"
+              autocomplete="new-password"
+              placeholder="再次输入密码"
+              required
+            />
+            <span v-if="confirmError" class="ui-error">{{ confirmError }}</span>
+          </div>
+
+          <p v-if="error" class="ui-alert ui-alert-error" role="alert">{{ error }}</p>
+
+          <button class="ui-btn ui-btn-primary ui-btn-block ui-btn-lg" type="submit" :disabled="loading">
+            <span v-if="loading" class="ui-spinner" aria-hidden="true" />
+            {{ loading ? '注册中…' : '创建账号' }}
+          </button>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-[#656d76]">已有账号？<RouterLink to="/login" class="font-semibold text-[#ea580c] hover:underline">登录</RouterLink></p>
+      </section>
     </main>
   </div>
 </template>
 
-<style scoped>
-.register {
-  max-width: 340px;
-  margin: 3rem auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-input,
-button {
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-}
-.error {
-  color: #d1242f;
-}
-.hint {
-  color: var(--muted, #57606a);
-  font-size: 0.85rem;
-}
-</style>

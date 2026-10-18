@@ -2,6 +2,57 @@
 
 > **上下文丢失时的恢复入口**：先读本文件 + `ROADMAP.md`，再继续阶段 B 的稳定化工作。
 
+## 版本规范（强制）
+
+- Bug 修复：补丁号 +1（`v0.10.1`）。
+- 新功能 / 安全大重构：次版本号 +1（`v0.11.0`）。
+- 禁止跨版本乱发 tag；`v0.10.0` 含严重 UI 错误，已在 Release 标记废弃。
+
+## 安全审计修复（v0.10.1）
+
+### P0 高危
+- **H-01** `internal/service/git/archive.go`：`ArchiveStream` 未校验 ref → 增加 `validateRef` + `--` 分隔；`language.go:49` 同类问题一并修复。
+- **H-02** `handlers_runner.go`：CI 日志 SSE 无鉴权 → `loadRepoAndPerm(PermRead)` + `job.RepoID == rp.ID`。
+- **H-06** `deploy/systemd/gitli.service`：硬编码 pepper/key → 改用 `EnvironmentFile`；新增 `secretguard.go` 拒绝公开示例值/低熵/过短密钥。
+- **H-07** `service/oauth/oauth.go`：redirect_uri 未校验协议 → `ValidateRedirectURIFormat`（仅 http/https、须有 host、禁止 fragment）；前端加 `isSafeRedirect`。
+- **H-08** `handlers_ci.go`：删除产物仅 requireUser → 经 artifact→job→pipeline 解析仓库并校验 `PermWrite`。
+
+### P1 逻辑
+- **H-03** `util.go`：XFF 无条件信任 → `[server] trusted_proxies`，仅可信代理生效且取最右非可信跳；默认忽略 XFF。
+- **H-04** `service/auth`：停用账号仍可登录 → `Login`/`VerifyPassword`/`AuthenticateRequest` 校验 `IsActive`；停用时撤销全部会话。
+- **H-05** `VerifyPassword`：未限流 → 接入 `limiter`（allow/fail/success）。
+
+### 专项清单
+- 团队 re-parent 跨组织越权 → 校验父团队同组织（`ErrCrossOrg`）。
+- 协作者接口仅 requireUser → 改为 `PermAdmin`；`SetCollaborator` 校验 role 所属组织与权限上限（`ErrPrivilegeEscalation`）。
+- 细粒度 PAT scope → `loadRepoAndPerm` 统一强制 `tokenAllowsRepo`。
+- Webhook SSRF → `secutil.NewSafeHTTPClient` 在 `DialContext` 拦截内网 IP（防 DNS Rebinding），禁止跟随重定向。
+- Runner 横向越权 → logs/result 校验 `job.RunnerID == runner`。
+- 路径穿越 → `fsrepo.Path/OwnerDir` 增加 `containedIn` 兜底校验。
+- M-02 改密/重置 2FA 撤销其他会话；M-07 注册限流 + 12 位；M-08 挂载 `apiLim`；M-09 `loginLimiter` 定期 GC；M-15 LIKE 增加 `ESCAPE`。
+- 安全 PoC 测试：`test/security_poc_test.go`。
+
+## 日志与停机（v0.10.1）
+
+- 新增自定义文本 Handler：`2026/10/17 23:51:42 [I] router: completed GET /api/v1/user/me for 1.2.3.4, 200 OK in 14.2ms @ handlers_user.go:42(handleUser)`
+- TTY 自动着色（时间灰、I 绿、W 黄、E 红、状态码按 2xx/4xx/5xx）；写文件自动去色；`format = "json"` 保留。
+- 慢请求升级：≥500ms 记 `[W]`，≥1s 记 `[E]`。
+- 启动横幅：版本、Go 版本、运行模式、配置路径、数据目录、Git 版本。
+- 优雅停机：收到信号 → 关闭 HTTP（10s 等待在途请求）→ 关闭 SSH → 停止后台任务 → 关闭数据库 → `PID xxx Gitli Web Finished`。
+- 修复真实 Bug：SSH `ListenAndServe` 原先同步阻塞，导致信号处理器从未注册。
+
+## 前端工程（v0.11.1）
+
+- **唯一前端目录**：`web/`（Vue 3 + Vite + Tailwind CSS）。`web-nuxt/` 已从磁盘与 Git 删除（80 个文件）。
+  嵌入源：`web/embed.go` 的 `//go:embed all:dist`。
+- Tailwind 全量引入（`tailwind.config.js` / `postcss.config.js`，`content` 扫描 `web/src`）。
+  无任何重型 UI 库（Element/Ant/Naive/Vuetify 均未使用）。
+- 已迁移到 Tailwind：TopNav（移动端汉堡）、Sidebar（w-64 / 移动端抽屉）、AppLayout（仅主区滚动）、
+  Dashboard（三列概览 + 两栏内容）、RepoView（头部/Tab/Grid/侧栏/各列表/Diff）、
+  登录/注册/初始化、新建仓库/组织/导入。
+- 新增 `ErrorAlert.vue`：接口错误只在主内容区顶部渲染，绝不替换 Layout。
+- 待迁移（下一版本）：Explore、用户设置、管理后台、个人主页、组织设置（约 1566 行 scoped CSS）。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**
@@ -32,9 +83,73 @@
 - **解压即用**：启动自动建库/建表/补齐迁移，全部成功后才监听；迁移逐版本事务化。
   新增 `TestStartupCreatesDatabaseFromScratch` 与 `TestUpgradeFromPartialSchema`（旧库升级不丢数据）。
 
+### 安全红线审查（rc4 前完成）
+
+- **SQL 注入**：全库扫描无 `Sprintf`/`+` 拼接 SQL；所有查询参数化。`LIKE` 统一经
+  `store.EscapeLike` 转义 `%`、`_`、`\`；动态表名 `countAll` 改为白名单。
+  端到端注入测试（`' OR 1=1 --`、`'; DROP TABLE users;--`、`%`、`_`）返回 200 且数据完好。
+- **XSS**：Markdown `html: false` + `validateLink` 仅允许 http(s)/mailto/相对路径；
+  用户网站链接校验协议（拒绝 `javascript:`）；CSP `default-src 'self'`。
+- **SSRF**：Webhook 阻断回环/私网/链路本地/元数据地址且禁止重定向；导入改为
+  `secutil.ValidateOutboundURL` 强校验；镜像保留内网（合法用途）。
+- **认证缓存**：Argon2 并发上限 2，Git Basic 认证缓存 60s，改密/重置 2FA/停用/删除
+  均按用户立即失效（私有仓库实测旧密码返回 401）。
+
+### rc5 修复（实机反馈）
+- **CSRF 未签发**：页面 GET 不经过 `/api`，首个 POST 必 403（表现为“显示已登录但设置页需要登录”）。
+  根路由新增 `IssueCSRF`；并用 context 复用同一 token，避免重复下发两个不同 cookie。
+- **登录态不持久**：Cookie `Secure` 改为按请求判定（TLS 或 X-Forwarded-Proto），
+  不再仅凭 `http_external_url`，避免 HTTP 部署下浏览器丢弃会话。
+- **个人主页白屏**：`repos` 为 null 导致模板求值抛错；后端返回空数组，前端再做归一化。
+- **初始化向导**：守卫对 `/setup` 也检查 `initialized`；提交后自动登录并进入 Dashboard；
+  已初始化时访问 `/setup` 跳转 `/login`。
+- **Termux**：生成配置时探测 Termux 路径并写入 `[git] bin`，Linxu 探测常见路径。
+- **UI**：全局设计系统（卡片/输入/按钮/焦点环/暗色），重做登录/注册/初始化三个页面，
+  Landing 英雄区与特性卡片、TopNav 毛玻璃与品牌徽标。
+
+### rc6 修复（实机反馈）
+- **移除“即将推出”**：新增发布 / 活动 / 百科三个真实页面（列表 + 新建 + Markdown 渲染）。
+- **工单 / 合并请求**：状态筛选、作者、相对时间、空状态引导；PR 支持展开 Diff
+  （后端 `/diff` 大文件保护返回 `too_large` 时给出提示）。
+- **空状态**：统一 `EmptyState` 组件（图标 + 标题 + 说明 + 主按钮）。
+- **个人主页白屏**：后端 `repos` 恒为数组，前端再做归一化。
+- **全局错误兜底**：`app.config.errorHandler` 渲染友好提示而非整页白屏。
+- 后端：Issue/Pull 列表 JOIN 用户名；Release 增加 `created_at`；新增仓库级活动接口。
+
+### rc7：品牌视觉（现代极客风 · 赤陶橙）
+- 设计令牌：`--bg-base/--bg-surface/--text-primary/--text-secondary/--border-color`，
+  主色 `--color-primary: #ea580c`（深色 `#f97316`），语义色 success/danger/purple/info
+  均含 `-bg` 变体；旧变量（`--primary`/`--card`/`--border` 等）保留为别名，全站即时生效。
+- Logo：`favicon.svg` + `web/src/components/icons/LogoIcon.vue`（`currentColor`），
+  TopNav 与初始化页统一使用；删除旧 `icon-192/512.svg`。
+- Manifest：`theme_color #ea580c`，图标指向 `/favicon.svg`。
+- 组件规范：状态徽章（开启绿/关闭红/已合并紫）、Tab 下划线 2px、侧边栏选中主色底、
+  Diff 行级着色（增绿/删红/hunk 蓝）、卡片圆角统一 8px + 阴影。
+- 清理：移除硬编码蓝色（仅保留 Go 语言色与 `--color-info` 令牌）。
+
+### rc8：空仓库与边缘状态
+- **空仓库**：`Tree` 识别“无有效对象”返回 `ErrEmptyRepo`；接口返回 `entries: []` +
+  `is_empty: true`，不再泄露 `git ls-tree ... exit status 128`。Commits 返回空数组，
+  Blob 返回“仓库还没有任何提交”。前端渲染空仓库引导页（含 git 快速上手命令与一键复制）。
+- **表单校验**：新建仓库/组织/导入页仅在 `blur` 或提交后显示校验提示，初始不飘红。
+- **侧边栏**：删除写死的“管理主题 / 2.1 MiB / LiCore v0.9.11”，改为真实
+  `StarsCount` / `ForksCount` / `SizeKB`，无数据时隐藏卡片。
+- **布局**：侧边栏固定 240px 不收缩（sticky）；主内容 `flex: 1`、内边距 24px；
+  仓库页 `minmax(0,1fr) 300px` + 24px 间距。
+
 ### 待办
-- B6 发布 `v0.9.0-rc2`（含自动迁移升级测试与文档净化）。
+- 发布 `v0.9.0-rc8`（预发布）。
 - B1 压测脚本已就绪，待在有足够内存的机器上跑完整 50 并发并记录结果。
+
+### rc4 新增
+- 零配置：自动生成 config.toml、data 目录、随机密钥；自动迁移；初始化向导。
+- 性能：gzip 压缩、静态资源 immutable 缓存、SQLite WAL/busy_timeout、`memory_limit_mb`。
+- 运维：`/readyz`、`gitli install`（systemd）、`gitli admin backup`、JSON 日志。
+- 体验：骨架屏、Toast、PWA、GFM 任务列表、A11y、大 Diff 保护。
+- 快捷键：全局 `g i` / `g p` / `g d` / `g e` / `c` / `/` / `?`，`?` 呼出说明弹窗。
+- 敏感操作确认：生成/吊销 PAT、关闭 2FA、删除 OAuth 应用、注销会话均二次确认。
+- 日志轮转：`[log] file` + lumberjack 按大小/保留数/天数切割，`format = "json"` 可选。
+- 构建：Docker 前端与 Go 编译固定在 BUILDPLATFORM（避免 QEMU 模拟），Release 支持手动跳过 Docker。
 
 ## 已完成功能总览
 
@@ -229,3 +344,8 @@ SQL 本身带归属条件，所以**没有**跨用户删除，但命中 0 行时
 - `AGENTS.md §10`「所有子命令支持 `--config`」对 `gitli admin user create` 不成立（实测报
   `flag provided but not defined: -config`），README 另一处又说 `admin` 是保留命令，两处均过时。
 
+## 前端（2026-10-18 合并 main 后的现状）
+
+main 分支已将前端迁移到 Vue 3 + Vite + Tailwind CSS，并在 `9fdfa13` 删除了 `web-nuxt/`。
+本次合并方向：**把 main 的全部后端与样式改进并入 beta，然后以 Nuxt 4 为唯一前端**，
+将 Tailwind 设计令牌迁回 Nuxt 4，最终让 `//go:embed` 指向 Nuxt 4 的静态产物。

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import TopNav from '../components/layout/TopNav.vue'
-import Sidebar from '../components/layout/Sidebar.vue'
+import AppLayout from '../components/layout/AppLayout.vue'
+import ErrorAlert from '../components/common/ErrorAlert.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 
@@ -11,6 +11,7 @@ const auth = useAuthStore()
 const name = ref('')
 const sourceURL = ref('')
 const error = ref('')
+const touched = ref(false)
 const loading = ref(false)
 
 const disabledReason = computed(() => {
@@ -49,76 +50,52 @@ async function submit() {
 </script>
 
 <template>
-  <div>
-    <TopNav variant="app" />
-    <div class="body">
-      <Sidebar />
-      <main class="content">
-        <h2>导入仓库</h2>
-        <form class="form" @submit.prevent="submit">
-          <label>
-            新仓库名称
-            <input v-model="name" placeholder="my-imported-repo" autocomplete="off" />
-          </label>
-          <label>
-            来源仓库地址
-            <input v-model="sourceURL" placeholder="https://github.com/user/repo.git" autocomplete="off" />
-          </label>
-          <div class="actions">
-            <button type="submit" :disabled="loading">{{ loading ? '导入中…' : '开始导入' }}</button>
-            <button type="button" class="secondary" @click="router.back()">取消</button>
-          </div>
-        </form>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-else-if="disabledReason" class="hint">{{ disabledReason }}</p>
-      </main>
+  <AppLayout>
+    <div class="mx-auto w-full max-w-[640px]">
+      <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">导入仓库</h2>
+      <ErrorAlert v-if="error" title="操作失败" :message="error" @dismiss="error = ''" />
+      <form
+        class="flex flex-col gap-4 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22] md:p-6"
+        @submit.prevent="submit"
+      >
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">新仓库名称</span>
+          <input
+            v-model="name"
+            placeholder="my-imported-repo"
+            autocomplete="off"
+            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            @blur="touched = true"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">来源仓库地址</span>
+          <input
+            v-model="sourceURL"
+            placeholder="https://example.com/user/repo.git"
+            autocomplete="off"
+            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            @blur="touched = true"
+          />
+        </label>
+        <p v-if="touched && disabledReason" class="text-xs text-[#cf222e]">{{ disabledReason }}</p>
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            :disabled="loading"
+            class="inline-flex h-9 items-center rounded-md bg-[#ea580c] px-4 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50"
+          >
+            {{ loading ? '处理中…' : '开始导入' }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-9 items-center rounded-md border border-[#d0d7de] px-4 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            @click="router.back()"
+          >
+            取消
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
+  </AppLayout>
 </template>
-
-<style scoped>
-.body {
-  display: flex;
-}
-.content {
-  flex: 1;
-  padding: 1.5rem;
-  max-width: 640px;
-}
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-}
-input {
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-}
-.actions {
-  display: flex;
-  gap: 0.6rem;
-}
-button {
-  padding: 0.55rem 0.9rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-  cursor: pointer;
-}
-button.secondary {
-  background: transparent;
-}
-.error {
-  color: #d1242f;
-}
-.hint {
-  color: var(--muted, #57606a);
-  font-size: 0.85rem;
-}
-</style>

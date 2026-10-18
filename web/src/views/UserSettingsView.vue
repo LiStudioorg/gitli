@@ -494,6 +494,13 @@ async function loadTokens() {
 
 async function createToken() {
   if (!newToken.name) return
+  if (
+    !window.confirm(
+      `将为「${newToken.name}」生成一个访问令牌。令牌明文只显示一次，请务必立即保存。确定继续？`,
+    )
+  ) {
+    return
+  }
   tokenCreating.value = true
   tokensError.value = ''
   copied.value = false
@@ -523,6 +530,7 @@ async function copyToken() {
 
 async function revokeToken(id: number | undefined) {
   if (id == null) return
+  if (!window.confirm('吊销后该令牌立即失效，使用它的脚本/CI 将无法再访问。确定吊销？')) return
   tokensError.value = ''
   try {
     await api.delete(`/user/me/tokens/${id}`)
@@ -700,6 +708,7 @@ async function totpEnable() {
 }
 
 async function totpDisable() {
+  if (!window.confirm('关闭两步验证会降低账号安全性，确定继续？')) return
   totpBusy.value = true
   totpError.value = ''
   totpOk.value = ''
@@ -1484,7 +1493,7 @@ onMounted(async () => {
 }
 .card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1.25rem;
   background: var(--card);
   display: flex;
@@ -1724,7 +1733,7 @@ label.check input {
 .modal {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1.25rem;
   width: 100%;
   max-width: 420px;
