@@ -10,6 +10,8 @@ const props = defineProps<{
   repo: string
   branch: string
   branches: string[]
+  /** README filename detected by the server; empty means there is none. */
+  readmeFilename?: string
 }>()
 
 const emit = defineEmits<{ (e: 'update:branch', value: string): void }>()
@@ -65,8 +67,6 @@ const error = ref('')
 const currentPath = computed(() => pathStack.value.join('/'))
 const readmeName = computed(() => readme.value?.name ?? '')
 
-const README_CANDIDATES = ['README.md', 'readme.md', 'README.markdown', 'README.rst', 'README']
-
 function sizeLabel(n?: number): string {
   if (!n) return '—'
   if (n < 1024) return `${n} B`
@@ -116,21 +116,22 @@ async function loadLatestCommit() {
 }
 
 async function loadReadme() {
-  for (const candidate of README_CANDIDATES) {
-    try {
-      const { data } = await api.get(
-        `/repos/${props.owner}/${props.repo}/blob/${encodeURIComponent(props.branch)}/${candidate}`,
-        { responseType: 'text', transformResponse: [(v) => v] },
-      )
-      if (typeof data === 'string' && data.length > 0) {
-        readme.value = { name: candidate, content: data }
-        return
-      }
-    } catch {
-      /* try next candidate */
-    }
+  // The server already told us whether a README exists and its exact filename,
+  // so there is no need to probe multiple candidates (which produced 404s).
+  const candidate = props.readmeFilename
+  if (!candidate) {
+    readme.value = null
+    return
   }
-  readme.value = null
+  try {
+    const { data } = await api.get(
+      `/repos/${props.owner}/${props.repo}/blob/${encodeURIComponent(props.branch)}/${encodeURIComponent(candidate)}`,
+      { responseType: 'text', transformResponse: [(v) => v] },
+    )
+    readme.value = typeof data === 'string' && data.length > 0 ? { name: candidate, content: data } : null
+  } catch {
+    readme.value = null
+  }
 }
 
 function enter(entry: TreeEntry) {

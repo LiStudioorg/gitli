@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import TopNav from '../components/layout/TopNav.vue'
-import Sidebar from '../components/layout/Sidebar.vue'
+import AppLayout from '../components/layout/AppLayout.vue'
+import ErrorAlert from '../components/common/ErrorAlert.vue'
 import api from '../api/client'
 import { useAuthStore } from '../stores'
 
@@ -45,88 +45,54 @@ async function submit() {
 </script>
 
 <template>
-  <div>
-    <TopNav variant="app" />
-    <div class="body">
-      <Sidebar />
-      <main class="content">
-        <h2>新建仓库</h2>
-        <form class="form" @submit.prevent="submit">
-          <label>
-            仓库名称
-            <input v-model="name" placeholder="my-project" autocomplete="off" @blur="touched = true" />
-          </label>
-          <label>
-            描述（可选）
-            <input v-model="description" placeholder="一句话介绍这个仓库" />
-          </label>
-          <label class="checkbox">
-            <input v-model="isPrivate" type="checkbox" />
-            私有仓库
-          </label>
-          <div class="actions">
-            <button type="submit" :disabled="loading">{{ loading ? '创建中…' : '创建仓库' }}</button>
-            <button type="button" class="secondary" @click="router.back()">取消</button>
-          </div>
-        </form>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-else-if="touched && disabledReason" class="hint">{{ disabledReason }}</p>
-      </main>
+  <AppLayout>
+    <div class="mx-auto w-full max-w-[640px]">
+      <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">新建仓库</h2>
+      <ErrorAlert v-if="error" title="创建失败" :message="error" @dismiss="error = ''" />
+      <form
+        class="flex flex-col gap-4 rounded-md border border-[#d0d7de] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22] md:p-6"
+        @submit.prevent="submit"
+      >
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">仓库名称</span>
+          <input
+            v-model="name"
+            placeholder="my-project"
+            autocomplete="off"
+            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+            @blur="touched = true"
+          />
+          <span v-if="touched && disabledReason" class="text-xs text-[#cf222e]">{{ disabledReason }}</span>
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">描述（可选）</span>
+          <input
+            v-model="description"
+            placeholder="一句话介绍这个仓库"
+            class="h-9 rounded-md border border-[#d0d7de] bg-white px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
+          />
+        </label>
+        <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
+          <input v-model="isPrivate" type="checkbox" class="h-4 w-4 rounded border-[#d0d7de] accent-[#ea580c]" />
+          私有仓库
+        </label>
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            :disabled="loading"
+            class="inline-flex h-9 items-center rounded-md bg-[#ea580c] px-4 text-sm font-semibold text-white hover:bg-[#c2410c] disabled:opacity-50"
+          >
+            {{ loading ? '创建中…' : '创建仓库' }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-9 items-center rounded-md border border-[#d0d7de] px-4 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            @click="router.back()"
+          >
+            取消
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
+  </AppLayout>
 </template>
-
-<style scoped>
-.body {
-  display: flex;
-}
-.content {
-  flex: 1;
-  padding: 1.5rem;
-  max-width: 640px;
-}
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-}
-label.checkbox {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-input {
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-}
-input[type='checkbox'] {
-  width: auto;
-}
-.actions {
-  display: flex;
-  gap: 0.6rem;
-}
-button {
-  padding: 0.55rem 0.9rem;
-  border-radius: 6px;
-  border: 1px solid var(--border, #d0d7de);
-  cursor: pointer;
-}
-button.secondary {
-  background: transparent;
-}
-.error {
-  color: #d1242f;
-}
-.hint {
-  color: var(--muted, #57606a);
-  font-size: 0.85rem;
-}
-</style>

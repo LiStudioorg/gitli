@@ -8,7 +8,7 @@ import LogoIcon from '../icons/LogoIcon.vue'
 
 const { t } = useI18n()
 
-const props = withDefaults(defineProps<{ variant?: 'landing' | 'app' }>(), {
+withDefaults(defineProps<{ variant?: 'landing' | 'app' }>(), {
   variant: 'landing',
 })
 
@@ -33,8 +33,6 @@ function submitSearch() {
   if (!q) return
   router.push({ path: '/search', query: { q } })
 }
-
-const variantClass = computed(() => `topnav-${props.variant}`)
 
 const themeIcon = computed(() => (theme.value === 'dark' ? '☀️' : '🌙'))
 const themeLabel = computed(() => {
@@ -86,52 +84,66 @@ const unread = computed(() => notifications.unread)
 </script>
 
 <template>
-  <header class="topnav" :class="variantClass">
-    <div class="left">
+  <header
+    class="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-[#d0d7de] bg-white/90 px-4 backdrop-blur dark:border-[#30363d] dark:bg-[#161b22]/90 md:px-6"
+  >
+    <div class="flex min-w-0 items-center gap-3">
       <button
         v-if="variant === 'app'"
-        class="icon-btn hamburger"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] md:hidden dark:hover:bg-[#21262d]"
         type="button"
-        aria-label="切换侧边栏"
+        aria-label="打开侧边导航"
         @click="ui.toggleSidebar()"
       >
-        ☰
+        <svg class="h-5 w-5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z" />
+        </svg>
       </button>
-      <RouterLink class="brand" to="/" aria-label="gitli 首页">
+
+      <RouterLink class="flex shrink-0 items-center gap-2 text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]" to="/" aria-label="gitli 首页">
         <LogoIcon />
         <span>gitli</span>
       </RouterLink>
+
       <template v-if="variant === 'landing'">
-        <nav class="links">
-          <a href="#features">{{ t('nav.features') }}</a>
-          <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">{{ t('nav.docs') }}</a>
-          <a href="#about">{{ t('nav.about') }}</a>
+        <nav class="hidden items-center gap-4 text-sm text-[#656d76] md:flex">
+          <a href="#features" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">{{ t('nav.features') }}</a>
+          <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">{{ t('nav.docs') }}</a>
+          <a href="#about" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">{{ t('nav.about') }}</a>
         </nav>
       </template>
-      <template v-else>
-        <form class="search-form" @submit.prevent="submitSearch">
-          <input
-            v-model="searchQuery"
-            class="search"
-            type="search"
-            placeholder="搜索仓库、Issue、用户..."
-            aria-label="全局搜索"
-          />
-        </form>
-      </template>
+      <form v-else class="hidden min-w-0 md:block" @submit.prevent="submitSearch">
+        <input
+          v-model="searchQuery"
+          class="h-8 w-64 rounded-md border border-[#d0d7de] bg-[#f6f8fa] px-3 text-sm text-[#1f2328] outline-none placeholder:text-[#656d76] focus:border-[#ea580c] focus:bg-white focus:ring-2 focus:ring-[#ea580c]/25 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3] dark:focus:bg-[#0d1117] lg:w-80"
+          type="search"
+          placeholder="搜索仓库、Issue、用户..."
+          aria-label="全局搜索"
+        />
+      </form>
     </div>
 
-    <nav v-if="variant === 'app'" class="app-links">
-      <RouterLink to="/dashboard">控制台</RouterLink>
-      <RouterLink to="/explore">仓库</RouterLink>
-      <RouterLink to="/explore?tab=trending">趋势</RouterLink>
-      <RouterLink to="/explore?tab=topics">话题</RouterLink>
-      <RouterLink to="/search">搜索</RouterLink>
+    <nav v-if="variant === 'app'" class="hidden items-center gap-4 text-sm text-[#656d76] lg:flex">
+      <RouterLink to="/dashboard" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">控制台</RouterLink>
+      <RouterLink to="/explore" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">仓库</RouterLink>
+      <RouterLink to="/explore?tab=trending" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">趋势</RouterLink>
+      <RouterLink to="/explore?tab=topics" class="hover:text-[#1f2328] dark:hover:text-[#e6edf3]">话题</RouterLink>
     </nav>
 
-    <div class="right">
+    <div class="ml-auto flex shrink-0 items-center gap-1.5">
+      <RouterLink
+        v-if="variant === 'app'"
+        to="/search"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] md:hidden dark:hover:bg-[#21262d]"
+        aria-label="搜索"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z" />
+        </svg>
+      </RouterLink>
+
       <button
-        class="icon-btn palette-trigger"
+        class="hidden h-8 items-center rounded-md border border-[#d0d7de] px-2 text-xs text-[#656d76] hover:bg-[#f6f8fa] md:inline-flex dark:border-[#30363d] dark:hover:bg-[#21262d]"
         type="button"
         aria-label="打开命令面板"
         title="命令面板 (Ctrl/Cmd+K)"
@@ -140,7 +152,7 @@ const unread = computed(() => notifications.unread)
         ⌘K
       </button>
       <button
-        class="icon-btn theme-toggle"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]"
         type="button"
         :aria-label="themeLabel"
         :title="themeLabel"
@@ -148,283 +160,89 @@ const unread = computed(() => notifications.unread)
       >
         {{ themeIcon }}
       </button>
+
       <template v-if="auth.isLoggedIn">
-        <RouterLink v-if="variant === 'landing'" class="btn primary" to="/dashboard">{{ t('nav.dashboard') }}</RouterLink>
+        <RouterLink
+          v-if="variant === 'landing'"
+          class="inline-flex h-8 items-center rounded-md bg-[#ea580c] px-3 text-sm font-semibold text-white hover:bg-[#c2410c]"
+          to="/dashboard"
+        >
+          {{ t('nav.dashboard') }}
+        </RouterLink>
         <template v-else>
-          <RouterLink class="icon-btn bell" to="/dashboard" title="通知" aria-label="通知">
-            🔔<span v-if="unread > 0" class="bell-badge">{{ unread > 99 ? '99+' : unread }}</span>
+          <RouterLink
+            class="relative inline-flex h-8 w-8 items-center justify-center rounded-md text-[#656d76] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d]"
+            to="/dashboard"
+            title="通知"
+            aria-label="通知"
+          >
+            🔔
+            <span
+              v-if="unread > 0"
+              class="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#cf222e] px-1 text-[10px] font-semibold text-white"
+            >
+              {{ unread > 99 ? '99+' : unread }}
+            </span>
           </RouterLink>
-          <div class="menu-wrap">
-            <button class="icon-btn plus" type="button" aria-label="快速创建" title="快速创建" @click="plusOpen = !plusOpen">
+
+          <div class="relative">
+            <button
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d0d7de] text-base font-semibold text-[#656d76] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:hover:bg-[#21262d]"
+              type="button"
+              aria-label="快速创建"
+              title="快速创建"
+              @click="plusOpen = !plusOpen"
+            >
               +
             </button>
-            <div v-if="plusOpen" class="menu" role="menu">
+            <div
+              v-if="plusOpen"
+              class="absolute right-0 top-full z-50 mt-1.5 flex w-48 flex-col rounded-md border border-[#d0d7de] bg-white p-1 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
+              role="menu"
+            >
               <button
                 v-for="item in createItems"
                 :key="item.label"
                 type="button"
                 role="menuitem"
-                class="menu-item"
+                class="flex flex-col items-start gap-0.5 rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
                 :disabled="item.disabled"
                 @click="!item.disabled && goCreate(item.to)"
               >
                 {{ item.label }}
-                <small v-if="item.hint">{{ item.hint }}</small>
+                <small v-if="item.hint" class="text-xs text-[#656d76]">{{ item.hint }}</small>
               </button>
             </div>
           </div>
-          <div class="menu-wrap">
-            <button class="avatar" type="button" :aria-label="`用户菜单 ${auth.user?.username}`" @click="avatarOpen = !avatarOpen">
+
+          <div class="relative">
+            <button
+              class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#ea580c] text-sm font-semibold text-white"
+              type="button"
+              :aria-label="`用户菜单 ${auth.user?.username}`"
+              @click="avatarOpen = !avatarOpen"
+            >
               {{ auth.user?.username?.[0]?.toUpperCase() }}
             </button>
-            <div v-if="avatarOpen" class="menu" role="menu">
-              <div class="menu-head">{{ auth.user?.username }}</div>
-              <button type="button" class="menu-item" role="menuitem" @click="goAvatar(`/${auth.user?.username}`)">个人主页</button>
-              <button type="button" class="menu-item" role="menuitem" @click="goAvatar('/settings')">设置</button>
-              <button v-if="auth.isAdmin" type="button" class="menu-item" role="menuitem" @click="goAvatar('/admin')">管理面板</button>
-              <button type="button" class="menu-item danger" role="menuitem" @click="logout">退出登录</button>
+            <div
+              v-if="avatarOpen"
+              class="absolute right-0 top-full z-50 mt-1.5 flex w-44 flex-col rounded-md border border-[#d0d7de] bg-white p-1 shadow-lg dark:border-[#30363d] dark:bg-[#161b22]"
+              role="menu"
+            >
+              <div class="truncate px-2.5 py-1.5 text-xs text-[#656d76]">{{ auth.user?.username }}</div>
+              <button type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="goAvatar(`/${auth.user?.username}`)">个人主页</button>
+              <button type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="goAvatar('/settings')">设置</button>
+              <button v-if="auth.isAdmin" type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" @click="goAvatar('/admin')">管理面板</button>
+              <button type="button" role="menuitem" class="rounded-md px-2.5 py-1.5 text-left text-sm text-[#cf222e] hover:bg-[#ffebe9]" @click="logout">退出登录</button>
             </div>
           </div>
         </template>
       </template>
       <template v-else>
-        <RouterLink class="btn" to="/login">{{ t('nav.login') }}</RouterLink>
-        <RouterLink class="btn primary" to="/register">{{ t('nav.register') }}</RouterLink>
+        <RouterLink class="inline-flex h-8 items-center rounded-md px-2.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" to="/login">{{ t('nav.login') }}</RouterLink>
+        <RouterLink class="inline-flex h-8 items-center rounded-md bg-[#ea580c] px-2.5 text-sm font-semibold text-white hover:bg-[#c2410c]" to="/register">{{ t('nav.register') }}</RouterLink>
       </template>
     </div>
   </header>
 </template>
 
-<style scoped>
-.topnav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0.6rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--card) 88%, transparent);
-  backdrop-filter: saturate(180%) blur(8px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow-sm);
-}
-.left,
-.right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-weight: 700;
-  font-size: 1.15rem;
-  color: var(--color-fg);
-  letter-spacing: -0.01em;
-  text-decoration: none;
-  padding: 0.2rem 0.1rem;
-}
-
-.links {
-  display: flex;
-  gap: 1.1rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.links a {
-  color: var(--muted);
-  transition: color 0.15s ease;
-}
-.links a:hover {
-  color: var(--color-fg);
-}
-.search-form {
-  display: flex;
-}
-.search {
-  padding: 0.42rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--color-bg) 70%, var(--card));
-  color: var(--color-fg);
-  min-width: 240px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-}
-.search:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: var(--card);
-  box-shadow: 0 0 0 3px var(--ring);
-}
-.btn {
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: var(--color-fg);
-  background: transparent;
-}
-.btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.btn.primary:hover {
-  background: var(--primary-hover);
-}
-.icon-btn {
-  color: var(--color-fg);
-  background: transparent;
-  border: none;
-  font-size: 1rem;
-  padding: 0.25rem 0.4rem;
-  border-radius: 6px;
-  line-height: 1;
-}
-.icon-btn:hover {
-  background: var(--hover-bg);
-}
-.palette-trigger {
-  border: 1px solid var(--border);
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.hamburger {
-  display: none;
-}
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
-  font-weight: 600;
-}
-.dropdown-toggle {
-  color: var(--color-fg);
-}
-.app-links {
-  display: flex;
-  gap: 1.1rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.app-links a {
-  color: var(--muted);
-  text-decoration: none;
-}
-.app-links a:hover,
-.app-links a.router-link-active {
-  color: var(--color-fg);
-}
-.bell {
-  position: relative;
-}
-.bell-badge {
-  position: absolute;
-  top: -4px;
-  right: -6px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #d1242f;
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.menu-wrap {
-  position: relative;
-}
-.plus {
-  border: 1px solid var(--border);
-  font-size: 1.1rem;
-  font-weight: 600;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.avatar {
-  border: none;
-  cursor: pointer;
-}
-.menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  min-width: 180px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 0.3rem;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-}
-.menu-head {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.25rem;
-}
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: var(--color-fg);
-  padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.88rem;
-  cursor: pointer;
-  width: 100%;
-}
-.menu-item:hover:not(:disabled) {
-  background: var(--hover-bg);
-}
-.menu-item:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.menu-item small {
-  color: var(--muted);
-  font-size: 0.72rem;
-}
-.menu-item.danger {
-  color: #d1242f;
-}
-@media (max-width: 900px) {
-  .app-links {
-    display: none;
-  }
-}
-@media (max-width: 720px) {
-  .search {
-    min-width: 120px;
-  }
-  .links {
-    display: none;
-  }
-}
-@media (max-width: 768px) {
-  .topnav-app .hamburger {
-    display: inline-flex;
-  }
-}
-</style>

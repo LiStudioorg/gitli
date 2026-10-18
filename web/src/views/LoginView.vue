@@ -55,10 +55,10 @@ function loginWithOIDC() {
 <template>
   <div>
     <TopNav />
-    <main class="auth-page">
-      <section class="auth-card">
+    <main class="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.10),transparent_70%)] px-4 py-10">
+      <section class="w-full max-w-[420px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
         <h1>登录 gitli</h1>
-        <p class="auth-subtitle">使用你的账号继续</p>
+        <p class="mb-5 mt-1 text-sm text-[#656d76]">使用你的账号继续</p>
 
         <form class="ui-form" @submit.prevent="submit">
           <div class="ui-field">
@@ -109,33 +109,16 @@ function loginWithOIDC() {
 
         <div class="ui-divider"><span>或</span></div>
 
-        <div class="alt-actions">
+        <div class="flex flex-col gap-2">
           <button class="ui-btn ui-btn-block" type="button" @click="loginWithSAML">通过 SAML 登录</button>
           <button class="ui-btn ui-btn-block" type="button" @click="loginWithOIDC">通过 OIDC 登录</button>
         </div>
 
-        <p class="switch">
-          还没有账号？<RouterLink to="/register">注册</RouterLink>
+        <p class="mt-6 text-center text-sm text-[#656d76]">
+          还没有账号？<RouterLink to="/register" class="font-semibold text-[#ea580c] hover:underline">注册</RouterLink>
         </p>
       </section>
     </main>
   </div>
 </template>
 
-<style scoped>
-.alt-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-.switch {
-  margin: 1.4rem 0 0;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.switch a {
-  color: var(--primary);
-  font-weight: 600;
-}
-</style>

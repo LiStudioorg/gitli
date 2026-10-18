@@ -412,8 +412,16 @@ func (s *Server) Router() http.Handler {
 	r.Get("/api/v1/explore/topics/{topic}", s.handleTopic)
 	r.Get("/api/v1/explore/activity", s.handleExploreActivity)
 
+	r.NotFound(notFoundHandler)
 	web.Mount(r, d.Log)
 	return r
+}
+
+// notFoundHandler answers unmatched routes. Having an explicit handler (rather
+// than chi's default) gives the request logger a stable name to report instead
+// of "unknown" for 404s.
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotFound, "接口不存在")
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

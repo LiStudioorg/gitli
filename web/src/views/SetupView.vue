@@ -70,11 +70,11 @@ async function submit() {
 </script>
 
 <template>
-  <main class="auth-page setup-page">
-    <section class="auth-card setup-card">
-      <div class="brand-badge"><LogoIcon /></div>
+  <main class="flex min-h-screen items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.12),transparent_70%)] px-4 py-12">
+    <section class="w-full max-w-[460px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
+      <div class="mb-4 flex items-center justify-center [&_svg]:h-11 [&_svg]:w-11"><LogoIcon /></div>
       <h1>初始化 gitli</h1>
-      <p class="auth-subtitle">创建第一个管理员账号并设置站点名称。完成后本页面会自动锁定。</p>
+      <p class="mb-5 mt-1 text-sm text-[#656d76]">创建第一个管理员账号并设置站点名称。完成后本页面会自动锁定。</p>
 
       <form class="ui-form" @submit.prevent="submit" novalidate>
         <div class="ui-field">
@@ -101,7 +101,7 @@ async function submit() {
             id="setup-email"
             v-model="email"
             class="ui-input"
-            :class="{ invalid: emailError }"
+            :class="{ '!border-[#cf222e]': emailError }"
             type="email"
             autocomplete="email"
             placeholder="admin@example.com"
@@ -116,7 +116,7 @@ async function submit() {
             id="setup-password"
             v-model="password"
             class="ui-input"
-            :class="{ invalid: passwordError }"
+            :class="{ '!border-[#cf222e]': passwordError }"
             type="password"
             autocomplete="new-password"
             placeholder="至少 8 位"
@@ -131,7 +131,7 @@ async function submit() {
             id="setup-confirm"
             v-model="confirmPassword"
             class="ui-input"
-            :class="{ invalid: confirmError }"
+            :class="{ '!border-[#cf222e]': confirmError }"
             type="password"
             autocomplete="new-password"
             placeholder="再次输入密码"
@@ -148,35 +148,8 @@ async function submit() {
         </button>
       </form>
 
-      <p class="hint">该账号拥有最高管理权限，请妥善保管密码。</p>
+      <p class="mt-4 text-center text-xs text-[#656d76]">该账号拥有最高管理权限，请妥善保管密码。</p>
     </section>
   </main>
 </template>
 
-<style scoped>
-.setup-page {
-  padding-top: 3rem;
-}
-.setup-card {
-  width: min(460px, 100%);
-}
-.brand-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.9rem;
-}
-.brand-badge :deep(svg) {
-  width: 44px;
-  height: 44px;
-}
-.invalid {
-  border-color: var(--danger) !important;
-}
-.hint {
-  margin: 1.1rem 0 0;
-  font-size: 0.78rem;
-  color: var(--muted);
-  text-align: center;
-}
-</style>

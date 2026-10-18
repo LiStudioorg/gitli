@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/LiStudioorg/gitli/internal/domain"
 	"github.com/LiStudioorg/gitli/internal/infra/gitcmd"
@@ -189,10 +190,32 @@ func (s *Server) handleGetRepo(w http.ResponseWriter, r *http.Request) {
 			lic = s.detectLicense(r, rp.ID, path)
 		}
 	}
+	// Detect README once here so the client renders it directly instead of
+	// probing README.md / readme.md / README.rst ... (each a 404 in the log).
+	readmeName := ""
+	isEmpty := true
+	if path, err := s.repoPath(r, rp); err == nil {
+		if entries, terr := s.deps.Git.Tree(r.Context(), path, rp.DefaultBranch, ""); terr == nil && len(entries) > 0 {
+			isEmpty = false
+			for _, e := range entries {
+				if e.Type != "blob" {
+					continue
+				}
+				lower := strings.ToLower(e.Name)
+				if strings.HasPrefix(lower, "readme") {
+					readmeName = e.Name
+					break
+				}
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"repo":      rp,
-		"languages": langs,
-		"license":   lic,
+		"repo":            rp,
+		"languages":       langs,
+		"license":         lic,
+		"is_empty":        isEmpty,
+		"has_readme":      readmeName != "",
+		"readme_filename": readmeName,
 	})
 }
 

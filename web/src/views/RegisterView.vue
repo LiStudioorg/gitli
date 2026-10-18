@@ -81,10 +81,10 @@ async function submit() {
 <template>
   <div>
     <TopNav />
-    <main class="auth-page">
-      <section class="auth-card">
+    <main class="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(234,88,12,0.10),transparent_70%)] px-4 py-10">
+      <section class="w-full max-w-[440px] rounded-md border border-[#d0d7de] bg-white p-6 shadow-lg dark:border-[#30363d] dark:bg-[#161b22] md:p-8">
         <h1>创建账号</h1>
-        <p class="auth-subtitle">加入 gitli，开始托管你的代码</p>
+        <p class="mb-5 mt-1 text-sm text-[#656d76]">加入 gitli，开始托管你的代码</p>
 
         <form class="ui-form" @submit.prevent="submit" novalidate>
           <div class="ui-field">
@@ -93,7 +93,7 @@ async function submit() {
               id="reg-username"
               v-model="username"
               class="ui-input"
-              :class="{ invalid: usernameError }"
+              :class="{ '!border-[#cf222e]': usernameError }"
               type="text"
               autocomplete="username"
               placeholder="例如 alice"
@@ -108,7 +108,7 @@ async function submit() {
               id="reg-email"
               v-model="email"
               class="ui-input"
-              :class="{ invalid: emailError }"
+              :class="{ '!border-[#cf222e]': emailError }"
               type="email"
               autocomplete="email"
               placeholder="you@example.com"
@@ -123,7 +123,7 @@ async function submit() {
               id="reg-password"
               v-model="password"
               class="ui-input"
-              :class="{ invalid: passwordError }"
+              :class="{ '!border-[#cf222e]': passwordError }"
               type="password"
               autocomplete="new-password"
               placeholder="至少 12 位"
@@ -139,7 +139,7 @@ async function submit() {
               id="reg-confirm"
               v-model="confirmPassword"
               class="ui-input"
-              :class="{ invalid: confirmError }"
+              :class="{ '!border-[#cf222e]': confirmError }"
               type="password"
               autocomplete="new-password"
               placeholder="再次输入密码"
@@ -156,24 +156,9 @@ async function submit() {
           </button>
         </form>
 
-        <p class="switch">已有账号？<RouterLink to="/login">登录</RouterLink></p>
+        <p class="mt-6 text-center text-sm text-[#656d76]">已有账号？<RouterLink to="/login" class="font-semibold text-[#ea580c] hover:underline">登录</RouterLink></p>
       </section>
     </main>
   </div>
 </template>
 
-<style scoped>
-.invalid {
-  border-color: var(--danger) !important;
-}
-.switch {
-  margin: 1.4rem 0 0;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.switch a {
-  color: var(--primary);
-  font-weight: 600;
-}
-</style>

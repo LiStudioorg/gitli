@@ -41,6 +41,18 @@
 - 优雅停机：收到信号 → 关闭 HTTP（10s 等待在途请求）→ 关闭 SSH → 停止后台任务 → 关闭数据库 → `PID xxx Gitli Web Finished`。
 - 修复真实 Bug：SSH `ListenAndServe` 原先同步阻塞，导致信号处理器从未注册。
 
+## 前端工程（v0.11.1）
+
+- **唯一前端目录**：`web/`（Vue 3 + Vite + Tailwind CSS）。`web-nuxt/` 已从磁盘与 Git 删除（80 个文件）。
+  嵌入源：`web/embed.go` 的 `//go:embed all:dist`。
+- Tailwind 全量引入（`tailwind.config.js` / `postcss.config.js`，`content` 扫描 `web/src`）。
+  无任何重型 UI 库（Element/Ant/Naive/Vuetify 均未使用）。
+- 已迁移到 Tailwind：TopNav（移动端汉堡）、Sidebar（w-64 / 移动端抽屉）、AppLayout（仅主区滚动）、
+  Dashboard（三列概览 + 两栏内容）、RepoView（头部/Tab/Grid/侧栏/各列表/Diff）、
+  登录/注册/初始化、新建仓库/组织/导入。
+- 新增 `ErrorAlert.vue`：接口错误只在主内容区顶部渲染，绝不替换 Layout。
+- 待迁移（下一版本）：Explore、用户设置、管理后台、个人主页、组织设置（约 1566 行 scoped CSS）。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**
@@ -228,63 +240,6 @@ Landing/Dashboard/Repo/Admin/Settings、Clone 下拉、语言统计、依赖 Tab
 - `9ca4a0c` feat: batch 4 complete
 - `8d925d8` ...
 
-## 阶段 B0：前端 Nuxt 4 重构（进行中，2026-10-17）
+## 前端（唯一目录：web）
 
-目标：`web-nuxt/` 以 **纯静态 SSG**（`ssr:false` + `nitro.preset=static`）并行重建前端，
-保持单二进制 embed 与无 Node 运行时约束；`web/` 仍是权威产物，Go embed 未改动。
-详见 `web-nuxt/README.md`。
-
-### 已完成的可用性修复（Windows 本机此前不可用）
-
-1. **服务在 Windows 起不来**：`enforcePerms` 用 POSIX 位判定数据目录，而 Windows 的
-   `os.Stat` 返回合成模式（0777）→ 改走 `platform.CheckDataDirPerm`（权限位仅在 Unix 生效）。
-2. **`go test ./...` 在 Windows 必红（3 处）**：
-   - 集成测试把 OS 路径写进 TOML 基本字符串形成非法 `\U` 转义 → `tomlPath()` 走 `filepath.ToSlash`；
-   - `fsrepo.TestInstallHooks` 断言可执行位 → 用 `platform.Current().SupportsPerms` 守卫；
-   - `lfs.TestPutGetRoundtrip` 在 `Delete` 时仍持有读句柄 → 读后立即 `Close`（Linux 允许删除已打开文件，Windows 不允许）。
-3. **Git 托管在 Windows 全废**：`gitcmd.ValidateRepoPath` 无条件禁止 `\`，而仓库绝对路径必然带
-   反斜杠 → 所有 git 调用在进入 git 前就被拒。现只在非 Windows 分隔符平台上禁止 `\` 与 `~`，
-   越界防护仍由 Clean + root 前缀包含检查承担；新增 `internal/infra/gitcmd/validate_test.go` 锁行为。
-4. **登录后 `isAdmin` 恒 false**（管理员被路由守卫挡在 `/admin` 外）：`/auth/login` 改为返回
-   `publicUser`（对 e2e 断言是纯增字段），前端登录响应类型诚实降级并以回读 `/user/me` 为准。
-5. **类型收口**：`RouteMeta` 声明合并、仓库页 Tab 变 union（URL 中文契约不变）、i18n 语言码
-   union + 单一断言、`errMessage/apiStatus` 统一到 `utils/error.ts`，消除全部 `catch (e: any)`。
-
-### 门禁证据
-
-- `go vet ./...` = 0；`go test ./...` = 0（Windows 首次全绿）；`go build` = 0；
-  `gofmt` 真实格式问题 0（本机 `core.autocrlf=true` 会让 `gofmt -l .` 误报全部 293 个文件，
-  仓库 blob 是 LF，CI Linux 为权威）。
-- 旧前端：`vue-tsc --noEmit` = 0，`vite build` = 0。
-- 新前端：`nuxt typecheck` = 0（比旧配置更严，含 `noUncheckedIndexedAccess`，已修 6 处真实
-  undefined 风险），`nuxt generate` = 0，产出 12 条路由 + `index.html`/`200.html` 同内容外壳。
-- 端到端冒烟（Nuxt dev 5174 → gitli 8080）：SPA 深链接回退 200、`/api` 代理、CSRF 双提交
-  （缺头 403）、Session Cookie、注册/登录（登录体 == `/user/me` 体，含 `is_admin`）、
-  建仓、分支列表 200、Issue 创建 201、评论 201、SSE `text/event-stream` 全部通过。
-
-### 待办
-
-阶段 3（进行中）：自动化行为回归已覆盖暗色模式、Ctrl+K、`g i`/`g p`/`c`/`/` 快捷键、
-SSE 解析与退避重连、未读计数、i18n 切换、CSRF 头、登录后 `isAdmin`、Tab 契约、TopNav
-管理入口、12 视图/页面壳导入契约 —— 共 **42 个用例全绿**（`cd web-nuxt && npm run verify`）。
-剩余：RepoView 各 Tab 数据流、Admin/UserSettings 面板交互、响应式抽查。
-阶段 4：切换 embed/Makefile/CI（Node 20 → 22/24）、清理旧目录、校正 README/AGENTS 中过时的
-技术栈与 `--config` 支持说明。
-
-### 迁移期踩到的工程坑（已修，避免复发）
-
-1. `nuxt typecheck` 依赖 `.nuxt` 生成物，与 `nuxt prepare`/`postinstall` 并发会假红。
-2. npm 在 Windows 用 `cmd.exe` 解析 `&&` 会命中全局 `nuxt`，导致「单跑绿、链跑红」；
-   `npm run verify` 改走 `scripts/verify.mjs`，用仓库内 `node_modules` 具体入口顺序执行。
-3. 测试类型门禁最初形同虚设：`tests/` 不在 Nuxt 的 tsconfig include 内，故意写错的类型
-   不会被捕获。现由 `tests/tsconfig.json`（继承 `.nuxt`）覆盖，已用 probe 验证有效。
-
-### 已知遗留（非本次引入）
-
-- 多个端点直接 marshal `domain` 结构体，JSON 是 PascalCase（`{"ID":1,"RepoID":1,...}`），
-  与 `publicUser` 这类 snake_case DTO 并存；前端只能两边手抄。
-- ~~`docs/ARCHITECTURE.md` 与 `docs/architecture.md` 在大小写不敏感文件系统上互相踩踏。~~
-  已修复：删除重复的 `architecture.md`，只保留 `docs/ARCHITECTURE.md`，并更新 `docs/README.md` 链接。
-- `AGENTS.md §10`「所有子命令支持 `--config`」对 `gitli admin user create` 不成立（实测报
-  `flag provided but not defined: -config`），README 另一处又说 `admin` 是保留命令，两处均过时。
-
+前端为 Vue 3 + Vite + Tailwind CSS，构建产物 `web/dist` 由 `web/embed.go` 的 `//go:embed all:dist` 嵌入单二进制。

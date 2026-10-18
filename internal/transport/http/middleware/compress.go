@@ -47,6 +47,11 @@ func Compress() func(http.Handler) http.Handler {
 }
 
 func skipCompressPath(p string) bool {
+	// SSE must not be wrapped: the handler needs a real http.Flusher and any
+	// buffering would delay events.
+	if strings.Contains(p, "/events") {
+		return true
+	}
 	for _, suffix := range []string{
 		"/info/refs", "/git-upload-pack", "/git-receive-pack",
 		"/archive/", "/blobs/", "/files/", "/attachments/", "/avatars/",
@@ -128,6 +133,17 @@ func (g *gzipResponseWriter) Write(b []byte) (int, error) {
 		g.writer = gw
 	}
 	return g.writer.Write(b)
+}
+
+// Flush forwards to the underlying writer so streaming handlers (SSE) keep
+// working through this wrapper.
+func (g *gzipResponseWriter) Flush() {
+	if g.writer != nil {
+		_ = g.writer.Flush()
+	}
+	if f, ok := g.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 func (g *gzipResponseWriter) close() {
