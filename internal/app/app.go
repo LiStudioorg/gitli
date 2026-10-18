@@ -77,10 +77,11 @@ import (
 
 // App is the top-level application runtime.
 type App struct {
-	Cfg  *config.Config
-	DB   *db.DB
-	Log  *slog.Logger
-	Deps *httptransport.Deps
+	Cfg        *config.Config
+	DB         *db.DB
+	Log        *slog.Logger
+	Deps       *httptransport.Deps
+	configPath string
 }
 
 // New builds an App from configuration, opening the database and wiring services.
@@ -222,7 +223,11 @@ func New(ctx context.Context, cfg *config.Config, configPath ...string) (*App, e
 		NotifPrefs:    notifpref.New(st),
 		Org2FA:        org2fa.New(st),
 	}
-	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps}
+	cfgPath := ""
+	if len(configPath) > 0 {
+		cfgPath = configPath[0]
+	}
+	a := &App{Cfg: cfg, DB: database, Log: log, Deps: deps, configPath: cfgPath}
 	deps.Dispatch = func(ctx context.Context, action string, repoID, actorID int64, payload map[string]any) {
 		a.DispatchRepoEvent(ctx, Event{Action: action, RepoID: repoID, ActorID: actorID, Payload: payload})
 	}

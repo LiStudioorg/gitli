@@ -32,6 +32,15 @@
 - M-02 改密/重置 2FA 撤销其他会话；M-07 注册限流 + 12 位；M-08 挂载 `apiLim`；M-09 `loginLimiter` 定期 GC；M-15 LIKE 增加 `ESCAPE`。
 - 安全 PoC 测试：`test/security_poc_test.go`。
 
+## 日志与停机（v0.10.1）
+
+- 新增自定义文本 Handler：`2026/10/17 23:51:42 [I] router: completed GET /api/v1/user/me for 1.2.3.4, 200 OK in 14.2ms @ handlers_user.go:42(handleUser)`
+- TTY 自动着色（时间灰、I 绿、W 黄、E 红、状态码按 2xx/4xx/5xx）；写文件自动去色；`format = "json"` 保留。
+- 慢请求升级：≥500ms 记 `[W]`，≥1s 记 `[E]`。
+- 启动横幅：版本、Go 版本、运行模式、配置路径、数据目录、Git 版本。
+- 优雅停机：收到信号 → 关闭 HTTP（10s 等待在途请求）→ 关闭 SSH → 停止后台任务 → 关闭数据库 → `PID xxx Gitli Web Finished`。
+- 修复真实 Bug：SSH `ListenAndServe` 原先同步阻塞，导致信号处理器从未注册。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**

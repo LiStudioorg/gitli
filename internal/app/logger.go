@@ -52,9 +52,21 @@ func NewLogger(cfg config.LogConfig) *slog.Logger {
 	if strings.ToLower(cfg.Format) == "json" {
 		handler = slog.NewJSONHandler(out, opts)
 	} else {
-		handler = slog.NewTextHandler(out, opts)
+		// Colour is only safe on an interactive terminal and never when the
+		// log is being written to a file.
+		color := cfg.File == "" && isTerminal(os.Stderr)
+		handler = newTextHandler(out, level, color)
 	}
 	return slog.New(handler)
+}
+
+// isTerminal reports whether w is a character device (a real terminal).
+func isTerminal(w *os.File) bool {
+	info, err := w.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
 }
 
 func ensureDirs(cfg *config.Config) error {
