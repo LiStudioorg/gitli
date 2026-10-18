@@ -42,6 +42,7 @@ const readme = ref<{ name: string; content: string } | null>(null)
 const isEmptyRepo = ref(false)
 const copiedQuickstart = ref(false)
 
+
 const quickstart = computed(() => {
   const remote = `${window.location.origin}/${props.owner}/${props.repo}.git`
   return [
@@ -53,6 +54,16 @@ const quickstart = computed(() => {
     `git push -u origin ${props.branch || 'main'}`,
   ].join('\n')
 })
+
+async function copyReadmeHint() {
+  try {
+    await navigator.clipboard.writeText(`echo "# ${props.repo}" > README.md\ngit add README.md\ngit commit -m "docs: add README"\ngit push`)
+    copiedQuickstart.value = true
+    setTimeout(() => (copiedQuickstart.value = false), 1500)
+  } catch {
+    /* clipboard unavailable */
+  }
+}
 
 async function copyQuickstart() {
   try {
@@ -226,21 +237,50 @@ onMounted(() => void loadTree())
     </p>
 
     <!-- 空仓库引导 -->
-    <section
-      v-else-if="isEmptyRepo"
-      class="flex flex-col items-center gap-2 rounded-md border border-dashed border-[#d1d9e0] bg-white px-4 py-10 text-center dark:border-[#30363d] dark:bg-[#161b22]"
-    >
-      <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#ea580c]/10 text-xl" aria-hidden="true">📦</div>
-      <h3 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">这是一个空仓库</h3>
-      <p class="max-w-md text-sm text-[#59636e]">还没有任何提交。在本地推送第一个提交后，这里会显示文件列表与 README。</p>
-      <pre class="mt-2 w-full max-w-[620px] overflow-x-auto rounded-md border border-[#d1d9e0] bg-[#f6f8fa] p-3 text-left font-mono text-xs leading-relaxed text-[#1f2328] dark:border-[#30363d] dark:bg-[#0d1117] dark:text-[#e6edf3]"><code>{{ quickstart }}</code></pre>
-      <button
-        type="button"
-        class="mt-1 h-8 rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
-        @click="copyQuickstart"
-      >
-        {{ copiedQuickstart ? '已复制' : '复制命令' }}
-      </button>
+    <section v-else-if="isEmptyRepo" class="flex flex-col gap-4">
+      <div class="overflow-hidden rounded-md border border-[#d1d9e0] bg-white dark:border-[#3d444d] dark:bg-[#0d1117]">
+        <div class="flex flex-col items-center gap-2 border-b border-[#d1d9e0] px-4 py-10 text-center dark:border-[#3d444d]">
+          <svg class="h-12 w-12 text-[#59636e]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z" />
+          </svg>
+          <h3 class="text-base font-semibold text-[#1f2328] dark:text-[#e6edf3]">Quick setup — if you've done this kind of thing before</h3>
+          <p class="max-w-md text-sm text-[#59636e]">
+            这是一个空仓库。在本地推送第一个提交后，这里会显示文件列表与 README。
+          </p>
+        </div>
+
+        <div class="p-4">
+          <div class="mb-2 flex items-center justify-between">
+            <p class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">推送到此仓库</p>
+            <button
+              type="button"
+              class="inline-flex h-7 items-center gap-1 rounded-md border border-[#d1d9e0] px-2 text-xs text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]"
+              @click="copyQuickstart"
+            >
+              <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z" />
+                <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z" />
+              </svg>
+              {{ copiedQuickstart ? '已复制' : '复制' }}
+            </button>
+          </div>
+          <pre class="overflow-x-auto rounded-md border border-[#d1d9e0] bg-[#f6f8fa] p-3 font-mono text-xs leading-relaxed text-[#1f2328] dark:border-[#3d444d] dark:bg-[#161b22] dark:text-[#e6edf3]"><code>{{ quickstart }}</code></pre>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center gap-2 rounded-md border border-[#d1d9e0] bg-white px-4 py-8 text-center dark:border-[#3d444d] dark:bg-[#0d1117]">
+        <p class="max-w-lg text-sm text-[#59636e]">
+          Help people interested in this repository understand your project by adding a README.
+        </p>
+        <button
+          type="button"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b]"
+          @click="copyReadmeHint"
+        >
+          添加 README
+        </button>
+        <p class="text-xs text-[#59636e]">在本地创建 README.md 并推送即可。</p>
+      </div>
     </section>
 
     <!-- 加载骨架 -->

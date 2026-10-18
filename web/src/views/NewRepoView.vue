@@ -46,7 +46,7 @@ async function submit() {
 
 <template>
   <AppLayout>
-    <div class="mx-auto w-full max-w-[640px]">
+    <div class="mx-auto w-full max-w-2xl">
       <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">新建仓库</h2>
       <ErrorAlert v-if="error" title="创建失败" :message="error" @dismiss="error = ''" />
       <form
@@ -54,7 +54,7 @@ async function submit() {
         @submit.prevent="submit"
       >
         <label class="flex flex-col gap-1.5">
-          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">仓库名称</span>
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">仓库名称 <span class="text-[#cf222e]">*</span></span>
           <input
             v-model="name"
             placeholder="my-project"

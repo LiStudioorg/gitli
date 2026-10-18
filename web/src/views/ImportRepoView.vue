@@ -51,7 +51,7 @@ async function submit() {
 
 <template>
   <AppLayout>
-    <div class="mx-auto w-full max-w-[640px]">
+    <div class="mx-auto w-full max-w-2xl">
       <h2 class="mb-4 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">导入仓库</h2>
       <ErrorAlert v-if="error" title="操作失败" :message="error" @dismiss="error = ''" />
       <form
@@ -59,7 +59,7 @@ async function submit() {
         @submit.prevent="submit"
       >
         <label class="flex flex-col gap-1.5">
-          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">新仓库名称</span>
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">新仓库名称 <span class="text-[#cf222e]">*</span></span>
           <input
             v-model="name"
             placeholder="my-imported-repo"
@@ -69,7 +69,7 @@ async function submit() {
           />
         </label>
         <label class="flex flex-col gap-1.5">
-          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">来源仓库地址</span>
+          <span class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">来源仓库地址 <span class="text-[#cf222e]">*</span></span>
           <input
             v-model="sourceURL"
             placeholder="https://example.com/user/repo.git"

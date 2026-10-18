@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore, useRepoStore, useUiStore } from '../../stores'
+import NavIcon from '../icons/NavIcon.vue'
 
 const auth = useAuthStore()
 const repos = useRepoStore()
@@ -8,17 +9,17 @@ const ui = useUiStore()
 const router = useRouter()
 
 const navItems = [
-  { to: '/dashboard', label: '首页' },
-  { to: '/explore', label: '探索' },
-  { to: '/explore?tab=topics', label: '话题' },
-  { to: '/explore?tab=trending', label: '趋势' },
-  { to: '/search', label: '搜索' },
-  { to: '/settings', label: '设置' },
+  { to: '/dashboard', label: '首页', icon: 'home' },
+  { to: '/explore', label: '探索', icon: 'compass' },
+  { to: '/explore?tab=topics', label: '话题', icon: 'tag' },
+  { to: '/explore?tab=trending', label: '趋势', icon: 'trend' },
+  { to: '/search', label: '搜索', icon: 'search' },
+  { to: '/settings', label: '设置', icon: 'gear' },
 ]
 const quickActions = [
-  { path: '/new/repo', label: '新建仓库' },
-  { path: '/new/org', label: '新建组织' },
-  { path: '/new/import', label: '导入仓库' },
+  { path: '/new/repo', label: '新建仓库', icon: 'repo' },
+  { path: '/new/org', label: '新建组织', icon: 'plus' },
+  { path: '/new/import', label: '导入仓库', icon: 'trend' },
 ]
 
 function go(path: string) {
@@ -47,20 +48,22 @@ function go(path: string) {
           v-for="item in navItems"
           :key="item.to + item.label"
           :to="item.to"
-          class="truncate rounded-md px-2.5 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
-          active-class="bg-[#ea580c]/10 font-semibold text-[#ea580c] hover:bg-[#ea580c]/10 dark:bg-[#ea580c]/15 dark:text-[#f97316]"
+          class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#161b22]"
+          active-class="!bg-[#ea580c]/10 font-semibold text-[#ea580c] hover:!bg-[#ea580c]/10 dark:!bg-[#ea580c]/15 dark:text-[#f97316]"
           @click="ui.sidebarOpen = false"
         >
-          {{ item.label }}
+          <NavIcon :name="item.icon" />
+          <span class="truncate">{{ item.label }}</span>
         </RouterLink>
         <RouterLink
           v-if="auth.isAdmin"
           to="/admin"
-          class="truncate rounded-md px-2.5 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+          class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#161b22]"
           active-class="bg-[#ea580c]/10 font-semibold text-[#ea580c] hover:bg-[#ea580c]/10 dark:bg-[#ea580c]/15 dark:text-[#f97316]"
           @click="ui.sidebarOpen = false"
         >
-          管理面板
+          <NavIcon name="shield" />
+          <span class="truncate">管理面板</span>
         </RouterLink>
       </nav>
     </section>
@@ -71,10 +74,11 @@ function go(path: string) {
         <li v-for="r in repos.myRepos.slice(0, 5)" :key="r.id" class="min-w-0">
           <RouterLink
             :to="`/${auth.user?.username}/${r.name}`"
-            class="block truncate rounded-md px-2.5 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
+            class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#161b22]"
             @click="ui.sidebarOpen = false"
           >
-            {{ r.name }}
+            <NavIcon name="repo" />
+            <span class="truncate">{{ r.name }}</span>
           </RouterLink>
         </li>
         <li v-if="repos.myRepos.length === 0" class="px-2.5 py-1.5 text-sm text-[#59636e]">暂无仓库</li>
@@ -91,10 +95,11 @@ function go(path: string) {
           v-for="q in quickActions"
           :key="q.path"
           type="button"
-          class="w-full truncate rounded-md border border-[#d1d9e0] px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:border-[#ea580c]/50 hover:bg-[#ea580c]/5 dark:border-[#30363d] dark:text-[#e6edf3]"
+          class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:text-[#e6edf3] dark:hover:bg-[#161b22]"
           @click="go(q.path)"
         >
-          ＋ {{ q.label }}
+          <NavIcon :name="q.icon" />
+          {{ q.label }}
         </button>
       </div>
     </section>

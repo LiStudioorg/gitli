@@ -30,6 +30,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/oauth/authorize', name: 'oauth-authorize', component: () => import('../views/OAuthAuthorizeView.vue') },
   { path: '/users/:username', name: 'user', component: () => import('../views/UserProfileView.vue') },
+  // 单段路径即用户主页（与主流代码托管一致）。放在所有静态路由之后，
+  // Vue Router 会优先匹配静态路径，因此不会吞掉 /dashboard、/admin 等。
+  { path: '/:username', name: 'user-root', component: () => import('../views/UserProfileView.vue') },
   { path: '/:owner/:repo', name: 'repo', component: () => import('../views/RepoView.vue') },
 ]
 
