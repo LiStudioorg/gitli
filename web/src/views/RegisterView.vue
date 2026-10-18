@@ -86,72 +86,72 @@ async function submit() {
         <h1>创建账号</h1>
         <p class="mb-5 mt-1 text-sm text-[#59636e]">加入 gitli，开始托管你的代码</p>
 
-        <form class="ui-form" @submit.prevent="submit" novalidate>
-          <div class="ui-field">
+        <form class="flex flex-col gap-3" @submit.prevent="submit" novalidate>
+          <div class="flex flex-col gap-1.5">
             <label for="reg-username">用户名</label>
             <input
               id="reg-username"
               v-model="username"
-              class="ui-input"
+              class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
               :class="{ '!border-[#cf222e]': usernameError }"
               type="text"
               autocomplete="username"
               placeholder="例如 alice"
               required
             />
-            <span v-if="usernameError" class="ui-error">{{ usernameError }}</span>
+            <span v-if="usernameError" class="text-xs text-[#cf222e]">{{ usernameError }}</span>
           </div>
 
-          <div class="ui-field">
+          <div class="flex flex-col gap-1.5">
             <label for="reg-email">邮箱</label>
             <input
               id="reg-email"
               v-model="email"
-              class="ui-input"
+              class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
               :class="{ '!border-[#cf222e]': emailError }"
               type="email"
               autocomplete="email"
               placeholder="you@example.com"
               required
             />
-            <span v-if="emailError" class="ui-error">{{ emailError }}</span>
+            <span v-if="emailError" class="text-xs text-[#cf222e]">{{ emailError }}</span>
           </div>
 
-          <div class="ui-field">
+          <div class="flex flex-col gap-1.5">
             <label for="reg-password">密码</label>
             <input
               id="reg-password"
               v-model="password"
-              class="ui-input"
+              class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
               :class="{ '!border-[#cf222e]': passwordError }"
               type="password"
               autocomplete="new-password"
               placeholder="至少 12 位"
               required
             />
-            <span v-if="passwordError" class="ui-error">{{ passwordError }}</span>
-            <span v-else class="ui-help">建议混合字母、数字与符号</span>
+            <span v-if="passwordError" class="text-xs text-[#cf222e]">{{ passwordError }}</span>
+            <span v-else class="text-xs text-[#59636e]">建议混合字母、数字与符号</span>
           </div>
 
-          <div class="ui-field">
+          <div class="flex flex-col gap-1.5">
             <label for="reg-confirm">确认密码</label>
             <input
               id="reg-confirm"
               v-model="confirmPassword"
-              class="ui-input"
+              class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]"
               :class="{ '!border-[#cf222e]': confirmError }"
               type="password"
               autocomplete="new-password"
               placeholder="再次输入密码"
               required
             />
-            <span v-if="confirmError" class="ui-error">{{ confirmError }}</span>
+            <span v-if="confirmError" class="text-xs text-[#cf222e]">{{ confirmError }}</span>
           </div>
 
-          <p v-if="error" class="ui-alert ui-alert-error" role="alert">{{ error }}</p>
+          <p v-if="error" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]" role="alert">{{ error }}</p>
 
-          <button class="ui-btn ui-btn-primary ui-btn-block ui-btn-lg" type="submit" :disabled="loading">
-            <span v-if="loading" class="ui-spinner" aria-hidden="true" />
+          <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#2da44e] px-4 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit" :disabled="loading">
+            <span v-if="loading" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
             {{ loading ? '注册中…' : '创建账号' }}
           </button>
         </form>

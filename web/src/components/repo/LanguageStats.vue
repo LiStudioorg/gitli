@@ -33,72 +33,22 @@ const segments = computed(() =>
 </script>
 
 <template>
-  <div class="language-stats">
-    <div class="bar">
+  <div v-if="segments.length" class="flex flex-col gap-2">
+    <div class="flex h-2 w-full overflow-hidden rounded-full bg-[#d1d9e0] dark:bg-[#3d444d]">
       <span
-        v-for="s in segments"
-        :key="s.language"
-        class="seg"
-        :style="{ width: s.percentage + '%', background: s.color }"
-        :title="`${s.language} ${s.percentage}%`"
+        v-for="seg in segments"
+        :key="seg.language"
+        class="h-full"
+        :style="{ width: seg.percentage + '%', backgroundColor: seg.color }"
+        :title="`${seg.language} ${seg.percentage.toFixed(1)}%`"
       />
     </div>
-    <ul class="list">
-      <li v-for="s in segments" :key="s.language">
-        <span class="dot" :style="{ background: s.color }" />
-        <span class="name">{{ s.language }}</span>
-        <span class="pct">{{ s.percentage }}%</span>
+    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <li v-for="seg in segments" :key="seg.language" class="flex items-center gap-1.5">
+        <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: seg.color }" aria-hidden="true" />
+        <span class="font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ seg.language }}</span>
+        <span class="text-[#59636e]">{{ seg.percentage.toFixed(1) }}%</span>
       </li>
     </ul>
-    <p v-if="segments.length === 0" class="empty">暂无语言统计</p>
   </div>
 </template>
-
-<style scoped>
-.language-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.bar {
-  display: flex;
-  height: 10px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--border);
-}
-.seg {
-  height: 100%;
-  transition: width 0.5s ease;
-}
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.88rem;
-}
-.list li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.name {
-  flex: 1;
-}
-.pct {
-  color: var(--muted);
-}
-.empty {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-</style>

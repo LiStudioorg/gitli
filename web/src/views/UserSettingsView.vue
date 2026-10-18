@@ -969,7 +969,7 @@ onMounted(async () => {
         <section v-else-if="active === 'keys'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>SSH 密钥</h3>
           <p v-if="keysError" class="text-sm text-[#cf222e]">{{ keysError }}</p>
-          <p v-if="keysLoading" class="muted">加载中…</p>
+          <p v-if="keysLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="keys.length">
             <table class="key-table">
               <thead>
@@ -1003,16 +1003,16 @@ onMounted(async () => {
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无 SSH 密钥</p>
+          <p v-else class="text-sm text-[#59636e]">暂无 SSH 密钥</p>
 
           <h3>添加 SSH 密钥</h3>
           <label>标题<input v-model="newKey.title" placeholder="例如：笔记本" /></label>
           <label>公钥<textarea v-model="newKey.public_key" rows="4" placeholder="ssh-ed25519 AAAA..." /></label>
-          <label class="check">
+          <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             <input v-model="newKey.can_authenticate" type="checkbox" />
             允许用于认证（Git clone/push/pull）
           </label>
-          <label class="check">
+          <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             <input v-model="newKey.can_sign" type="checkbox" />
             允许用于提交签名
           </label>
@@ -1024,7 +1024,7 @@ onMounted(async () => {
 
           <h3>GPG 密钥</h3>
           <p v-if="gpgError" class="text-sm text-[#cf222e]">{{ gpgError }}</p>
-          <p v-if="gpgLoading" class="muted">加载中…</p>
+          <p v-if="gpgLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="gpgKeys.length">
             <table class="key-table">
               <thead>
@@ -1047,7 +1047,7 @@ onMounted(async () => {
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无 GPG 密钥</p>
+          <p v-else class="text-sm text-[#59636e]">暂无 GPG 密钥</p>
 
           <h3>添加 GPG 密钥</h3>
           <label>标题<input v-model="newGpg.title" placeholder="例如：工作密钥" /></label>
@@ -1075,19 +1075,19 @@ onMounted(async () => {
             <button class="link" type="button" @click="createdToken = ''">我已保存，关闭</button>
           </div>
           <h3>已创建的令牌</h3>
-          <p v-if="tokensLoading" class="muted">加载中…</p>
+          <p v-if="tokensLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="tokens.length">
             <ul class="list">
               <li v-for="t in tokens" :key="tokenId(t)">
                 <div class="li-main">
                   <strong>{{ tokenName(t) }}</strong>
-                  <span class="muted">{{ tokenKind(t) }} · {{ tokenCreatedAt(t) }}</span>
+                  <span class="text-sm text-[#59636e]">{{ tokenKind(t) }} · {{ tokenCreatedAt(t) }}</span>
                 </div>
                 <button class="inline-flex h-8 items-center rounded-md bg-[#cf222e] px-3 text-sm font-semibold text-white hover:bg-[#a40e26] disabled:opacity-50" @click="revokeToken(tokenId(t))">吊销</button>
               </li>
             </ul>
           </template>
-          <p v-else class="muted">暂无数据</p>
+          <p v-else class="text-sm text-[#59636e]">暂无数据</p>
           <h3>新建令牌</h3>
           <label>名称<input v-model="newToken.name" placeholder="例如：CI 部署" /></label>
           <label>类型
@@ -1116,7 +1116,7 @@ onMounted(async () => {
 
           <h3>我的应用</h3>
           <p v-if="oauthAppsError" class="text-sm text-[#cf222e]">{{ oauthAppsError }}</p>
-          <p v-if="oauthAppsLoading" class="muted">加载中…</p>
+          <p v-if="oauthAppsLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="oauthApps.length">
             <table class="key-table">
               <thead>
@@ -1130,11 +1130,11 @@ onMounted(async () => {
                 <tr v-for="a in oauthApps" :key="a.id">
                   <td>
                     <strong>{{ a.name }}</strong>
-                    <div class="muted"><code class="fingerprint">{{ a.client_id }}</code></div>
+                    <div class="text-sm text-[#59636e]"><code class="fingerprint">{{ a.client_id }}</code></div>
                     <div class="muted nowrap">创建于 {{ fmtTime(a.created_at) }}</div>
                   </td>
                   <td>
-                    <div v-for="u in a.redirect_uris" :key="u" class="muted">
+                    <div v-for="u in a.redirect_uris" :key="u" class="text-sm text-[#59636e]">
                       <code class="fingerprint">{{ u }}</code>
                     </div>
                     <div class="scope-chips">
@@ -1148,7 +1148,7 @@ onMounted(async () => {
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无 OAuth 应用</p>
+          <p v-else class="text-sm text-[#59636e]">暂无 OAuth 应用</p>
 
           <h3>创建 OAuth 应用</h3>
           <label>应用名称<input v-model="newApp.name" placeholder="例如：我的集成" /></label>
@@ -1161,8 +1161,8 @@ onMounted(async () => {
             />
           </label>
           <div class="scope-group">
-            <span class="muted">权限范围</span>
-            <label v-for="s in oauthScopes" :key="s.value" class="check">
+            <span class="text-sm text-[#59636e]">权限范围</span>
+            <label v-for="s in oauthScopes" :key="s.value" class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
               <input v-model="newApp.scopes" type="checkbox" :value="s.value" />
               {{ s.label }}
             </label>
@@ -1175,7 +1175,7 @@ onMounted(async () => {
 
           <h3>已授权应用</h3>
           <p v-if="oauthAuthsError" class="text-sm text-[#cf222e]">{{ oauthAuthsError }}</p>
-          <p v-if="oauthAuthsLoading" class="muted">加载中…</p>
+          <p v-if="oauthAuthsLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="oauthAuths.length">
             <table class="key-table">
               <thead>
@@ -1190,7 +1190,7 @@ onMounted(async () => {
                 <tr v-for="g in oauthAuths" :key="g.id">
                   <td>
                     <strong>{{ g.app_name }}</strong>
-                    <div class="muted"><code class="fingerprint">{{ g.client_id }}</code></div>
+                    <div class="text-sm text-[#59636e]"><code class="fingerprint">{{ g.client_id }}</code></div>
                   </td>
                   <td>
                     <span v-for="s in g.scopes" :key="s" class="scope-chip">{{ s }}</span>
@@ -1210,7 +1210,7 @@ onMounted(async () => {
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无已授权应用</p>
+          <p v-else class="text-sm text-[#59636e]">暂无已授权应用</p>
         </section>
 
         <!-- 两步验证 -->
@@ -1258,7 +1258,7 @@ onMounted(async () => {
           <span class="deleted-hint">已删除的仓库处于「已删除」状态，可在此恢复。</span>
           <p v-if="deletedError" class="text-sm text-[#cf222e]">{{ deletedError }}</p>
           <p v-if="deletedOk" class="ok">{{ deletedOk }}</p>
-          <p v-if="deletedLoading" class="muted">加载中…</p>
+          <p v-if="deletedLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="deletedRepos.length">
             <table class="key-table">
               <thead>
@@ -1287,20 +1287,20 @@ onMounted(async () => {
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无已删除的仓库</p>
+          <p v-else class="text-sm text-[#59636e]">暂无已删除的仓库</p>
         </section>
 
         <!-- 安全活动 -->
         <section v-else-if="active === 'general'" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#30363d] dark:bg-[#161b22]">
           <h3>通用</h3>
-          <label class="field">
+          <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             语言 / Language
             <select v-model="selectedLocale" @change="changeLocale(selectedLocale)">
               <option v-for="o in localeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
             </select>
           </label>
           <p class="hint">切换后立即生效并保存。</p>
-          <label class="field">
+          <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             通知频率
             <select v-model="notificationFrequency" :disabled="notifLoading">
               <option
@@ -1312,7 +1312,7 @@ onMounted(async () => {
               </option>
             </select>
           </label>
-          <p v-if="notifLoading" class="muted">加载中…</p>
+          <p v-if="notifLoading" class="text-sm text-[#59636e]">加载中…</p>
           <p v-if="notifError" class="text-sm text-[#cf222e]">{{ notifError }}</p>
           <p v-if="notifOk" class="ok">{{ notifOk }}</p>
           <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" :disabled="notifSaving || notifLoading" @click="saveNotificationFrequency">
@@ -1332,7 +1332,7 @@ onMounted(async () => {
               </select>
             </label>
           </div>
-          <p v-if="logsLoading" class="muted">加载中…</p>
+          <p v-if="logsLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="logs.length">
             <table class="key-table">
               <thead>
@@ -1355,19 +1355,19 @@ onMounted(async () => {
                     <span v-if="l.target_name || l.target_type">
                       {{ l.target_type ? l.target_type + ' · ' : '' }}{{ l.target_name || '-' }}
                     </span>
-                    <span v-else class="muted">-</span>
+                    <span v-else class="text-sm text-[#59636e]">-</span>
                   </td>
                   <td class="muted nowrap"><code>{{ l.actor_ip || '-' }}</code></td>
                 </tr>
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无活动记录</p>
+          <p v-else class="text-sm text-[#59636e]">暂无活动记录</p>
           <div class="pager">
             <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="logsPage === 0 || logsLoading" @click="activityPrev">
               上一页
             </button>
-            <span class="muted">第 {{ logsPage + 1 }} 页</span>
+            <span class="text-sm text-[#59636e]">第 {{ logsPage + 1 }} 页</span>
             <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="!logsHasNext || logsLoading" @click="activityNext">
               下一页
             </button>
@@ -1378,7 +1378,7 @@ onMounted(async () => {
           <h3>登录设备</h3>
           <p v-if="sessionsError" class="text-sm text-[#cf222e]">{{ sessionsError }}</p>
           <p v-if="sessionsOk" class="ok">{{ sessionsOk }}</p>
-          <p v-if="sessionsLoading" class="muted">加载中…</p>
+          <p v-if="sessionsLoading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="sessions.length">
             <table class="key-table">
               <thead>
@@ -1422,24 +1422,24 @@ onMounted(async () => {
               {{ revokingAll ? '注销中…' : '注销其他所有设备' }}
             </button>
           </template>
-          <p v-else class="muted">暂无会话</p>
+          <p v-else class="text-sm text-[#59636e]">暂无会话</p>
         </section>
     </div>
 
-    <div v-if="editOpen" class="modal-backdrop" @click.self="closeEdit">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="key-edit-title">
+    <div v-if="editOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeEdit">
+      <div class="w-full max-w-lg rounded-md border border-[#d1d9e0] bg-white p-5 shadow-lg dark:border-[#3d444d] dark:bg-[#0d1117]" role="dialog" aria-modal="true" aria-labelledby="key-edit-title">
         <h3 id="key-edit-title">编辑 SSH 密钥用途</h3>
-        <p class="muted">{{ editTarget ? keyTitle(editTarget) : '' }}</p>
+        <p class="text-sm text-[#59636e]">{{ editTarget ? keyTitle(editTarget) : '' }}</p>
         <p v-if="editError" class="text-sm text-[#cf222e]">{{ editError }}</p>
-        <label class="check">
+        <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
           <input v-model="editForm.can_authenticate" type="checkbox" />
           允许用于认证（Git clone/push/pull）
         </label>
-        <label class="check">
+        <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
           <input v-model="editForm.can_sign" type="checkbox" />
           允许用于提交签名
         </label>
-        <div class="modal-actions">
+        <div class="mt-4 flex justify-end gap-2">
           <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="editBusy" @click="closeEdit">取消</button>
           <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="editBusy" @click="saveEdit">
             {{ editBusy ? '保存中…' : '保存' }}

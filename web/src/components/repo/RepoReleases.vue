@@ -80,39 +80,39 @@ onMounted(load)
 
 <template>
   <section class="releases">
-    <header class="head">
+    <header class="mb-3 flex items-center justify-between gap-2">
       <h3>发布</h3>
-      <div class="actions">
-        <button class="ui-btn" type="button" @click="load">刷新</button>
-        <button v-if="auth.isLoggedIn" class="ui-btn ui-btn-primary" type="button" @click="showForm = !showForm">
+      <div class="flex items-center gap-2">
+        <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" type="button" @click="load">刷新</button>
+        <button v-if="auth.isLoggedIn" class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="showForm = !showForm">
           {{ showForm ? '取消' : '新建发布' }}
         </button>
       </div>
     </header>
 
-    <form v-if="showForm" class="ui-card ui-form create" @submit.prevent="create">
-      <div class="ui-field">
+    <form v-if="showForm" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]" @submit.prevent="create">
+      <div class="flex flex-col gap-1.5">
         <label for="rel-tag">标签（必填）</label>
-        <input id="rel-tag" v-model="form.tag" class="ui-input" placeholder="例如 v1.0.0" />
+        <input id="rel-tag" v-model="form.tag" class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]" placeholder="例如 v1.0.0" />
       </div>
-      <div class="ui-field">
+      <div class="flex flex-col gap-1.5">
         <label for="rel-name">标题</label>
-        <input id="rel-name" v-model="form.name" class="ui-input" placeholder="留空则使用标签名" />
+        <input id="rel-name" v-model="form.name" class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]" placeholder="留空则使用标签名" />
       </div>
-      <div class="ui-field">
+      <div class="flex flex-col gap-1.5">
         <label for="rel-body">说明</label>
-        <textarea id="rel-body" v-model="form.body" class="ui-input" rows="4" placeholder="本次发布的主要变更" />
+        <textarea id="rel-body" v-model="form.body" class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]" rows="4" placeholder="本次发布的主要变更" />
       </div>
-      <button class="ui-btn ui-btn-primary" type="submit" :disabled="creating">
-        <span v-if="creating" class="ui-spinner" aria-hidden="true" />
+      <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit" :disabled="creating">
+        <span v-if="creating" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
         {{ creating ? '创建中…' : '创建发布' }}
       </button>
     </form>
 
-    <div v-if="loading" class="list">
+    <div v-if="loading" class="flex flex-col gap-2">
       <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
     </div>
-    <p v-else-if="error" class="ui-alert ui-alert-error">{{ error }}</p>
+    <p v-else-if="error" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
     <EmptyState
       v-else-if="!releases.length"
       icon="🏷"
@@ -122,8 +122,8 @@ onMounted(load)
       :show-action="auth.isLoggedIn"
       @action="showForm = true"
     />
-    <ul v-else class="list">
-      <li v-for="r in releases" :key="r.id" class="ui-card release">
+    <ul v-else class="flex flex-col gap-2">
+      <li v-for="r in releases" :key="r.id" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
         <div class="release-head">
           <span class="tag">{{ r.tag }}</span>
           <span v-if="r.is_prerelease" class="pill">预发布</span>
@@ -133,91 +133,10 @@ onMounted(load)
         </div>
         <MarkdownView v-if="r.body" :source="r.body" class="body" />
         <div class="downloads">
-          <a class="ui-btn" :href="archiveUrl(r.tag, 'zip')">源码 .zip</a>
-          <a class="ui-btn" :href="archiveUrl(r.tag, 'tar.gz')">源码 .tar.gz</a>
+          <a class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" :href="archiveUrl(r.tag, 'zip')">源码 .zip</a>
+          <a class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" :href="archiveUrl(r.tag, 'tar.gz')">源码 .tar.gz</a>
         </div>
       </li>
     </ul>
   </section>
 </template>
-
-<style scoped>
-.releases {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.head h3 {
-  margin: 0;
-}
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.create {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.release {
-  padding: 1rem 1.1rem;
-}
-.release-head {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  flex-wrap: wrap;
-}
-.tag {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-weight: 700;
-  color: var(--primary);
-  background: var(--primary-soft);
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-}
-.name {
-  font-weight: 600;
-}
-.when {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-.pill {
-  font-size: 0.72rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.body {
-  margin-top: 0.6rem;
-}
-.downloads {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  flex-wrap: wrap;
-}
-.downloads .ui-btn {
-  font-size: 0.8rem;
-  padding: 0.3rem 0.7rem;
-  text-decoration: none;
-}
-</style>

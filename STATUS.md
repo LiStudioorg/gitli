@@ -76,6 +76,20 @@
 - 文件表 `tr.react-directory-row { height: 40px }`，单元格 `padding-left: 16px`，行间 `border-top`。
 - 修复挤压：分栏断点由 `md` 改为 `lg`，并给主列 `min-w-0`，杜绝右栏被压缩成竖排。
 
+## Tailwind 全量迁移完成（v0.12.0）
+
+- 全站 **零 scoped CSS**、零 `ui-*` 遗留类，样式统一由 Tailwind 原子类承担。
+- `style.css` 从 490 行精简到 155 行（仅保留设计 Token 与基础复位）。
+- CSS 产物：**101.4 KB → 26.7 KB（-74%）**；单二进制 25.5 MB。
+- 页面覆盖：Dashboard、RepoView（全部 11 个 Tab）、新建仓库/组织/导入、新建工单、
+  个人主页、用户设置、管理后台、组织设置、探索、搜索、登录/注册/初始化、Landing、OAuth 授权。
+- 组件覆盖：TopNav、Sidebar、AppLayout、RepoSidebarCard、ActivityItem、ContributionGraph、
+  LanguageStats、EmptyState、SkeletonBlock、RepoActivity/Releases/Wiki、CloneDropdown、
+  FileIcon、ToastHost、ShortcutHelp 等。
+- 布局按 `github/` 抓取源码的真实变量校准：顶栏 48px、边框 `#d1d9e0`/`#3d444d`、
+  次要文字 `#59636e`、圆角 0.375rem、Dashboard 右栏 356px、仓库侧栏 220px、文件行 40px。
+- `github/` 参考目录已写入 `.gitignore`，不进入版本库。
+
 ## 当前阶段
 
 **阶段 B：稳定化（进行中）**

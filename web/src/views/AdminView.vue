@@ -878,7 +878,7 @@ onMounted(() => {
           </button>
         </nav>
 
-        <section v-if="active === 'users'" class="panel">
+        <section v-if="active === 'users'" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
           <form class="filters" @submit.prevent="loadUsers">
             <label class="filter search-field">
               <span>搜索用户</span>
@@ -902,7 +902,7 @@ onMounted(() => {
           </p>
 
           <p v-if="usersState.error" class="text-sm text-[#cf222e]">{{ usersState.error }}</p>
-          <p v-if="usersState.loading" class="muted">加载中…</p>
+          <p v-if="usersState.loading" class="text-sm text-[#59636e]">加载中…</p>
           <div v-else-if="usersState.items.length" class="table-wrap">
             <table>
               <thead>
@@ -968,13 +968,13 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          <p v-else-if="!usersState.error" class="muted">暂无用户</p>
+          <p v-else-if="!usersState.error" class="text-sm text-[#59636e]">暂无用户</p>
           <p class="cli-hint">
             彻底删除用户请使用 CLI：<code>gitli admin user delete &lt;username&gt; --purge</code>
           </p>
         </section>
 
-        <section v-else-if="active === 'repos'" class="panel">
+        <section v-else-if="active === 'repos'" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
           <form class="filters" @submit.prevent="loadRepos">
             <label class="filter search-field">
               <span>搜索仓库</span>
@@ -987,7 +987,7 @@ onMounted(() => {
           </form>
 
           <p v-if="reposState.error" class="text-sm text-[#cf222e]">{{ reposState.error }}</p>
-          <p v-if="reposState.loading" class="muted">加载中…</p>
+          <p v-if="reposState.loading" class="text-sm text-[#59636e]">加载中…</p>
           <div v-else-if="reposState.items.length" class="table-wrap">
             <table>
               <thead>
@@ -1035,10 +1035,10 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          <p v-else-if="!reposState.error" class="muted">暂无仓库</p>
+          <p v-else-if="!reposState.error" class="text-sm text-[#59636e]">暂无仓库</p>
           <div class="subsection">
             <h3 class="panel-title">永久删除仓库</h3>
-            <p class="muted">
+            <p class="text-sm text-[#59636e]">
               按仓库 ID 永久删除仓库及其数据，<strong class="danger-text">此操作不可恢复</strong>（CLI 专属操作）。
             </p>
             <p v-if="purgeError" class="text-sm text-[#cf222e]">{{ purgeError }}</p>
@@ -1057,12 +1057,12 @@ onMounted(() => {
           </div>
         </section>
 
-        <section v-else-if="active === 'orgs'" class="panel">
+        <section v-else-if="active === 'orgs'" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
           <div class="panel-toolbar">
             <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadOrgs">刷新</button>
           </div>
           <p v-if="orgsState.error" class="text-sm text-[#cf222e]">{{ orgsState.error }}</p>
-          <p v-if="orgsState.loading" class="muted">加载中…</p>
+          <p v-if="orgsState.loading" class="text-sm text-[#59636e]">加载中…</p>
           <div v-else-if="orgsState.items.length" class="table-wrap">
             <table>
               <thead>
@@ -1085,13 +1085,13 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          <p v-else-if="!orgsState.error" class="muted">暂无组织</p>
+          <p v-else-if="!orgsState.error" class="text-sm text-[#59636e]">暂无组织</p>
         </section>
 
-        <section v-else-if="active === 'system'" class="panel">
+        <section v-else-if="active === 'system'" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
           <h3 class="panel-title">概览</h3>
           <p v-if="statsError" class="text-sm text-[#cf222e]">{{ statsError }}</p>
-          <p v-if="loadingStats" class="muted">加载中…</p>
+          <p v-if="loadingStats" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="stats">
             <div class="cards">
               <div v-for="c in statCards" :key="c.label" class="stat-card">
@@ -1101,7 +1101,7 @@ onMounted(() => {
             </div>
             <p class="uptime">运行时间：{{ formatUptime(stats.uptime_seconds) }}</p>
           </template>
-          <p v-else-if="!statsError" class="muted">暂无数据</p>
+          <p v-else-if="!statsError" class="text-sm text-[#59636e]">暂无数据</p>
 
           <div class="subsection">
             <div class="panel-toolbar system-toolbar">
@@ -1111,25 +1111,25 @@ onMounted(() => {
               </button>
             </div>
             <p v-if="systemError" class="text-sm text-[#cf222e]">{{ systemError }}</p>
-            <p v-if="systemLoading && !systemInfo" class="muted">加载中…</p>
+            <p v-if="systemLoading && !systemInfo" class="text-sm text-[#59636e]">加载中…</p>
             <div v-else-if="systemInfo" class="cards">
               <div v-for="c in systemCards" :key="c.label" class="stat-card">
                 <span class="stat-value" :class="{ 'mono': c.mono, 'stat-value-sm': c.mono }">{{ c.value }}</span>
                 <span class="stat-label">{{ c.label }}</span>
               </div>
             </div>
-            <p v-else-if="!systemError" class="muted">暂无数据</p>
+            <p v-else-if="!systemError" class="text-sm text-[#59636e]">暂无数据</p>
           </div>
         </section>
 
-        <section v-else-if="active === 'runner'" class="panel">
+        <section v-else-if="active === 'runner'" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
           <div class="panel-toolbar">
             <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="openRunnerModal">新建 Runner</button>
             <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="loadRunners">刷新</button>
           </div>
 
           <p v-if="runnersError" class="text-sm text-[#cf222e]">{{ runnersError }}</p>
-          <p v-if="runnersLoading" class="muted">加载中…</p>
+          <p v-if="runnersLoading" class="text-sm text-[#59636e]">加载中…</p>
           <div v-else-if="runners.length" class="table-wrap">
             <table>
               <thead>
@@ -1152,7 +1152,7 @@ onMounted(() => {
                     <span v-if="runnerLabels(r).length" class="labels">
                       <span v-for="l in runnerLabels(r)" :key="l" class="label">{{ l }}</span>
                     </span>
-                    <span v-else class="muted">-</span>
+                    <span v-else class="text-sm text-[#59636e]">-</span>
                   </td>
                   <td>
                     <span class="status" :class="'status-' + r.status">{{ runnerStatusLabel(r.status) }}</span>
@@ -1169,7 +1169,7 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          <p v-else-if="!runnersError" class="muted">暂无 Runner</p>
+          <p v-else-if="!runnersError" class="text-sm text-[#59636e]">暂无 Runner</p>
         </section>
 
         <section v-else-if="active === 'audit'" class="panel audit-panel">
@@ -1227,7 +1227,7 @@ onMounted(() => {
           <p v-if="archiveError" class="text-sm text-[#cf222e]">{{ archiveError }}</p>
 
           <p v-if="auditError" class="text-sm text-[#cf222e]">{{ auditError }}</p>
-          <p v-if="loadingAudit" class="muted">加载中…</p>
+          <p v-if="loadingAudit" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="auditLogs.length">
             <div class="table-wrap">
               <table>
@@ -1260,12 +1260,12 @@ onMounted(() => {
                             <div class="value-col">
                               <span class="value-label">旧值 old_value</span>
                               <pre v-if="log.old_value" class="value-pre">{{ prettyValue(log.old_value) }}</pre>
-                              <span v-else class="muted">-</span>
+                              <span v-else class="text-sm text-[#59636e]">-</span>
                             </div>
                             <div class="value-col">
                               <span class="value-label">新值 new_value</span>
                               <pre v-if="log.new_value" class="value-pre">{{ prettyValue(log.new_value) }}</pre>
-                              <span v-else class="muted">-</span>
+                              <span v-else class="text-sm text-[#59636e]">-</span>
                             </div>
                           </div>
                           <div class="detail-meta">
@@ -1282,16 +1282,16 @@ onMounted(() => {
             </div>
             <div class="pagination">
               <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditOffset === 0" @click="prevPage">上一页</button>
-              <span class="muted">第 {{ Math.floor(auditOffset / PAGE_SIZE) + 1 }} 页</span>
+              <span class="text-sm text-[#59636e]">第 {{ Math.floor(auditOffset / PAGE_SIZE) + 1 }} 页</span>
               <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" :disabled="auditLogs.length < PAGE_SIZE" @click="nextPage">下一页</button>
             </div>
           </template>
-          <p v-else-if="!auditError" class="muted">暂无数据</p>
+          <p v-else-if="!auditError" class="text-sm text-[#59636e]">暂无数据</p>
 
           <div class="subsection">
             <h3>统计（近 30 天）</h3>
             <p v-if="auditStatsError" class="text-sm text-[#cf222e]">{{ auditStatsError }}</p>
-            <p v-if="loadingAuditStats" class="muted">加载中…</p>
+            <p v-if="loadingAuditStats" class="text-sm text-[#59636e]">加载中…</p>
             <template v-else-if="auditStats">
               <div class="charts">
                 <div class="chart-card">
@@ -1303,7 +1303,7 @@ onMounted(() => {
                       <span class="bar-count">{{ e.count }}</span>
                     </div>
                   </div>
-                  <p v-else class="muted">暂无数据</p>
+                  <p v-else class="text-sm text-[#59636e]">暂无数据</p>
                 </div>
                 <div class="chart-card">
                   <h4>每日趋势</h4>
@@ -1326,7 +1326,7 @@ onMounted(() => {
                       <span>{{ byDay30[byDay30.length - 1]?.day }}</span>
                     </div>
                   </div>
-                  <p v-else class="muted">暂无数据</p>
+                  <p v-else class="text-sm text-[#59636e]">暂无数据</p>
                 </div>
                 <div class="chart-card">
                   <h4>活跃用户</h4>
@@ -1336,7 +1336,7 @@ onMounted(() => {
                       <span class="bar-count">{{ a.count }}</span>
                     </li>
                   </ul>
-                  <p v-else class="muted">暂无数据</p>
+                  <p v-else class="text-sm text-[#59636e]">暂无数据</p>
                 </div>
               </div>
             </template>
@@ -1345,7 +1345,7 @@ onMounted(() => {
           <div class="subsection">
             <h3>告警规则</h3>
             <p v-if="alertRulesError" class="text-sm text-[#cf222e]">{{ alertRulesError }}</p>
-            <p v-if="loadingAlertRules" class="muted">加载中…</p>
+            <p v-if="loadingAlertRules" class="text-sm text-[#59636e]">加载中…</p>
             <div v-else-if="alertRules.length" class="table-wrap">
               <table>
                 <thead>
@@ -1380,7 +1380,7 @@ onMounted(() => {
                 </tbody>
               </table>
             </div>
-            <p v-else class="muted">暂无告警规则</p>
+            <p v-else class="text-sm text-[#59636e]">暂无告警规则</p>
 
             <form class="alert-form" @submit.prevent="createAlertRule">
               <label class="filter">
@@ -1424,27 +1424,27 @@ onMounted(() => {
           </div>
         </section>
 
-        <section v-else class="panel">
-          <p class="muted">暂无数据</p>
+        <section v-else class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
+          <p class="text-sm text-[#59636e]">暂无数据</p>
         </section>
     </div>
 
-    <div v-if="runnerModal" class="modal-overlay" @click.self="closeRunnerModal">
-      <div class="modal">
+    <div v-if="runnerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeRunnerModal">
+      <div class="w-full max-w-lg rounded-md border border-[#d1d9e0] bg-white p-5 shadow-lg dark:border-[#3d444d] dark:bg-[#0d1117]">
         <h3 v-if="!createdRunner">新建 Runner</h3>
         <h3 v-else>Runner 已创建</h3>
 
         <template v-if="!createdRunner">
-          <label class="field">
+          <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             <span>名称</span>
             <input v-model="runnerForm.name" type="text" placeholder="my-runner" />
           </label>
-          <label class="field">
+          <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             <span>标签（逗号分隔）</span>
             <input v-model="runnerForm.labels" type="text" placeholder="linux, amd64, docker" />
           </label>
           <p v-if="runnerFormError" class="text-sm text-[#cf222e]">{{ runnerFormError }}</p>
-          <div class="modal-actions">
+          <div class="mt-4 flex justify-end gap-2">
             <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="closeRunnerModal">取消</button>
             <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="runnerSaving" @click="createRunner">
               {{ runnerSaving ? '创建中…' : '创建' }}
@@ -1453,7 +1453,7 @@ onMounted(() => {
         </template>
 
         <template v-else>
-          <p class="muted">请立即保存以下凭据，Token 仅显示一次。</p>
+          <p class="text-sm text-[#59636e]">请立即保存以下凭据，Token 仅显示一次。</p>
           <div class="token-box">
             <div class="token-row">
               <span class="token-label">runner_id</span>
@@ -1472,7 +1472,7 @@ onMounted(() => {
           </div>
           <p class="snippet-label">配置片段</p>
           <pre class="snippet">{{ runnerConfigSnippet(createdRunner) }}</pre>
-          <div class="modal-actions">
+          <div class="mt-4 flex justify-end gap-2">
             <button
               class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]"
               type="button"
@@ -1486,14 +1486,14 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-if="editModal" class="modal-overlay" @click.self="editModal = false">
-      <div class="modal">
+    <div v-if="editModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="editModal = false">
+      <div class="w-full max-w-lg rounded-md border border-[#d1d9e0] bg-white p-5 shadow-lg dark:border-[#3d444d] dark:bg-[#0d1117]">
         <h3>编辑 Runner</h3>
-        <label class="field">
+        <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
           <span>名称</span>
           <input v-model="editForm.name" type="text" />
         </label>
-        <label class="field">
+        <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
           <span>状态</span>
           <select v-model="editForm.status">
             <option value="active">在线</option>
@@ -1501,12 +1501,12 @@ onMounted(() => {
             <option value="disabled">已禁用</option>
           </select>
         </label>
-        <label class="field">
+        <label class="flex flex-col gap-1.5 text-sm text-[#1f2328] dark:text-[#e6edf3]">
           <span>标签（逗号分隔）</span>
           <input v-model="editForm.labels" type="text" />
         </label>
         <p v-if="editError" class="text-sm text-[#cf222e]">{{ editError }}</p>
-        <div class="modal-actions">
+        <div class="mt-4 flex justify-end gap-2">
           <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[#21262d]" type="button" @click="editModal = false">取消</button>
           <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="editSaving" @click="saveEdit">
             {{ editSaving ? '保存中…' : '保存' }}

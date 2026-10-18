@@ -116,26 +116,26 @@ onMounted(load)
 <template>
   <div>
     <TopNav />
-    <main class="authorize">
-      <div class="card">
-        <h2>授权应用</h2>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="loading" class="muted">加载中…</p>
+    <main class="flex min-h-[calc(100vh-3rem)] items-center justify-center bg-[#f6f8fa] px-4 py-10 dark:bg-[#0d1117]">
+      <div class="w-full max-w-[440px] rounded-md border border-[#d1d9e0] bg-white p-6 dark:border-[#3d444d] dark:bg-[#0d1117]">
+        <h2 class="mb-3 text-lg font-semibold text-[#1f2328] dark:text-[#e6edf3]">授权应用</h2>
+        <p v-if="error" class="mb-3 rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
+        <p v-if="loading" class="text-sm text-[#59636e]">加载中…</p>
         <template v-else-if="info">
-          <p class="lead">
+          <p class="text-sm text-[#1f2328] dark:text-[#e6edf3]">
             应用 <strong>{{ info.app?.name || info.app?.client_id || clientId }}</strong> 请求访问你的账户。
           </p>
-          <p class="muted">客户端 ID：<code>{{ info.app?.client_id || clientId }}</code></p>
-          <p class="muted">回调地址：<code class="break">{{ info.redirect_uri }}</code></p>
-          <div class="scopes">
-            <span class="muted">请求的权限：</span>
+          <p class="text-sm text-[#59636e]">客户端 ID：<code>{{ info.app?.client_id || clientId }}</code></p>
+          <p class="text-sm text-[#59636e]">回调地址：<code class="break">{{ info.redirect_uri }}</code></p>
+          <div class="my-3 rounded-md border border-[#d1d9e0] p-3 dark:border-[#3d444d]">
+            <span class="text-sm text-[#59636e]">请求的权限：</span>
             <ul>
               <li v-for="s in info.scopes" :key="s"><code>{{ s }}</code></li>
             </ul>
           </div>
-          <div class="actions">
-            <button class="ghost" type="button" :disabled="busy" @click="deny">取消</button>
-            <button class="primary" type="button" :disabled="busy" @click="approve">
+          <div class="mt-4 flex justify-end gap-2">
+            <button class="h-8 rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" type="button" :disabled="busy" @click="deny">取消</button>
+            <button class="h-8 rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" :disabled="busy" @click="approve">
               {{ busy ? '处理中…' : '授权' }}
             </button>
           </div>
@@ -144,83 +144,3 @@ onMounted(load)
     </main>
   </div>
 </template>
-
-<style scoped>
-.authorize {
-  max-width: 460px;
-  margin: 3rem auto;
-  padding: 0 1rem;
-}
-.card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.5rem;
-  background: var(--card);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.card h2 {
-  margin: 0;
-}
-.lead {
-  margin: 0;
-  font-size: 0.95rem;
-}
-.scopes {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
-}
-.scopes ul {
-  margin: 0.35rem 0 0;
-  padding-left: 1.1rem;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-button.primary {
-  padding: 0.45rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: #fff;
-  font-size: 0.9rem;
-}
-button.primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-.ghost {
-  padding: 0.45rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--color-fg);
-  font-size: 0.9rem;
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.error {
-  margin: 0;
-  color: #d1242f;
-  background: rgba(209, 36, 47, 0.08);
-  border: 1px solid rgba(209, 36, 47, 0.4);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.9rem;
-}
-.muted {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.break {
-  word-break: break-all;
-}
-</style>

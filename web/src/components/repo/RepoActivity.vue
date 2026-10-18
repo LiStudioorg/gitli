@@ -32,14 +32,14 @@ onMounted(load)
 
 <template>
   <section class="activity">
-    <header class="head">
+    <header class="mb-3 flex items-center justify-between gap-2">
       <h3>活动</h3>
-      <button class="ui-btn" type="button" @click="load">刷新</button>
+      <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" type="button" @click="load">刷新</button>
     </header>
-    <div v-if="loading" class="list">
+    <div v-if="loading" class="flex flex-col gap-2">
       <SkeletonBlock v-for="i in 4" :key="i" :lines="2" />
     </div>
-    <p v-else-if="error" class="ui-alert ui-alert-error">{{ error }}</p>
+    <p v-else-if="error" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
     <EmptyState
       v-else-if="!items.length"
       icon="📈"
@@ -47,29 +47,8 @@ onMounted(load)
       description="推送代码、创建工单或发布版本后，这里会显示时间线。"
       :show-action="false"
     />
-    <div v-else class="list">
+    <div v-else class="flex flex-col gap-2">
       <ActivityItem v-for="a in items" :key="a.id" :activity="a" />
     </div>
   </section>
 </template>
-
-<style scoped>
-.activity {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.head h3 {
-  margin: 0;
-}
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-</style>

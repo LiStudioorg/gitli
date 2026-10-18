@@ -57,77 +57,27 @@ function relativeTime(raw: string): string {
 </script>
 
 <template>
-  <article class="activity-item">
-    <span class="icon" :class="`verb-${activity.verb}`" aria-hidden="true">{{ icon }}</span>
-    <div class="body">
-      <p class="line">
-        <strong>{{ actor }}</strong>
+  <article class="flex gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 transition-colors hover:border-[#ea580c]/40 dark:border-[#3d444d] dark:bg-[#0d1117]">
+    <span
+      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ea580c]/10 text-sm text-[#ea580c]"
+      aria-hidden="true"
+    >
+      {{ icon }}
+    </span>
+    <div class="min-w-0 flex-1">
+      <p class="text-sm leading-relaxed text-[#1f2328] dark:text-[#e6edf3]">
+        <strong class="font-semibold">{{ actor }}</strong>
         {{ label }}
-        <RouterLink v-if="repoLink" class="repo" :to="repoLink">{{ repoName }}</RouterLink>
+        <RouterLink v-if="repoLink" class="font-semibold text-[#0969da] hover:underline" :to="repoLink">{{ repoName }}</RouterLink>
         <span v-else-if="repoName">{{ repoName }}</span>
       </p>
-      <p v-if="activity.summary" class="summary">{{ activity.summary }}</p>
-      <time class="time">{{ time }}</time>
+      <p
+        v-if="activity.summary"
+        class="mt-1 truncate rounded bg-[#f6f8fa] px-2 py-1 font-mono text-xs text-[#1f2328] dark:bg-[#161b22] dark:text-[#e6edf3]"
+      >
+        {{ activity.summary }}
+      </p>
+      <time class="mt-1 block text-xs text-[#59636e]">{{ time }}</time>
     </div>
   </article>
 </template>
-
-<style scoped>
-.activity-item {
-  display: flex;
-  gap: 0.85rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  transition: border-color 0.15s;
-}
-.activity-item:hover {
-  border-color: var(--primary);
-}
-.icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: var(--primary);
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-.body {
-  flex: 1;
-  min-width: 0;
-}
-.line {
-  margin: 0;
-  font-size: 0.93rem;
-  line-height: 1.45;
-}
-.repo {
-  color: var(--primary);
-  font-weight: 600;
-  text-decoration: none;
-}
-.repo:hover {
-  text-decoration: underline;
-}
-.summary {
-  margin: 0.3rem 0 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-  color: var(--fg);
-  background: color-mix(in srgb, var(--border) 35%, transparent);
-  border-radius: 6px;
-  padding: 0.25rem 0.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.time {
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-</style>

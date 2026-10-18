@@ -78,27 +78,27 @@ onMounted(load)
 
 <template>
   <section class="wiki">
-    <header class="head">
+    <header class="mb-3 flex items-center justify-between gap-2">
       <h3>百科</h3>
-      <div class="actions">
-        <button class="ui-btn" type="button" @click="load">刷新</button>
-        <button v-if="auth.isLoggedIn" class="ui-btn ui-btn-primary" type="button" @click="showForm = !showForm">
+      <div class="flex items-center gap-2">
+        <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" type="button" @click="load">刷新</button>
+        <button v-if="auth.isLoggedIn" class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="showForm = !showForm">
           {{ showForm ? '取消' : '新建页面' }}
         </button>
       </div>
     </header>
 
-    <form v-if="showForm" class="ui-card ui-form" @submit.prevent="create">
-      <div class="ui-field">
+    <form v-if="showForm" class="flex flex-col gap-3 rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]" @submit.prevent="create">
+      <div class="flex flex-col gap-1.5">
         <label for="wiki-title">标题</label>
-        <input id="wiki-title" v-model="form.title" class="ui-input" placeholder="例如 安装指南" />
+        <input id="wiki-title" v-model="form.title" class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]" placeholder="例如 安装指南" />
       </div>
-      <div class="ui-field">
+      <div class="flex flex-col gap-1.5">
         <label for="wiki-body">内容（Markdown）</label>
-        <textarea id="wiki-body" v-model="form.body" class="ui-input" rows="8" placeholder="# 标题" />
+        <textarea id="wiki-body" v-model="form.body" class="h-8 rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-2.5 text-sm text-[#1f2328] outline-none placeholder:text-[#59636e] focus:border-[#0969da] focus:bg-white focus:ring-2 focus:ring-[#0969da]/25 dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3]" rows="8" placeholder="# 标题" />
       </div>
-      <button class="ui-btn ui-btn-primary" type="submit" :disabled="saving">
-        <span v-if="saving" class="ui-spinner" aria-hidden="true" />
+      <button class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="submit" :disabled="saving">
+        <span v-if="saving" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
         {{ saving ? '保存中…' : '保存页面' }}
       </button>
     </form>
@@ -106,7 +106,7 @@ onMounted(load)
     <div v-if="loading" class="layout">
       <SkeletonBlock :lines="6" />
     </div>
-    <p v-else-if="error" class="ui-alert ui-alert-error">{{ error }}</p>
+    <p v-else-if="error" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ error }}</p>
     <EmptyState
       v-else-if="!list.length"
       icon="📖"
@@ -129,68 +129,10 @@ onMounted(load)
           {{ p.title }}
         </button>
       </nav>
-      <article v-if="active" class="ui-card page">
+      <article v-if="active" class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
         <h2>{{ active.title }}</h2>
         <MarkdownView :source="active.body" />
       </article>
     </div>
   </section>
 </template>
-
-<style scoped>
-.wiki {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.head h3 {
-  margin: 0;
-}
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.layout {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.nav-item {
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  padding: 0.45rem 0.6rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.88rem;
-}
-.nav-item:hover {
-  background: var(--hover-bg);
-  color: var(--color-fg);
-}
-.nav-item.active {
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-weight: 600;
-}
-.page {
-  padding: 1.25rem 1.4rem;
-}
-@media (max-width: 800px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-</style>

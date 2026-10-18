@@ -14,49 +14,12 @@ const emit = defineEmits<{ (e: 'action'): void }>()
 </script>
 
 <template>
-  <div class="empty-state">
-    <div class="icon" aria-hidden="true">{{ icon }}</div>
-    <p class="title">{{ title }}</p>
-    <p v-if="description" class="desc">{{ description }}</p>
-    <button v-if="showAction && actionLabel" class="ui-btn ui-btn-primary" type="button" @click="emit('action')">
+  <div class="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-[#d1d9e0] bg-white px-4 py-10 text-center dark:border-[#3d444d] dark:bg-[#0d1117]">
+    <div class="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-[#ea580c]/10 text-xl" aria-hidden="true">{{ icon }}</div>
+    <p class="text-sm font-semibold text-[#1f2328] dark:text-[#e6edf3]">{{ title }}</p>
+    <p v-if="description" class="max-w-md text-sm text-[#59636e]">{{ description }}</p>
+    <button v-if="showAction && actionLabel" class="inline-flex h-8 items-center rounded-md bg-[#2da44e] px-3 text-sm font-semibold text-white hover:bg-[#2c974b] disabled:opacity-50" type="button" @click="emit('action')">
       {{ actionLabel }}
     </button>
   </div>
 </template>
-
-<style scoped>
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 0.4rem;
-  padding: 3rem 1.5rem;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--card) 70%, transparent);
-}
-.icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
-  margin-bottom: 0.4rem;
-}
-.title {
-  margin: 0;
-  font-weight: 600;
-  font-size: 1rem;
-}
-.desc {
-  margin: 0 0 0.7rem;
-  color: var(--muted);
-  font-size: 0.86rem;
-  max-width: 380px;
-}
-</style>

@@ -14,22 +14,35 @@ const features = [
 </script>
 
 <template>
-  <div class="landing">
+  <div class="min-h-screen bg-[#f6f8fa] dark:bg-[#0d1117]">
     <TopNav variant="landing" />
 
-    <section class="hero">
-      <h1>轻量级自研 Git 服务平台，低内存，单二进制，Go + Vue3</h1>
-      <p class="subtitle">
-        支持 SSH/HTTP Git 协议、Issue/PR、TOTP、细粒度 PAT、
-        包管理（NPM/Docker/Go/Maven）、CI 等。AGPL-3.0 开源。
+    <section class="mx-auto flex max-w-[1000px] flex-col items-center px-4 pb-12 pt-16 text-center md:px-6">
+      <h1 class="text-3xl font-semibold leading-tight tracking-tight text-[#1f2328] dark:text-[#e6edf3] md:text-4xl">
+        轻量级自研 Git 服务平台，低内存，单二进制，Go + Vue3
+      </h1>
+      <p class="mt-4 max-w-2xl text-base leading-relaxed text-[#59636e]">
+        支持 SSH/HTTP Git 协议、Issue/PR、TOTP、细粒度 PAT、包管理（NPM/Docker/Go/Maven）、CI 等。AGPL-3.0 开源。
       </p>
-      <div class="cta">
-        <RouterLink class="btn primary" to="/register">快速开始</RouterLink>
-        <a class="btn" href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">GitHub 仓库</a>
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <RouterLink
+          to="/register"
+          class="inline-flex h-10 items-center rounded-md bg-[#2da44e] px-5 text-sm font-semibold text-white hover:bg-[#2c974b]"
+        >
+          快速开始
+        </RouterLink>
+        <a
+          href="https://github.com/LiStudioorg/gitli"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex h-10 items-center rounded-md border border-[#d1d9e0] bg-white px-5 text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:bg-[#0d1117] dark:text-[#e6edf3] dark:hover:bg-[#161b22]"
+        >
+          仓库主页
+        </a>
       </div>
     </section>
 
-    <section id="features" class="features">
+    <section id="features" class="mx-auto grid max-w-[1100px] grid-cols-1 gap-4 px-4 pb-12 sm:grid-cols-2 md:px-6 lg:grid-cols-3">
       <FeatureCard
         v-for="f in features"
         :key="f.title"
@@ -39,142 +52,19 @@ const features = [
       />
     </section>
 
-    <section id="about" class="about">
-      <p class="stack">技术栈：Go 1.22+ / Vue 3 / SQLite / MySQL / PostgreSQL / Docker / OCI</p>
-      <p class="license">gitli 是开源项目，采用 AGPL-3.0 许可证。</p>
-      <nav class="doc-links">
-        <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">文档</a>
-        <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">部署指南</a>
-        <a href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">贡献指南</a>
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">许可证</a>
+    <section id="about" class="border-t border-[#d1d9e0] py-10 text-center dark:border-[#3d444d]">
+      <p class="text-sm text-[#1f2328] dark:text-[#e6edf3]">技术栈：Go 1.22+ / Vue 3 / SQLite / MySQL / PostgreSQL / Docker / OCI</p>
+      <p class="mt-1.5 text-sm text-[#59636e]">gitli 是开源项目，采用 AGPL-3.0 许可证。</p>
+      <nav class="mt-4 flex flex-wrap justify-center gap-4 text-sm">
+        <a class="text-[#0969da] hover:underline" href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">文档</a>
+        <a class="text-[#0969da] hover:underline" href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">部署指南</a>
+        <a class="text-[#0969da] hover:underline" href="https://github.com/LiStudioorg/gitli" target="_blank" rel="noopener">贡献指南</a>
+        <a class="text-[#0969da] hover:underline" href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">许可证</a>
       </nav>
     </section>
 
-    <footer class="footer">
+    <footer class="border-t border-[#d1d9e0] py-6 text-center text-xs text-[#59636e] dark:border-[#3d444d]">
       <p>© {{ new Date().getFullYear() }} gitli. All rights reserved.</p>
     </footer>
   </div>
 </template>
-
-<style scoped>
-.landing {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.hero {
-  position: relative;
-  text-align: center;
-  padding: 5rem 1.5rem 3.5rem;
-  background:
-    radial-gradient(900px 320px at 50% -20%, var(--primary-soft), transparent 68%);
-  border-radius: 0 0 28px 28px;
-}
-.hero h1 {
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  line-height: 1.28;
-  letter-spacing: -0.02em;
-  margin: 0 0 1rem;
-}
-.subtitle {
-  color: var(--muted);
-  font-size: 1.1rem;
-  max-width: 760px;
-  margin: 0 auto 2rem;
-  line-height: 1.6;
-}
-.cta {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.65rem 1.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 0.98rem;
-  font-weight: 600;
-  color: var(--color-fg);
-  background: var(--card);
-  text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
-}
-.btn:hover {
-  background: var(--hover-bg);
-  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
-}
-.btn:active {
-  transform: translateY(1px);
-}
-.btn.primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 35%, transparent);
-}
-.btn.primary:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
-  color: #fff;
-}
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  padding: 1.5rem;
-}
-.features > * {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
-}
-.features > *:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
-}
-.about {
-  text-align: center;
-  padding: 2.5rem 1.5rem;
-  border-top: 1px solid var(--border);
-}
-.stack {
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-}
-.license {
-  color: var(--muted);
-  margin-bottom: 1.25rem;
-}
-.doc-links {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.footer {
-  text-align: center;
-  padding: 1.5rem;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-@media (max-width: 900px) {
-  .features {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 600px) {
-  .features {
-    grid-template-columns: 1fr;
-  }
-  .hero h1 {
-    font-size: 1.8rem;
-  }
-}
-</style>

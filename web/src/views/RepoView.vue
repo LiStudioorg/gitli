@@ -1133,11 +1133,11 @@ onUnmounted(() => {
             </button>
             <button type="button" :class="{ active: pullFilter === 'all' }" @click="pullFilter = 'all'">全部</button>
           </div>
-          <button class="ui-btn" type="button" @click="loadPulls">刷新</button>
+          <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" type="button" @click="loadPulls">刷新</button>
         </div>
       </div>
 
-      <p v-if="pullsError" class="ui-alert ui-alert-error">{{ pullsError }}</p>
+      <p v-if="pullsError" class="rounded-md border border-[#ff818266] bg-[#ffebe9] px-3 py-2 text-sm text-[#cf222e]">{{ pullsError }}</p>
       <div v-if="pullsLoading" class="list-skeleton">
         <SkeletonBlock v-for="i in 3" :key="i" :lines="2" />
       </div>
@@ -1167,13 +1167,13 @@ onUnmounted(() => {
             <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="p.Merged ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : p.State === 'open' ? 'bg-[#10b981]/15 text-[#10b981]' : 'bg-[#ef4444]/15 text-[#ef4444]'">
               {{ p.Merged ? '已合并' : p.State === 'open' ? '开启' : '已关闭' }}
             </span>
-            <button class="ui-btn" type="button" @click="toggleDiff(p)">
+            <button class="inline-flex h-8 items-center rounded-md border border-[#d1d9e0] px-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] dark:border-[#3d444d] dark:text-[#e6edf3] dark:hover:bg-[#161b22]" type="button" @click="toggleDiff(p)">
               {{ diffOpen === p.ID ? '收起' : '查看变更' }}
             </button>
           </div>
           <div v-if="diffOpen === p.ID" class="diff">
-            <p v-if="diffLoading" class="muted">正在加载变更…</p>
-            <p v-else-if="diffMessage" class="ui-alert">{{ diffMessage }}</p>
+            <p v-if="diffLoading" class="text-sm text-[#59636e]">正在加载变更…</p>
+            <p v-else-if="diffMessage" class="rounded-md border border-[#d1d9e0] bg-[#f6f8fa] px-3 py-2 text-sm dark:border-[#3d444d] dark:bg-[#161b22]">{{ diffMessage }}</p>
             <pre v-else-if="diffText" class="mt-2 max-h-[420px] overflow-auto rounded-md bg-[#f6f8fa] p-3 font-mono text-xs leading-relaxed dark:bg-[#0d1117]"><code><span
               v-for="(line, idx) in diffText.split('\n')"
               :key="idx"
@@ -1181,7 +1181,7 @@ onUnmounted(() => {
               :class="diffLineClass(line)"
             >{{ line || ' ' }}
 </span></code></pre>
-            <p v-else class="muted">该合并请求没有文本变更。</p>
+            <p v-else class="text-sm text-[#59636e]">该合并请求没有文本变更。</p>
           </div>
         </li>
       </ul>

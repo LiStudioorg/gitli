@@ -146,7 +146,7 @@ onMounted(load)
           <p v-if="ok" class="ok">{{ ok }}</p>
 
           <div class="toggle-row">
-            <label class="check">
+            <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
               <input
                 type="checkbox"
                 :checked="enabled"
@@ -166,7 +166,7 @@ onMounted(load)
           <hr class="divider" />
 
           <h3>规则列表</h3>
-          <p v-if="loading" class="muted">加载中…</p>
+          <p v-if="loading" class="text-sm text-[#59636e]">加载中…</p>
           <template v-else-if="rules.length">
             <table class="key-table">
               <thead>
@@ -202,7 +202,7 @@ onMounted(load)
               </tbody>
             </table>
           </template>
-          <p v-else class="muted">暂无规则</p>
+          <p v-else class="text-sm text-[#59636e]">暂无规则</p>
 
           <hr class="divider" />
 
@@ -216,7 +216,7 @@ onMounted(load)
             说明
             <input v-model="form.description" placeholder="例如：办公室出口 IP" />
           </label>
-          <label class="check">
+          <label class="flex items-center gap-2 text-sm text-[#1f2328] dark:text-[#e6edf3]">
             <input v-model="form.enabled" type="checkbox" />
             添加后立即启用
           </label>

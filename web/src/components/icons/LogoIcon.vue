@@ -6,12 +6,3 @@
     />
   </svg>
 </template>
-
-<style scoped>
-svg {
-  width: 28px;
-  height: 28px;
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-</style>

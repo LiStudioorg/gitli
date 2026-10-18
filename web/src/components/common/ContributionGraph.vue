@@ -46,8 +46,8 @@ function dayKey(raw: string): string {
 </script>
 
 <template>
-  <section class="card">
-    <header class="head">
+  <section class="rounded-md border border-[#d1d9e0] bg-white p-4 dark:border-[#3d444d] dark:bg-[#0d1117]">
+    <header class="mb-3 flex items-center justify-between gap-2">
       <h3>贡献热力图</h3>
       <span class="range">最近 3 个月</span>
     </header>
@@ -74,69 +74,3 @@ function dayKey(raw: string): string {
     </footer>
   </section>
 </template>
-
-<style scoped>
-.card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  background: var(--card);
-}
-.head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-}
-h3 {
-  margin: 0;
-  font-size: 0.95rem;
-}
-.range {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-.grid {
-  display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(7, 12px);
-  grid-auto-columns: 12px;
-  gap: 3px;
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-}
-.cell {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--border) 70%, transparent);
-  display: inline-block;
-}
-.level-1 {
-  background: color-mix(in srgb, var(--primary) 30%, transparent);
-}
-.level-2 {
-  background: color-mix(in srgb, var(--primary) 55%, transparent);
-}
-.level-3 {
-  background: color-mix(in srgb, var(--primary) 78%, transparent);
-}
-.level-4 {
-  background: var(--primary);
-}
-.foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.6rem;
-  font-size: 0.75rem;
-  color: var(--muted);
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.legend {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-</style>
